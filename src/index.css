@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@tailwind utilities;
+@layer components {
+  .card-hover {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+}
