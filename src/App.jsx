@@ -1,15 +1,15 @@
-import React, { useState } from 'react';  // 🔥 CHANGED: Added useState import
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './Components/Header';
 import ProjectCard from './components/ProjectCard';
 import SearchBar from './components/SearchBar';
 import ProjectDetails from './pages/ProjectDetails';
-import NewProjectModal from './components/NewProjectModal';  // 🔥 CHANGED: Added modal import
-
-const Home = ({ projects, onAddProject }) => {  // 🔥 CHANGED: Added props parameter
+import NewProjectModal from './components/NewProjectModal';
+import AuthModal from './Components/AuthModal';
+const Home = ({ projects, onAddProject, onLoginClick }) => {
   return (
     <>
-      <Header onNewProjectClick={onAddProject} />  {/* 🔥 CHANGED: Passed onClick prop */}
+      <Header onNewProjectClick={onAddProject} onLoginClick={onLoginClick} />
       <SearchBar />
       <div className="mt-8 space-y-6">
         {projects.map(project => (
@@ -21,7 +21,6 @@ const Home = ({ projects, onAddProject }) => {  // 🔥 CHANGED: Added props par
 };
 
 function App() {
-  // 🔥 CHANGED: Moved projects to useState and added modal state
   const [projects, setProjects] = useState([
     {
       id: 1,
@@ -58,9 +57,11 @@ function App() {
     }
   ]);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);  // 🔥 CHANGED: Added modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false); // CHANGED: Auth modal state
+  const [authView, setAuthView] = useState('login'); // ADDED: Track login/register view
 
-  // 🔥 CHANGED: Added modal handlers
+  // Project Modal Handlers
   const handleOpenModal = () => {
     setIsModalOpen(true);
   };
@@ -86,6 +87,33 @@ function App() {
     setProjects([...projects, newProject]);
   };
 
+  // CHANGED: Auth Modal Handlers
+  const handleOpenAuthModal = (view = 'login') => {
+    setAuthView(view);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleCloseAuthModal = () => {
+    setIsAuthModalOpen(false);
+    setAuthView('login'); // Reset to login view when closing
+  };
+
+  const handleSwitchAuthView = (view) => {
+    setAuthView(view);
+  };
+
+  const handleLogin = (loginData) => {
+    console.log('Login data:', loginData);
+    // Add your login logic here
+    handleCloseAuthModal();
+  };
+
+  const handleRegister = (registerData) => {
+    console.log('Register data:', registerData);
+    // Add your registration logic here
+    handleCloseAuthModal();
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -96,18 +124,29 @@ function App() {
               element={
                 <Home 
                   projects={projects} 
-                  onAddProject={handleOpenModal}  // 🔥 CHANGED: Passed props
+                  onAddProject={handleOpenModal}
+                  onLoginClick={() => handleOpenAuthModal('login')}
                 />
               } 
             />
             <Route path="/project/:id" element={<ProjectDetails />} />
           </Routes>
 
-          {/*modal component */}
+          {/* Project Modal */}
           <NewProjectModal 
             isOpen={isModalOpen}
             onClose={handleCloseModal}
             onSave={handleSaveProject}
+          />
+
+          {/* CHANGED: Single Auth Modal */}
+          <AuthModal 
+            isOpen={isAuthModalOpen}
+            onClose={handleCloseAuthModal}
+            currentView={authView}
+            onSwitchView={handleSwitchAuthView}
+            onLogin={handleLogin}
+            onRegister={handleRegister}
           />
         </div>
       </div>
