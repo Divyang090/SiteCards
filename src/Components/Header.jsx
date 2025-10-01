@@ -13,7 +13,7 @@ const Header = ({ onNewProjectClick, onLoginClick }) => {  // CHANGED: Added onL
       <div className="flex items-center gap-4">  {/* CHANGED: Added container for buttons */}
         <button 
           onClick={onLoginClick}  // ADDED: Login button
-          className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300 hover:bg-gray-50"
+          className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300 hover:bg-gray-100"
         >
           Login
         </button>

@@ -4,7 +4,7 @@ const StatusBadge = ({ status }) => {
   const statusConfig = {
     progress: {
       label: 'Progress',
-      color: 'bg-blue-100 text-blue-800'
+      color: 'bg-blue-200 text-blue-900'
     },
     completed: {
       label: 'Completed',

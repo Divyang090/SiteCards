@@ -150,7 +150,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                 <button
                   type="button"
                   onClick={() => onSwitchView('register')}
-                  className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                  className="text-blue-600 hover:text-sky-500 font-medium focus:outline-none "
                 >
                   Create one now
                 </button>
@@ -259,7 +259,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                 <button
                   type="button"
                   onClick={() => onSwitchView('login')}
-                  className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                  className="text-blue-600 hover:text-sky-500 font-medium focus:outline-none"
                 >
                   Sign in
                 </button>

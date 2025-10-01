@@ -4,7 +4,7 @@ import StatusBadge from './StatusBadge';
 
 const ProjectCard = ({ project }) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 w-full">
+    <div className="bg-gradient-to-r from-blue-100 to-slate-200 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 w-full">
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 p-6 border-b md:border-b-0 md:border-r border-gray-100">
           <div className="flex justify-between items-start mb-3">

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './Components/Header';
-import ProjectCard from './components/ProjectCard';
+import ProjectCard from './Components/ProjectCard';
 import SearchBar from './components/SearchBar';
-import ProjectDetails from './pages/ProjectDetails';
+import ProjectDetails from './Pages/ProjectDetails';
 import NewProjectModal from './components/NewProjectModal';
 import AuthModal from './Components/AuthModal';
 const Home = ({ projects, onAddProject, onLoginClick }) => {
@@ -37,9 +37,9 @@ function App() {
       id: 2,
       title: "Suburban Family Home",
       assignee: "The Martinez Family",
-      status: "progress",
+      status: "completed",
       docDate: "Feb 28",
-      isOverdue: true,
+      isOverdue: false,
       cardsCount: 3,
       location: "Westchester, NY",
       updated: "Jan 7"
@@ -48,7 +48,7 @@ function App() {
       id: 3,
       title: "Corporate Office Redesign",
       assignee: "TechCorp Inc.",
-      status: "progress",
+      status: "pending",
       docDate: "Jan 20",
       isOverdue: true,
       cardsCount: 5,
