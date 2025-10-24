@@ -1,18 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Header = ({ onNewProjectClick, onLoginClick }) => {  // CHANGED: Added onLoginClick prop
+const Header = ({ onNewProjectClick, onLoginClick, onTemplates }) => {
   return (
     <div className="flex justify-between items-center mb-8">
       <div>
         <Link to="/" className="text-2xl font-bold text-gray-900 hover:text-gray-700">
-          Cards
+          SiteCards
         </Link>
         <p className="text-gray-600 mt-1">3 active projects</p>
       </div>
-      <div className="flex items-center gap-4">  {/* CHANGED: Added container for buttons */}
+      <div className="flex items-center gap-4">
+        <button><div>Dark</div></button>
         <button 
-          onClick={onLoginClick}  // ADDED: Login button
+        onClick={onTemplates} className='text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300 hover:bg-gray-100'>
+          Templates
+        </button>
+        <button 
+          onClick={onLoginClick}
           className="text-gray-700 hover:text-gray-900 px-4 py-2 rounded-lg font-medium transition-colors duration-200 border border-gray-300 hover:bg-gray-100"
         >
           Login

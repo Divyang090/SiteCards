@@ -41,7 +41,7 @@ function App() {
       docDate: "Feb 28",
       isOverdue: false,
       cardsCount: 3,
-      location: "Westchester, NY",
+      location: "UpTown, NY",
       updated: "Jan 7"
     },
     {
