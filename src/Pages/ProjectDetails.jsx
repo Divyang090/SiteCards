@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ThemeProvider } from '../Components/Theme';
 
 const ProjectDetails = () => {
   const { id } = useParams();

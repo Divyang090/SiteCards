@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { useTheme } from './Theme';
 const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegister }) => {
   const [loginData, setLoginData] = useState({
     email: '',

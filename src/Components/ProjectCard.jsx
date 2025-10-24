@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
+import { useTheme } from './Theme';
 
 const ProjectCard = ({ project }) => {
   return (

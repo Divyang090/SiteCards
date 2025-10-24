@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './Components/Theme';
 import Header from './Components/Header';
 import ProjectCard from './Components/ProjectCard';
 import SearchBar from './components/SearchBar';
 import ProjectDetails from './Pages/ProjectDetails';
 import NewProjectModal from './components/NewProjectModal';
 import AuthModal from './Components/AuthModal';
+import Templates from './Components/Templates';
+
 const Home = ({ projects, onAddProject, onLoginClick }) => {
   return (
     <>
-      <Header onNewProjectClick={onAddProject} onLoginClick={onLoginClick} />
+      <Header 
+        onNewProjectClick={onAddProject} 
+        onLoginClick={onLoginClick} 
+      />
       <SearchBar />
       <div className="mt-8 space-y-6">
         {projects.map(project => (
@@ -58,17 +64,11 @@ function App() {
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false); // CHANGED: Auth modal state
-  const [authView, setAuthView] = useState('login'); // ADDED: Track login/register view
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authView, setAuthView] = useState('login');
 
-  // Project Modal Handlers
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSaveProject = (projectData) => {
     const newProject = {
@@ -83,11 +83,9 @@ function App() {
       updated: "Just now",
       description: projectData.description
     };
-
     setProjects([...projects, newProject]);
   };
 
-  // CHANGED: Auth Modal Handlers
   const handleOpenAuthModal = (view = 'login') => {
     setAuthView(view);
     setIsAuthModalOpen(true);
@@ -95,62 +93,57 @@ function App() {
 
   const handleCloseAuthModal = () => {
     setIsAuthModalOpen(false);
-    setAuthView('login'); // Reset to login view when closing
+    setAuthView('login');
   };
 
-  const handleSwitchAuthView = (view) => {
-    setAuthView(view);
-  };
-
+  const handleSwitchAuthView = (view) => setAuthView(view);
   const handleLogin = (loginData) => {
     console.log('Login data:', loginData);
-    // Add your login logic here
     handleCloseAuthModal();
   };
-
   const handleRegister = (registerData) => {
     console.log('Register data:', registerData);
-    // Add your registration logic here
     handleCloseAuthModal();
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <Home 
-                  projects={projects} 
-                  onAddProject={handleOpenModal}
-                  onLoginClick={() => handleOpenAuthModal('login')}
-                />
-              } 
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen theme-bg-primary">
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            <Routes>
+              <Route 
+                path="/" 
+                element={
+                  <Home 
+                    projects={projects} 
+                    onAddProject={handleOpenModal}
+                    onLoginClick={() => handleOpenAuthModal('login')}
+                  />
+                } 
+              />
+              <Route path="/project/:id" element={<ProjectDetails />} />
+              <Route path="/templates" element={<Templates />} />
+            </Routes>
+
+            <NewProjectModal 
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              onSave={handleSaveProject}
             />
-            <Route path="/project/:id" element={<ProjectDetails />} />
-          </Routes>
 
-          {/* Project Modal */}
-          <NewProjectModal 
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onSave={handleSaveProject}
-          />
-
-          {/* CHANGED: Single Auth Modal */}
-          <AuthModal 
-            isOpen={isAuthModalOpen}
-            onClose={handleCloseAuthModal}
-            currentView={authView}
-            onSwitchView={handleSwitchAuthView}
-            onLogin={handleLogin}
-            onRegister={handleRegister}
-          />
+            <AuthModal 
+              isOpen={isAuthModalOpen}
+              onClose={handleCloseAuthModal}
+              currentView={authView}
+              onSwitchView={handleSwitchAuthView}
+              onLogin={handleLogin}
+              onRegister={handleRegister}
+            />
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 }
 
