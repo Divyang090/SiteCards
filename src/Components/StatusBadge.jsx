@@ -15,7 +15,6 @@ const StatusBadge = ({ status }) => {
       color: 'bg-yellow-100 text-yellow-800'
     }
   };
-
   const config = statusConfig[status] || statusConfig.progress;
 
   return (
