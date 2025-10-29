@@ -3,17 +3,22 @@ import React from 'react';
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     progress: {
-      label: 'Progress',
+      label: ' In Progress',
       color: 'bg-blue-200 text-blue-900'
     },
     completed: {
       label: 'Completed',
       color: 'bg-green-100 text-green-800'
     },
-    pending: {
-      label: 'Pending',
+    review:{
+      label: 'Review',
+      color: 'bg-purple-100 text-purple-800'
+    },
+    Planning: {
+      label: 'Planning',
       color: 'bg-yellow-100 text-yellow-800'
     }
+    
   };
   const config = statusConfig[status] || statusConfig.progress;
 

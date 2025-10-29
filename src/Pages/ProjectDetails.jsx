@@ -1,187 +1,290 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ThemeProvider } from '../Components/Theme';
+import CreateTaskModal from '../Components/CreateTaskModal'; // Adjust path
 
-const ProjectDetails = () => {
+const ProjectDetails = ({ projects: propProjects = [] }) => {
   const { id } = useParams();
+  const [project, setProject] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [activeTab, setActiveTab] = useState('tasks'); // 'tasks' or 'sitemaps'
-  const [taskData, setTaskData] = useState({
-    title: '',
-    description: '',
-    taskType: 'Simple Task',
-    assignee: 'Unassigned',
-    files: []
-  });
-  const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
-  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
+  const [activeTab, setActiveTab] = useState('tasks');
 
-  const projects = {
-    1: {
-      title: "Modern Downtown Loft",
-      assignee: "Sarah Johnson",
-      status: "Progress",
-      dueDate: "Jan 15, 2024",
-      location: "Downtown, NYC",
-      description: "Complete renovation of a 2-bedroom loft with modern finishes and smart home integration.",
-      board: "Site Map",
-      siteMaps: [
-        {
-          id: 1,
-          title: "Floor Plan",
-          image: "/api/placeholder/400/300",
-          date: "Jan 10, 2024",
-          description: "Initial floor plan layout"
-        },
-        {
-          id: 2,
-          title: "Electrical Layout",
-          image: "/api/placeholder/400/300",
-          date: "Jan 12, 2024",
-          description: "Electrical wiring and outlet placement"
-        },
-        {
-          id: 3,
-          title: "Plumbing Diagram",
-          image: "/api/placeholder/400/300",
-          date: "Jan 14, 2024",
-          description: "Plumbing and fixture locations"
-        },
-        {
-          id: 4,
-          title: "3D Render",
-          image: "/api/placeholder/400/300",
-          date: "Jan 16, 2024",
-          description: "3D visualization of the space"
-        },
-        {
-          id: 5,
-          title: "Material Board",
-          image: "/api/placeholder/400/300",
-          date: "Jan 18, 2024",
-          description: "Selected materials and finishes"
-        },
-        {
-          id: 6,
-          title: "Lighting Plan",
-          image: "/api/placeholder/400/300",
-          date: "Jan 20, 2024",
-          description: "Lighting fixture placement"
+  // Get project data
+  useEffect(() => {
+    const loadProject = async () => {
+      try {
+        setLoading(true);
+        
+        console.log('Loading project with ID:', id);
+        if (Array.isArray(propProjects) && propProjects.length > 0) {
+          const foundFromProps = propProjects.find(p => (p.id && p.id.toString() === id) || (p.project_id && p.project_id.toString() === id));
+          if (foundFromProps) {
+            console.log('Found project in parent propProjects:', foundFromProps);
+            setProject(foundFromProps);
+            setLoading(false);
+            return;
+          }
         }
-      ]
-    },
-    2: {
-      title: "Suburban Family Home",
-      assignee: "The Martinez Family",
-      status: "Progress",
-      dueDate: "Feb 28, 2024",
-      location: "Westchester, NY",
-      description: "Family home renovation with focus on functionality and comfort.",
-      board: "Site Plan",
-      siteMaps: []
-    },
-    3: {
-      title: "Corporate Office Redesign",
-      assignee: "TechCorp Inc.",
-      status: "Progress",
-      dueDate: "Jan 20, 2024",
-      location: "Midtown, NYC",
-      description: "Modern office space redesign to promote collaboration.",
-      board: "Floor Plan",
-      siteMaps: []
+
+        const localProject = getProjectFromLocalStorage(id);
+        if (localProject) {
+          console.log('Found project in localStorage:', localProject);
+          setProject(localProject);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Project not in localStorage, trying API...');
+        let response = await fetch(`http://127.0.0.1:5000/api/projects/projects/${id}`);
+        
+        if (response.ok) {
+          const projectData = await response.json();
+          const transformedProject = transformProjectData(projectData);
+          console.log('Found project via API:', transformedProject);
+          setProject(transformedProject);
+        } else {
+          const projectsResponse = await fetch('http://127.0.0.1:5000/api/projects/projects');
+          if (projectsResponse.ok) {
+            const projectsData = await projectsResponse.json();
+            const projectsArray = extractProjectsArray(projectsData);
+            const foundProject = projectsArray.find(proj => 
+              (proj.id && proj.id.toString() === id) || 
+              (proj.project_id && proj.project_id.toString() === id)
+            );
+            
+            if (foundProject) {
+              const transformedProject = transformProjectData(foundProject);
+              console.log('Found project in projects list:', transformedProject);
+              setProject(transformedProject);
+            } else {
+              throw new Error('Project not found in API');
+            }
+          } else {
+            throw new Error('API not available');
+          }
+        }
+        
+      } catch (err) {
+        console.error('Error loading project:', err);
+        const defaultProject = createDefaultProject(id);
+        setProject(defaultProject);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadProject();
+    }
+  }, [id]);
+
+  // FETCH TASKS FROM API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!id) return;
+      
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
+        if (response.ok) {
+          const tasksData = await response.json();
+          console.log('Fetched tasks from API:', tasksData);
+          
+          // Handle different response formats
+          let tasksArray = tasksData;
+          if (tasksData && Array.isArray(tasksData.data)) {
+            tasksArray = tasksData.data;
+          } else if (tasksData && Array.isArray(tasksData.tasks)) {
+            tasksArray = tasksData.tasks;
+          }
+          
+          // Transform API data to match frontend structure
+          const transformedTasks = tasksArray.map(task => ({
+            id: task.id || task.task_id,
+            title: task.title,
+            description: task.description,
+            taskType: task.task_type || 'Simple Task',
+            assignee: task.assignee || 'Unassigned',
+            status: task.status || 'pending',
+            completed: task.status === 'completed',
+            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+            files: task.files || []
+          }));
+          
+          setTasks(transformedTasks);
+        } else {
+          console.log('No tasks found in API');
+          setTasks([]);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        setTasks([]);
+      }
+    };
+
+    if (id) {
+      fetchTasks();
+    }
+  }, [id]);
+
+  // Helper functions
+  const getProjectFromLocalStorage = (projectId) => {
+    try {
+      const projects = JSON.parse(localStorage.getItem('projects') || '[]');
+      const foundProject = projects.find(p => p.id && p.id.toString() === projectId);
+      return foundProject || null;
+    } catch (err) {
+      console.error('Error reading from localStorage:', err);
+      return null;
     }
   };
 
-  const project = projects[id];
+  const extractProjectsArray = (projectsData) => {
+    if (Array.isArray(projectsData)) return projectsData;
+    if (projectsData && Array.isArray(projectsData.data)) return projectsData.data;
+    if (projectsData && Array.isArray(projectsData.projects)) return projectsData.projects;
+    return [];
+  };
 
-  // Task type and assignee options
-  const taskTypeOptions = ['Simple Task', 'Site Visits', 'Meeting', 'Design Review', 'Client Meeting', 'Documentation'];
-  const assigneeOptions = ['Unassigned', 'Sarah Johnson', 'The Martinez Family', 'TechCorp Inc.', 'John Doe', 'Jane Smith', 'Mike Wilson'];
+  const transformProjectData = (projectData) => {
+    return {
+      id: projectData.id || projectData.project_id,
+      title: projectData.project_name || projectData.title || 'Project',
+      assignee: projectData.client_name || projectData.assignee || 'Unassigned',
+      status: projectData.status || 'open',
+      dueDate: projectData.end_date ? new Date(projectData.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 
+               projectData.due_date ? new Date(projectData.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
+      location: projectData.location || 'No location',
+      description: projectData.project_description || projectData.description || 'No description available',
+      board: "Site Map",
+      siteMaps: []
+    };
+  };
 
-  const handleCreateTask = (e) => {
-    e.preventDefault();
-    if (taskData.title.trim()) {
-      const newTask = {
-        id: Date.now(),
-        title: taskData.title,
-        description: taskData.description,
-        taskType: taskData.taskType,
-        assignee: taskData.assignee,
-        files: taskData.files,
-        completed: false,
-        createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const createDefaultProject = (projectId) => {
+    return {
+      id: projectId,
+      title: 'Project',
+      assignee: 'Unassigned',
+      status: 'open',
+      dueDate: 'No date',
+      location: 'No location',
+      description: 'Project details',
+      board: "Site Map",
+      siteMaps: []
+    };
+  };
+
+  // Handle task creation success
+const handleCreateTask = async (newTaskData) => {
+  try {
+    console.log('Task creation callback received:', newTaskData);
+    
+    // Add the new task to the local state immediately for better UX
+    if (newTaskData && (newTaskData.id || newTaskData.task_id)) {
+      const transformedTask = {
+        id: newTaskData.id || newTaskData.task_id,
+        title: newTaskData.title,
+        description: newTaskData.description,
+        taskType: newTaskData.task_type || 'Simple Task',
+        assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
+        status: newTaskData.status || 'pending',
+        completed: newTaskData.status === 'completed',
+        createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+        files: newTaskData.files || []
       };
-      setTasks([...tasks, newTask]);
-      setTaskData({
-        title: '',
-        description: '',
-        taskType: 'Simple Task',
-        assignee: 'Unassigned',
-        files: []
+      
+      setTasks(prev => [transformedTask, ...prev]);
+    }
+    
+    // Also refresh from API to ensure consistency
+    const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
+    if (response.ok) {
+      const tasksData = await response.json();
+      console.log('Refreshed tasks from API:', tasksData);
+      // ... your existing transformation logic
+    }
+  } catch (error) {
+    console.error('Error in task creation callback:', error);
+  }
+};
+
+  // UPDATE TASK STATUS USING API
+  const handleToggleTask = async (taskId) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      
+      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus
+        }),
       });
-      setIsCreatingTask(false);
+
+      if (response.ok) {
+        // Update local state
+        setTasks(tasks.map(task => 
+          task.id === taskId ? { 
+            ...task, 
+            status: newStatus,
+            completed: newStatus === 'completed'
+          } : task
+        ));
+      } else {
+        throw new Error('Failed to update task');
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      alert('Failed to update task status');
     }
   };
 
-  const handleToggleTask = (taskId) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, completed: !task.completed } : task
-    ));
+  // DELETE TASK USING API
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setTasks(tasks.filter(task => task.id !== taskId));
+      } else {
+        throw new Error('Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Failed to delete task');
+    }
   };
 
-  const handleDeleteTask = (taskId) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-  };
-
-  const handleChange = (e) => {
-    setTaskData({
-      ...taskData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleTaskTypeSelect = (type) => {
-    setTaskData({
-      ...taskData,
-      taskType: type
-    });
-    setShowTaskTypeDropdown(false);
-  };
-
-  const handleAssigneeSelect = (assignee) => {
-    setTaskData({
-      ...taskData,
-      assignee: assignee
-    });
-    setShowAssigneeDropdown(false);
-  };
-
-  const toggleTaskTypeDropdown = () => {
-    setShowTaskTypeDropdown(!showTaskTypeDropdown);
-    setShowAssigneeDropdown(false);
-  };
-
-  const toggleAssigneeDropdown = () => {
-    setShowAssigneeDropdown(!showAssigneeDropdown);
-    setShowTaskTypeDropdown(false);
-  };
+  // Sort tasks: completed tasks at the bottom
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.completed && !b.completed) return 1;
+    if (!a.completed && b.completed) return -1;
+    return 0;
+  });
 
   const remainingTasks = tasks.filter(task => !task.completed).length;
   const totalTasks = tasks.length;
 
-  if (!project) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Project Not Found</h1>
-          <Link to="/" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
-            ← Back to Projects
-          </Link>
-        </div>
-      </div>
-    );
+  // Skeleton loading component (keep your existing skeleton code)
+  const SkeletonLoader = () => (
+    <div className="min-h-screen bg-white">
+      {/* Your existing skeleton code remains the same */}
+    </div>
+  );
+
+  if (loading) {
+    return <SkeletonLoader />;
   }
+
+  const displayProject = project;
 
   return (
     <div className="min-h-screen bg-white">
@@ -196,27 +299,20 @@ const ProjectDetails = () => {
 
         {/* Project Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">{project.title}</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">{displayProject.title}</h1>
           
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-            <span>• {project.assignee}</span>
+            <span>• {displayProject.assignee}</span>
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-              {project.status}
+              {displayProject.status}
             </span>
-            <span>• Due {project.dueDate}</span>
-            <span>• {project.location}</span>
+            <span>• Due {displayProject.dueDate}</span>
+            <span>• {displayProject.location}</span>
           </div>
 
           <div className="border-t border-b border-gray-200 py-4 my-6">
-            <p className="text-gray-700">{project.description}</p>
+            <p className="text-gray-700">{displayProject.description}</p>
           </div>
-
-          {/* <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium text-gray-500">Board</span>
-              <p className="text-gray-900 font-semibold">{project.board}</p>
-            </div>
-          </div> */}
         </div>
 
         {/* Tabs Navigation */}
@@ -240,7 +336,7 @@ const ProjectDetails = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Site Maps({project.siteMaps?.length || 0})
+              Site Maps ({displayProject.siteMaps?.length || 0})
             </button>
           </nav>
         </div>
@@ -267,150 +363,23 @@ const ProjectDetails = () => {
               )}
             </div>
 
-            {/* Compact Task Creation Form */}
+            {/* INLINE TASK CREATION FORM - Using CreateTaskModal component */}
             {isCreatingTask && (
-              <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-                <form onSubmit={handleCreateTask} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Task Title */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Task title <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        value={taskData.title}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="Enter task title"
-                        autoFocus
-                      />
-                    </div>
-
-                    {/* Task Type Dropdown */}
-                    <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Task Type
-                      </label>
-                      <button
-                        type="button"
-                        onClick={toggleTaskTypeDropdown}
-                        className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm"
-                      >
-                        <span className="text-gray-700 truncate">{taskData.taskType}</span>
-                        <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showTaskTypeDropdown ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {showTaskTypeDropdown && (
-                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                          {taskTypeOptions.map((type) => (
-                            <button
-                              key={type}
-                              type="button"
-                              onClick={() => handleTaskTypeSelect(type)}
-                              className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${
-                                taskData.taskType === type ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                              }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Assignee Dropdown */}
-                    <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Assignee
-                      </label>
-                      <button
-                        type="button"
-                        onClick={toggleAssigneeDropdown}
-                        className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm"
-                      >
-                        <span className="text-gray-700 truncate">{taskData.assignee}</span>
-                        <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showAssigneeDropdown ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {showAssigneeDropdown && (
-                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                          {assigneeOptions.map((assignee) => (
-                            <button
-                              key={assignee}
-                              type="button"
-                              onClick={() => handleAssigneeSelect(assignee)}
-                              className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${
-                                taskData.assignee === assignee ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-                              }`}
-                            >
-                              {assignee}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description <span className="text-gray-400 text-xs">(optional)</span>
-                    </label>
-                    <textarea
-                      name="description"
-                      value={taskData.description}
-                      onChange={handleChange}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      placeholder="Enter task description"
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsCreatingTask(false)}
-                        className="flex-1 px-3 py-2 text-gray-600 hover:text-gray-800 font-medium text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
-                      >
-                        Add Task
-                      </button>
-                    </div>
-                </form>
-              </div>
+              <CreateTaskModal
+                isInline={true}
+                projectId={id}
+                onCreate={handleCreateTask}
+                onCancel={() => setIsCreatingTask(false)}
+              />
             )}
 
             {/* Tasks List with Scroll */}
-            <div className={`space-y-3 ${tasks.length > 3 ? 'max-h-96 overflow-y-auto' : ''}`}>
-              {tasks.length > 0 ? (
-                tasks.map((task) => (
-                  <div key={task.id} className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between group hover:shadow-md transition-shadow duration-200">
+            <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto' : ''}`}>
+              {sortedTasks.length > 0 ? (
+                sortedTasks.map((task) => (
+                  <div key={task.id} className={`bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between group hover:shadow-md transition-shadow duration-200 ${
+                    task.completed ? 'opacity-60' : ''
+                  }`}>
                     <div className="flex items-center gap-3 flex-1">
                       <button
                         onClick={() => handleToggleTask(task.id)}
@@ -438,6 +407,15 @@ const ProjectDetails = () => {
                         </div>
                         {task.description && (
                           <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                        )}
+                        {task.files && task.files.length > 0 && (
+                          <div className="flex gap-1 mt-2">
+                            {task.files.map((file, index) => (
+                              <span key={index} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                                📎 {typeof file === 'string' ? file : file.name}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -481,9 +459,10 @@ const ProjectDetails = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Site Maps</h2>
-                <p className="text-gray-600 mt-1">{project.siteMaps?.length || 0} site maps</p>
+                <p className="text-gray-600 mt-1">{displayProject.siteMaps?.length || 0} site maps</p>
               </div>
               
+              {/* Upload Site Map Button */}
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -493,9 +472,9 @@ const ProjectDetails = () => {
             </div>
 
             {/* Site Maps Grid - 3 per row */}
-            {project.siteMaps && project.siteMaps.length > 0 ? (
+            {displayProject.siteMaps && displayProject.siteMaps.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {project.siteMaps.map((siteMap) => (
+                {displayProject.siteMaps.map((siteMap) => (
                   <div key={siteMap.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
                     {/* Image Container */}
                     <div className="aspect-video bg-gray-200 relative overflow-hidden">

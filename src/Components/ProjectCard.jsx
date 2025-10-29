@@ -12,11 +12,11 @@ const ProjectCard = ({ project }) => {
             <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
             <StatusBadge status={project.status} />
           </div>
-          <p className="text-sm text-gray-600 mb-4">A: {project.assignee}</p>
+          <p className="text-sm text-gray-600 mb-4">Assignee: {project.assignee}</p>
           
           <div className="mb-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">Doc Date</span>
+              <span className="text-sm font-medium text-gray-700">Due Date</span>
               <span className={`text-sm font-medium ${project.isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
                 {project.docDate} {project.isOverdue && '(Overdue)'}
               </span>

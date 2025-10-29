@@ -8,7 +8,6 @@
   .card-hover:hover {
     transform: translateY(-2px);
   }
-  /* Add this to your existing index.css */
 :root {
   --bg-primary: #ffffff;
   --bg-secondary: #f9fafb;

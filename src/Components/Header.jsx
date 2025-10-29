@@ -19,11 +19,11 @@ const Header = ({ onNewProjectClick, onLoginClick }) => {
         >
           SiteCards
         </Link>
-        <p className="theme-text-secondary mt-1">3 active projects</p>
+        {/* <p className="theme-text-secondary mt-1">3 active projects</p> */}
       </div>
       <div className="flex items-center gap-4">
         {/* Theme Toggle Button */}
-        <button
+        {/* <button
           onClick={toggleTheme}
           className="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:opacity-80 flex items-center gap-2 theme-border theme-text-primary theme-bg-secondary border"
         >
@@ -42,7 +42,7 @@ const Header = ({ onNewProjectClick, onLoginClick }) => {
               <span>Dark</span>
             </>
           )}
-        </button>
+        </button> */}
 
         <button
           onClick={handleTemplatesClick}

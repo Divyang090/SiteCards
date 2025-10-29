@@ -1,175 +1,245 @@
 import React, { useState, useEffect } from 'react';
 
 const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegister }) => {
-  // ==================== ADD YOUR API LINK HERE ====================
-const API_BASE = "http://localhost:5000/api";
+  // ==================== API CONFIG ====================
+  const API_BASE = "http://127.0.0.1:5000/api/user";
   const LOGIN_API = `${API_BASE}/login`;
   const REGISTER_API = `${API_BASE}/register`;
   const FORGOT_PASSWORD_API = `${API_BASE}/forgot-password`;
 
-  // State management
+  // ==================== STATE MANAGEMENT ====================
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: ''
-  });
+  const [success, setSuccess] = useState('');
 
-  const [registerData, setRegisterData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  // ==================== UTILITY FUNCTIONS ====================
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-  // Login function - ALREADY HAS API CODE
+  const isStrongPassword = (password) => {
+    return password.length >= 6;
+  };
+
+  // ==================== LOGIN FUNCTION ====================
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
+    
+    // Get form values directly from the form elements
+    const form = e.target;
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
+    
+    console.log('sLOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
+
+    // Basic validation
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // API call happens here automatically
       const response = await fetch(LOGIN_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        //Use backend field names
         body: JSON.stringify({
-  user_email: loginData.email,      // Matches your backend
-  user_password: loginData.password // Matches your backend
-})
+          user_email: email,        // Changed to user_email
+          user_password: password   // Changed to user_password
+        })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
       }
+
+      const data = await response.json();
 
       if (onLogin) {
         onLogin(data);
       }
 
-      onClose();
+      setSuccess('Login successful!');
+      setTimeout(() => {
+        onClose();
+      }, 1500);
 
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      if (err.message.includes('Failed to fetch')) {
+        setError('Cannot connect to server. Please check if backend is running on port 5000.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Register function - ALREADY HAS API CODE
+  // ==================== REGISTER FUNCTION ====================
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     
-    if (registerData.password !== registerData.confirmPassword) {
+    // Get form values directly from the form elements
+    const form = e.target;
+    const fullName = form.fullName.value.trim();
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
+    const confirmPassword = form.confirmPassword.value.trim();
+    
+    console.log('REGISTER DEBUG:', { 
+      fullName, email, password, confirmPassword,
+      fullNameLength: fullName.length,
+      emailLength: email.length,
+      passwordLength: password.length,
+      confirmPasswordLength: confirmPassword.length
+    });
+
+    // Validation
+    if (!fullName || !email || !password || !confirmPassword) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    if (password !== confirmPassword) {
       setError("Passwords don't match!");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // API call happens here automatically
       const response = await fetch(REGISTER_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        //Use backend field names
         body: JSON.stringify({
-          name: registerData.fullName,
-          email: registerData.email,
-          password: registerData.password
+          user_name: fullName,    // Changed to user_fullname
+          user_email: email,          // Changed to user_email
+          user_password: password     // Changed to user_password
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
+
+      const data = await response.json();
 
       if (onRegister) {
         onRegister(data);
       }
 
-      onSwitchView('login');
-      setError('Registration successful! Please login.');
+      setSuccess('Registration successful! Please check your email to verify your account.');
+      
+      setTimeout(() => {
+        onSwitchView('login');
+      }, 2000);
 
     } catch (err) {
-      setError(err.message);
+      console.error('Registration error:', err);
+      if (err.message.includes('Failed to fetch')) {
+        setError('Cannot connect to server. Please check if backend is running on port 5000.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Forgot password function - ALREADY HAS API CODE
+  // ==================== FORGOT PASSWORD FUNCTION ====================
   const handleForgotPassword = async () => {
-    if (!loginData.email) {
+    // Get email from the login form directly
+    const emailInput = document.querySelector('input[name="email"]');
+    const email = emailInput ? emailInput.value.trim() : '';
+    
+    if (!email) {
       setError('Please enter your email address first');
       return;
     }
 
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
+    setError('');
+    setSuccess('');
+
     try {
-      // API call happens here automatically
       const response = await fetch(FORGOT_PASSWORD_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        //Use backend field name
         body: JSON.stringify({
-          email: loginData.email
+          user_email: email  // Changed to user_email
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to send reset email');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send reset email');
       }
 
-      setError('Password reset instructions sent to your email!');
+      const data = await response.json();
+      setSuccess('Password reset instructions have been sent to your email!');
+      
     } catch (err) {
-      setError(err.message);
+      console.error('Forgot password error:', err);
+      if (err.message.includes('Failed to fetch')) {
+        setError('Cannot connect to server. Please check if backend is running on port 5000.');
+      } else {
+        setError(err.message || 'Failed to send reset email. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Form change handlers
-  const handleLoginChange = (e) => {
-    setLoginData({
-      ...loginData,
-      [e.target.name]: e.target.value
-    });
-    setError('');
-  };
-
-  const handleRegisterChange = (e) => {
-    setRegisterData({
-      ...registerData,
-      [e.target.name]: e.target.value
-    });
-    setError('');
-  };
-
-  // Reset form when modal closes
+  // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {
     if (!isOpen) {
-      setLoginData({ email: '', password: '' });
-      setRegisterData({ fullName: '', email: '', password: '', confirmPassword: '' });
       setError('');
+      setSuccess('');
       setLoading(false);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+  // ==================== JSX RENDER ====================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
@@ -194,13 +264,16 @@ const API_BASE = "http://localhost:5000/api";
           </button>
         </div>
 
+        {/* Success Message */}
+        {success && (
+          <div className="mx-6 mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
+            {success}
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
-          <div className={`mx-6 mt-4 p-3 rounded-lg border text-sm ${
-            error.includes('successful') 
-              ? 'bg-green-50 border-green-200 text-green-700'
-              : 'bg-red-50 border-red-200 text-red-700'
-          }`}>
+          <div className="mx-6 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
           </div>
         )}
@@ -242,8 +315,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="email"
                   name="email"
-                  value={loginData.email}
-                  onChange={handleLoginChange}
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -258,8 +329,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="password"
                   name="password"
-                  value={loginData.password}
-                  onChange={handleLoginChange}
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -314,7 +383,7 @@ const API_BASE = "http://localhost:5000/api";
                   type="button"
                   onClick={() => onSwitchView('register')}
                   disabled={loading}
-                  className="text-blue-600 hover:text-sky-500 font-medium focus:outline-none disabled:opacity-50"
+                  className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none disabled:opacity-50"
                 >
                   Create one now
                 </button>
@@ -334,8 +403,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="text"
                   name="fullName"
-                  value={registerData.fullName}
-                  onChange={handleRegisterChange}
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -350,8 +417,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="email"
                   name="email"
-                  value={registerData.email}
-                  onChange={handleRegisterChange}
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -366,8 +431,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="password"
                   name="password"
-                  value={registerData.password}
-                  onChange={handleRegisterChange}
                   required
                   disabled={loading}
                   minLength={6}
@@ -383,8 +446,6 @@ const API_BASE = "http://localhost:5000/api";
                 <input
                   type="password"
                   name="confirmPassword"
-                  value={registerData.confirmPassword}
-                  onChange={handleRegisterChange}
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -441,7 +502,7 @@ const API_BASE = "http://localhost:5000/api";
                   type="button"
                   onClick={() => onSwitchView('login')}
                   disabled={loading}
-                  className="text-blue-600 hover:text-sky-500 font-medium focus:outline-none disabled:opacity-50"
+                  className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none disabled:opacity-50"
                 >
                   Sign in
                 </button>
