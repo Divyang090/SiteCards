@@ -67,7 +67,7 @@ const handleSubmit = async (e) => {
   try {
     // Create main task data
     const requestData = {
-      name: taskData.title,
+      task_name: taskData.title,
       description: taskData.description,
       task_type: taskData.task_type,
       project_id: String(projectId), // Ensure project_id is a string
@@ -93,6 +93,7 @@ const handleSubmit = async (e) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(requestData),
     });
@@ -105,10 +106,7 @@ const handleSubmit = async (e) => {
       throw new Error(errorData.error || `Failed to create task: ${taskResponse.status}`);
     }
     
-    // Parse the response data
-    const responseData = await taskResponse.json();
-    console.log('Task created successfully:', responseData);
-
+    // Parse the response data only once
     const taskResult = await taskResponse.json();
     console.log('Task created successfully:', taskResult);
 
@@ -345,7 +343,7 @@ return (
         <>
           {/* Task Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium theme-text-primary mb-2">
               Task title <span className="text-red-500">*</span>
             </label>
             <input
@@ -440,7 +438,7 @@ return (
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description <span className="text-gray-400 text-sm">(optional)</span>
+              Description
             </label>
             <textarea
               name="description"

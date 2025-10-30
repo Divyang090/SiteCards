@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider } from './Components/Theme';
+import { ThemeProvider,useTheme } from './Components/ThemeContext';
 import Header from './Components/Header';
 import ProjectCard from './Components/ProjectCard';
-import SearchBar from './components/SearchBar';
+import SearchBar from './Components/SearchBar';
 import ProjectDetails from './Pages/ProjectDetails';
 import NewProjectModal from './Components/NewProjectModal';
 import AuthModal from './Components/AuthModal';
-import Templates from './Components/Templates';
+import Templates from './Components/ProjectTemplates';
 
 const Home = ({ projects, onAddProject, onLoginClick, onSearch, searchTerm, loading, error }) => {
   if (loading) {
@@ -19,7 +19,7 @@ const Home = ({ projects, onAddProject, onLoginClick, onSearch, searchTerm, load
         />
         <SearchBar onSearch={onSearch} />
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-3 border-blue-300"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-300"></div>
           <span className="ml-3 text-gray-600">Loading projects...</span>
         </div>
       </>
@@ -36,7 +36,7 @@ const Home = ({ projects, onAddProject, onLoginClick, onSearch, searchTerm, load
         <SearchBar onSearch={onSearch} />
         <div className="text-center py-12">
           <div className="text-red-400 text-6xl mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load projects</h3>
+          <h3 className="text-lg font-medium theme-text-primary mb-2">Failed to load projects</h3>
           <p className="text-gray-500">{error}</p>
         </div>
       </>

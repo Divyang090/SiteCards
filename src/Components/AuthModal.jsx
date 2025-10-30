@@ -241,18 +241,18 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
   // ==================== JSX RENDER ====================
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black-opacity-50 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div 
-        className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-[1px]"
+        className="absolute inset-0 theme-bg-primary bg-opacity-80 backdrop-blur-[1px]"
         onClick={onClose}
       ></div>
       
       {/* Modal content */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
+      <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold theme-text-primary">
             {currentView === 'login' ? 'Login to Your Account' : 'Create Your Account'}
           </h2>
           <button 
@@ -309,7 +309,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
           <form onSubmit={handleLoginSubmit} className="p-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Email Address *
                 </label>
                 <input
@@ -323,7 +323,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Password *
                 </label>
                 <input
@@ -343,7 +343,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
                     disabled={loading}
                   />
-                  <span className="ml-2 text-gray-600">Remember me</span>
+                  <span className="ml-2 theme-text-primary">Remember me</span>
                 </label>
                 <button 
                   type="button" 
@@ -377,7 +377,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
             {/* Switch to Register */}
             <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-              <p className="text-gray-600 text-sm">
+              <p className="theme-text-primary text-sm">
                 Don't have an account?{' '}
                 <button
                   type="button"
@@ -397,7 +397,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
           <form onSubmit={handleRegisterSubmit} className="p-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Full Name *
                 </label>
                 <input
@@ -411,7 +411,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Email Address *
                 </label>
                 <input
@@ -425,7 +425,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Password *
                 </label>
                 <input
@@ -440,7 +440,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium theme-text-primary mb-1">
                   Confirm Password *
                 </label>
                 <input
@@ -461,7 +461,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                     required
                     disabled={loading}
                   />
-                  <span className="ml-2 text-gray-600">
+                  <span className="ml-2 theme-text-primary">
                     I agree to the{' '}
                     <button type="button" className="text-blue-600 hover:text-blue-800 disabled:opacity-50" disabled={loading}>
                       Terms of Service
@@ -496,7 +496,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
             {/* Switch to Login */}
             <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-              <p className="text-gray-600 text-sm">
+              <p className="theme-text-primary text-sm">
                 Already have an account?{' '}
                 <button
                   type="button"

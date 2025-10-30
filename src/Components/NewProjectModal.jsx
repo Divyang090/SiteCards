@@ -160,15 +160,15 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div 
-        className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-[1px]"
+        className="absolute inset-0 theme-bg-primary bg-opacity-80 backdrop-blur-[1px]"
         onClick={handleOverlayClick}
       ></div>
       
       {/* Modal content */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
+      <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold theme-text-primary">
             {loading ? 'Creating Project...' : 'Create New Project'}
           </h2>
           <button 
@@ -186,14 +186,14 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         {/* Success Message */}
         {success && (
           <div className="mx-6 mt-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm">
-            ✅ {success}
+            {success}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
           <div className="mx-6 mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-            ❌ {error}
+            {error}
           </div>
         )}
 
@@ -202,7 +202,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
           <div className="space-y-4">
             {/* Project Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Project Title *
               </label>
               <input
@@ -219,7 +219,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
             {/* Client Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Client Name *
               </label>
               <input
@@ -236,7 +236,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
             {/* Location */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Location
               </label>
               <input
@@ -252,7 +252,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Status *
               </label>
               <select
@@ -271,7 +271,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
             {/* Due Date */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Due Date *
               </label>
               <input
@@ -287,7 +287,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-primary mb-1">
                 Description
               </label>
               <textarea
@@ -311,7 +311,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
                 onClose();
               }}
               disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-gray-600 hover:text-gray-700 font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
