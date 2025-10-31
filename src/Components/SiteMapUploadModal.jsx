@@ -4,6 +4,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    description:'',
     file: null
   });
 

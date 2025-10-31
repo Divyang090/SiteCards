@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import UseTemplateModal from './UseTemplateModal';
 
 const defaultTemplates = [
   {
@@ -40,6 +41,8 @@ const ProjectTemplates = () => {
   const [templates, setTemplates] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTemplates, setselectedTemplates] =useState(null);
+  const [isUseTemplateModalOpen, setIsUseTemplateModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -59,7 +62,7 @@ const ProjectTemplates = () => {
 
         let extractedTemplates = [];
 
-        // Handle single template object (your current API response)
+        // Handle single template object
         if (rawData && typeof rawData === 'object' && rawData.template_id) {
           console.log('Single template object detected');
           
@@ -94,12 +97,12 @@ const ProjectTemplates = () => {
             template_id: item.template_id || item.id,
             title: item.template_name || item.title,
             description: item.description,
-            type: item.type || "general",
+            type: item.type || "Residential",
             cards: item.files ? item.files.length : 0,
             duration: item.duration || "Not specified",
             tags: item.tags || [],
             includedCards: item.includedCards || [
-              { type: "site", title: "Site Assessment", description: "Initial site evaluation" },
+              { type: item.type || "site", title: item.template_name || "Site Assessment", description: "Initial site evaluation" },
               { type: "note", title: "Project Notes", description: "Important project considerations" }
             ]
           }));
@@ -297,7 +300,10 @@ const ProjectTemplates = () => {
                     </div>
                       {/* use Template */}
                     <div className="border-t border-gray-200 pt-6">
-                      <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
+                      <button onClick={() => {
+                        setselectedTemplates(template);
+                        setIsUseTemplateModalOpen(true);
+                      }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
                         <span className="text-lg">+</span>
                         <span>Use Template</span>
                       </button>
@@ -307,6 +313,22 @@ const ProjectTemplates = () => {
               ))}
             </div>
           )}
+
+          {isUseTemplateModalOpen && selectedTemplate && (
+  <UseTemplateModal
+    template={selectedTemplate}
+    onClose={() => {
+      setIsUseTemplateModalOpen(false);
+      setSelectedTemplate(null);
+    }}
+    onSave={(projectData) => {
+      // Handle creating project from template
+      console.log('Creating project from template:', projectData);
+      setIsUseTemplateModalOpen(false);
+      setSelectedTemplate(null);
+    }}
+  />
+)}
 
           {!loading && !error && filteredTemplates.length === 0 && (
             <div className="text-center py-12">

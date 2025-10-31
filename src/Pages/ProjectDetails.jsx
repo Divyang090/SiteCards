@@ -16,8 +16,11 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     const loadProject = async () => {
       try {
         setLoading(true);
-        
+
         console.log('Loading project with ID:', id);
+        //remove after testing
+        console.log('propProjects:', propProjects);
+        console.log('localStorage projects:', JSON.parse(localStorage.getItem('projects') || '[]'));
         if (Array.isArray(propProjects) && propProjects.length > 0) {
           const foundFromProps = propProjects.find(p => (p.id && p.id.toString() === id) || (p.project_id && p.project_id.toString() === id));
           if (foundFromProps) {
@@ -35,10 +38,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           setLoading(false);
           return;
         }
-        
+
         console.log('Project not in localStorage, trying API...');
         let response = await fetch(`http://127.0.0.1:5000/api/projects/projects/${id}`);
-        
+
         if (response.ok) {
           const projectData = await response.json();
           const transformedProject = transformProjectData(projectData);
@@ -49,11 +52,11 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           if (projectsResponse.ok) {
             const projectsData = await projectsResponse.json();
             const projectsArray = extractProjectsArray(projectsData);
-            const foundProject = projectsArray.find(proj => 
-              (proj.id && proj.id.toString() === id) || 
+            const foundProject = projectsArray.find(proj =>
+              (proj.id && proj.id.toString() === id) ||
               (proj.project_id && proj.project_id.toString() === id)
             );
-            
+
             if (foundProject) {
               const transformedProject = transformProjectData(foundProject);
               console.log('Found project in projects list:', transformedProject);
@@ -65,7 +68,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             throw new Error('API not available');
           }
         }
-        
+
       } catch (err) {
         console.error('Error loading project:', err);
         const defaultProject = createDefaultProject(id);
@@ -84,13 +87,13 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   useEffect(() => {
     const fetchTasks = async () => {
       if (!id) return;
-      
+
       try {
         const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
         if (response.ok) {
           const tasksData = await response.json();
           console.log('Fetched tasks from API:', tasksData);
-          
+
           // Handle different response formats
           let tasksArray = tasksData;
           if (tasksData && Array.isArray(tasksData.data)) {
@@ -98,7 +101,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           } else if (tasksData && Array.isArray(tasksData.tasks)) {
             tasksArray = tasksData.tasks;
           }
-          
+
           // Transform API data to match frontend structure
           const transformedTasks = tasksArray.map(task => ({
             id: task.id || task.task_id,
@@ -111,7 +114,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
             files: task.files || []
           }));
-          
+
           setTasks(transformedTasks);
         } else {
           console.log('No tasks found in API');
@@ -153,31 +156,12 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       title: projectData.project_name || projectData.title || 'Project',
       assignee: projectData.client_name || projectData.assignee || 'Unassigned',
       status: projectData.status || 'open',
-      dueDate: projectData.end_date ? new Date(projectData.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 
-               projectData.due_date ? new Date(projectData.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
+      dueDate: projectData.end_date ? new Date(projectData.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
+        projectData.due_date ? new Date(projectData.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
       location: projectData.location || 'No location',
       description: projectData.project_description || projectData.description || 'No description available',
       board: "Site Map",
-      siteMaps: [
-        {
-        id: 1,
-        title: 'Floor Plan',
-        description: 'Main floor layout',
-        file_url: '/sample-floorplan.jpg',
-        file_type: 'image/jpeg',
-        file_size: 2048576,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 2, 
-        title: 'Electrical Layout',
-        description: 'Wiring and outlets plan',
-        file_url: '/sample-electrical.pdf',
-        file_type: 'application/pdf',
-        file_size: 1048576,
-        created_at: new Date().toISOString()
-      }
-      ]
+      siteMaps: projectData.site_maps || projectData.siteMaps || []
     };
   };
 
@@ -196,45 +180,45 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   // Handle task creation success
-const handleCreateTask = async (newTaskData) => {
-  try {
-    console.log('Task creation callback received:', newTaskData);
-    
-    // Add the new task to the local state immediately for better UX
-    if (newTaskData && (newTaskData.id || newTaskData.task_id)) {
-      const transformedTask = {
-        id: newTaskData.id || newTaskData.task_id,
-        title: newTaskData.task_name || newTaskData.title,
-        description: newTaskData.description,
-        taskType: newTaskData.task_type || 'Simple Task',
-        assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
-        // status: newTaskData.status || 'pending',
-        // completed: newTaskData.status === 'completed',
-        // createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-        files: newTaskData.files || []
-      };
-      
-      setTasks(prev => [transformedTask, ...prev]);
+  const handleCreateTask = async (newTaskData) => {
+    try {
+      console.log('Task creation callback received:', newTaskData);
+
+      // Add the new task to the local state immediately for better UX
+      if (newTaskData && (newTaskData.id || newTaskData.task_id)) {
+        const transformedTask = {
+          id: newTaskData.id || newTaskData.task_id,
+          title: newTaskData.task_name || newTaskData.title,
+          description: newTaskData.description,
+          taskType: newTaskData.task_type || 'Simple Task',
+          assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
+          // status: newTaskData.status || 'pending',
+          // completed: newTaskData.status === 'completed',
+          // createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+          files: newTaskData.files || []
+        };
+
+        setTasks(prev => [transformedTask, ...prev]);
+      }
+
+      // Also refresh from API to ensure consistency
+      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
+      if (response.ok) {
+        const tasksData = await response.json();
+        console.log('Refreshed tasks from API:', tasksData);
+        // ... your existing transformation logic
+      }
+    } catch (error) {
+      console.error('Error in task creation callback:', error);
     }
-    
-    // Also refresh from API to ensure consistency
-    const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
-    if (response.ok) {
-      const tasksData = await response.json();
-      console.log('Refreshed tasks from API:', tasksData);
-      // ... your existing transformation logic
-    }
-  } catch (error) {
-    console.error('Error in task creation callback:', error);
-  }
-};
+  };
 
   // UPDATE TASK STATUS USING API
   const handleToggleTask = async (taskId) => {
     try {
       const task = tasks.find(t => t.id === taskId);
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      
+
       const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
@@ -247,9 +231,9 @@ const handleCreateTask = async (newTaskData) => {
 
       if (response.ok) {
         // Update local state
-        setTasks(tasks.map(task => 
-          task.id === taskId ? { 
-            ...task, 
+        setTasks(tasks.map(task =>
+          task.id === taskId ? {
+            ...task,
             status: newStatus,
             completed: newStatus === 'completed'
           } : task
@@ -266,7 +250,7 @@ const handleCreateTask = async (newTaskData) => {
   // DELETE TASK USING API
   const handleDeleteTask = async (taskId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
-    
+
     try {
       const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
         method: 'DELETE',
@@ -306,9 +290,9 @@ const handleCreateTask = async (newTaskData) => {
 
   const displayProject = project;
 
-console.log('Project Data:', displayProject);
-console.log('Site Maps:', displayProject.siteMaps);
-console.log('Project ID:', id);
+  console.log('Project Data:', displayProject);
+  console.log('Site Maps:', displayProject.siteMaps);
+  console.log('Project ID:', id);
 
   return (
     <div className="min-h-screen theme-bg-primary theme-text-primary">
@@ -324,7 +308,7 @@ console.log('Project ID:', id);
         {/* Project Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold theme-text-primary mb-4">{displayProject.title}</h1>
-          
+
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
             <span>• {displayProject.assignee}</span>
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
@@ -344,21 +328,19 @@ console.log('Project ID:', id);
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('tasks')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                activeTab === 'tasks'
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'tasks'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               Tasks ({totalTasks})
             </button>
             <button
               onClick={() => setActiveTab('sitemaps')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                activeTab === 'sitemaps'
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'sitemaps'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               Site Maps ({displayProject.siteMaps?.length || 0})
             </button>
@@ -373,7 +355,7 @@ console.log('Project ID:', id);
                 <h2 className="text-2xl font-bold theme-text-primary">Tasks</h2>
                 <p className="theme-text-secondary mt-1">{remainingTasks} of {totalTasks} remaining</p>
               </div>
-              
+
               {!isCreatingTask && (
                 <button
                   onClick={() => setIsCreatingTask(true)}
@@ -401,26 +383,32 @@ console.log('Project ID:', id);
             <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto' : ''}`}>
               {sortedTasks.length > 0 ? (
                 sortedTasks.map((task) => (
-                  <div key={task.id} className={`theme-bg-primary rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-shadow duration-200 ${
-                    task.completed ? 'opacity-60' : ''
-                  }`}>
+                  <div key={task.id} className={`theme-bg-primary rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
+                    }`}>
                     <div className="flex items-center gap-3 flex-1">
                       <button
                         onClick={() => handleToggleTask(task.id)}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200 ${
-                          task.completed 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-gray-300 hover:border-green-500'
-                        }`}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
+                            ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                            : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                          }`}
                       >
                         {task.completed && (
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg
+                            className="w-3 h-3 transition-all duration-200"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <span className={`block font-medium ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                        <span className={`block font-medium transition-all duration-200 ${task.completed
+                            ? ' text-gray-400 underline decoration-gray-400'
+                            : 'text-gray-700'
+                          }`}>
                           {task.title}
                         </span>
                         <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
@@ -430,14 +418,19 @@ console.log('Project ID:', id);
                           )}
                         </div>
                         {task.description && (
-                          <p className="text-sm theme-text-primary mt-1">{task.description}</p>
+                          <p className={`text-sm theme-text-primary mt-1 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
+                            }`}>
+                            {task.description}
+                          </p>
                         )}
                         {task.files && task.files.length > 0 && (
                           <div className="flex gap-1 mt-2">
                             {task.files.map((file, index) => (
-                              <span key={index} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
-                          {/* 📎 */}
-                                Null {typeof file === 'string' ? file : file.name}
+                              <span key={index} className={`text-xs px-2 py-1 rounded transition-all duration-200 ${task.completed
+                                  ? 'bg-gray-100 text-gray-400'
+                                  : 'bg-blue-50 text-blue-600'
+                                }`}>
+                                📎 {typeof file === 'string' ? file : file.name}
                               </span>
                             ))}
                           </div>
@@ -445,7 +438,10 @@ console.log('Project ID:', id);
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <span className="text-xs text-gray-500 whitespace-nowrap">{task.createdAt}</span>
+                      <span className={`text-xs whitespace-nowrap transition-all duration-200 ${task.completed ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                        {task.createdAt}
+                      </span>
                       <button
                         onClick={() => handleDeleteTask(task.id)}
                         className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
@@ -480,7 +476,7 @@ console.log('Project ID:', id);
 
         {/* Site Maps Tab Content */}
         {activeTab === 'sitemaps' && (
-          <SiteMapsSection 
+          <SiteMapsSection
             projectId={id}
             siteMaps={(displayProject.siteMaps) || []}
           />

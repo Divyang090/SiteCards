@@ -157,10 +157,10 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 theme-black flex items-center justify-center">
       {/* Overlay */}
       <div 
-        className="absolute inset-0 theme-bg-primary bg-opacity-80 backdrop-blur-[1px]"
+        className="absolute inset-0  bg-opacity-80 backdrop-blur-[1px]"
         onClick={handleOverlayClick}
       ></div>
       

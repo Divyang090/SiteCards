@@ -60,7 +60,7 @@ const CreateTaskModal = ({
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-  console.log('🔍 DEBUG - projectId:', projectId);
+  console.log('DEBUG - projectId:', projectId);
   if (!taskData.title.trim()) return;
 
   setUploading(true);
@@ -70,7 +70,7 @@ const handleSubmit = async (e) => {
       task_name: taskData.title,
       description: taskData.description,
       task_type: taskData.task_type,
-      project_id: String(projectId), // Ensure project_id is a string
+      project_id: String(projectId),
       status: 'pending'
     };
     
@@ -88,7 +88,7 @@ const handleSubmit = async (e) => {
 
     console.log('Sending request data:', requestData);
 
-    // Step 1: Create the task first
+    //Create the task first
     const taskResponse = await fetch('http://127.0.0.1:5000/api/tasks/tasks', {
       method: 'POST',
       headers: {
@@ -110,7 +110,7 @@ const handleSubmit = async (e) => {
     const taskResult = await taskResponse.json();
     console.log('Task created successfully:', taskResult);
 
-    // Step 2: Upload files if any
+    //Upload files if any
     if (taskData.files.length > 0) {
       console.log('Uploading files:', taskData.files);
       
@@ -141,7 +141,7 @@ const handleSubmit = async (e) => {
       files: []
     });
     
-    onCreate(taskResult);
+    onCreate(taskResult, projectId);
     
     if (!isInline && onClose) {
       onClose();
@@ -496,7 +496,6 @@ return (
       {/* INLINE FORM LAYOUT */}
       {isInline && (
         <>
-          {/* Row 1: Task Title and Task Type side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
             {/* Task Title */}
             <div>
