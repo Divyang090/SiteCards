@@ -4,7 +4,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    description:'',
+    description: '',
     file: null
   });
 
@@ -42,15 +42,15 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="absolute inset-0 theme-bg-primary bg-opacity-50 backdrop-blur-[1px]"
+      <div
+        className="absolute inset-0 bg-opacity-50 backdrop-blur-[1px]"
         onClick={onClose}
       ></div>
-      
+
       <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">Upload Site Map</h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl transition-colors duration-200 focus:outline-none"
           >
@@ -86,15 +86,29 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 theme-bg-card theme-text-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-500 transition-colors duration-200"
               >
                 <option value="">Select a category</option>
                 {categories.map(category => (
-                  <option key={category} value={category}>
+                  <option key={category} value={category} className="theme-bg-card theme-text-secondary">
                     {category}
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className='block text-sm font-medium theme-text-secondary mb-2'>
+                Description
+              </label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter Description here"
+              />
+
             </div>
 
             {/* File Upload */}
@@ -121,7 +135,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
               type="button"
               onClick={onClose}
               disabled={isUploading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200 disabled:opacity-50"
+              className="px-4 py-2 text-gray-600 hover:text-gray-700 font-medium transition-colors duration-200 disabled:opacity-50"
             >
               Cancel
             </button>

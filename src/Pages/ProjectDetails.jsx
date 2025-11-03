@@ -8,6 +8,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
+  const [taskLoading, setTaskLoading] = useState(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
 
@@ -81,55 +82,65 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     if (id) {
       loadProject();
     }
-  }, [id]);
+  }, [id, propProjects]);
 
-  // FETCH TASKS FROM API
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (!id) return;
+// FETCH TASKS FROM API
+useEffect(() => {
+  const fetchTasks = async () => {
+    if (!id) return;
 
-      try {
-        const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
-        if (response.ok) {
-          const tasksData = await response.json();
-          console.log('Fetched tasks from API:', tasksData);
+    try {
+      setTaskLoading(true); 
+      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks`);
+      if (response.ok) {
+        const tasksData = await response.json();
+        console.log('Fetched ALL tasks from API:', tasksData);
 
-          // Handle different response formats
-          let tasksArray = tasksData;
-          if (tasksData && Array.isArray(tasksData.data)) {
-            tasksArray = tasksData.data;
-          } else if (tasksData && Array.isArray(tasksData.tasks)) {
-            tasksArray = tasksData.tasks;
-          }
-
-          // Transform API data to match frontend structure
-          const transformedTasks = tasksArray.map(task => ({
-            id: task.id || task.task_id,
-            title: task.title,
-            description: task.description,
-            taskType: task.task_type || 'Simple Task',
-            assignee: task.assignee || 'Unassigned',
-            status: task.status || 'pending',
-            completed: task.status === 'completed',
-            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-            files: task.files || []
-          }));
-
-          setTasks(transformedTasks);
-        } else {
-          console.log('No tasks found in API');
-          setTasks([]);
+        // Handle different response formats
+        let tasksArray = tasksData;
+        if (tasksData && Array.isArray(tasksData.data)) {
+          tasksArray = tasksData.data;
+        } else if (tasksData && Array.isArray(tasksData.tasks)) {
+          tasksArray = tasksData.tasks;
         }
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
+
+        // Filter tasks by project_id
+        const filteredTasks = tasksArray.filter(task => 
+          String(task.project_id) === String(id)
+        );
+
+        console.log(`Filtered tasks for project ${id}:`, filteredTasks);
+
+        // Transform ONLY the filtered tasks
+        const transformedTasks = filteredTasks.map(task => ({
+          id: task.id || task.task_id,
+          title: task.task_name || task.title,
+          description: task.description,
+          taskType: task.task_type || 'Simple Task',
+          assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
+          status: task.status || 'pending',
+          completed: task.status === 'completed',
+          createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+          files: task.files || []
+        }));
+
+        setTasks(transformedTasks);
+      } else {
+        console.log('No tasks found in API');
         setTasks([]);
       }
-    };
-
-    if (id) {
-      fetchTasks();
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      setTasks([]);
+    } finally {
+      setTaskLoading(false);
     }
-  }, [id]);
+  };
+
+  if (id) {
+    fetchTasks();
+  }
+}, [id]);
 
   // Helper functions
   const getProjectFromLocalStorage = (projectId) => {
@@ -151,7 +162,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   const transformProjectData = (projectData) => {
+      console.log('projectData',projectData);
     return {
+    
+      
       id: projectData.id || projectData.project_id,
       title: projectData.project_name || projectData.title || 'Project',
       assignee: projectData.client_name || projectData.assignee || 'Unassigned',
@@ -179,39 +193,64 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     };
   };
 
-  // Handle task creation success
-  const handleCreateTask = async (newTaskData) => {
-    try {
-      console.log('Task creation callback received:', newTaskData);
+const handleCreateTask = async (newTaskData, projectId) => {
+  try {
+    console.log('Task creation callback received:', newTaskData, 'for project:', projectId);
+    if (String(projectId) === String(id)) {
+      const transformedTask = {
+        id: newTaskData.id || newTaskData.task_id,
+        title: newTaskData.task_name || newTaskData.title,
+        description: newTaskData.description,
+        taskType: newTaskData.task_type || 'Simple Task',
+        assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
+        status: newTaskData.status || 'pending',
+        completed: (newTaskData.status || 'pending') === 'completed',
+        createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+        files: newTaskData.files || []
+      };
 
-      // Add the new task to the local state immediately for better UX
-      if (newTaskData && (newTaskData.id || newTaskData.task_id)) {
-        const transformedTask = {
-          id: newTaskData.id || newTaskData.task_id,
-          title: newTaskData.task_name || newTaskData.title,
-          description: newTaskData.description,
-          taskType: newTaskData.task_type || 'Simple Task',
-          assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
-          // status: newTaskData.status || 'pending',
-          // completed: newTaskData.status === 'completed',
-          // createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-          files: newTaskData.files || []
-        };
-
-        setTasks(prev => [transformedTask, ...prev]);
-      }
-
-      // Also refresh from API to ensure consistency
-      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${id}`);
-      if (response.ok) {
-        const tasksData = await response.json();
-        console.log('Refreshed tasks from API:', tasksData);
-        // ... your existing transformation logic
-      }
-    } catch (error) {
-      console.error('Error in task creation callback:', error);
+      setTasks(prev => [transformedTask, ...prev]);
     }
-  };
+
+    setTaskLoading(true);
+    
+    const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks`);
+    if (response.ok) {
+      const tasksData = await response.json();
+      
+      // Handle different response formats
+      let tasksArray = tasksData;
+      if (tasksData && Array.isArray(tasksData.data)) {
+        tasksArray = tasksData.data;
+      } else if (tasksData && Array.isArray(tasksData.tasks)) {
+        tasksArray = tasksData.tasks;
+      }
+
+      // Filter by project_id
+      const filteredTasks = tasksArray.filter(task => 
+        String(task.project_id) === String(id)
+      );
+
+      const transformedTasks = filteredTasks.map(task => ({
+        id: task.id || task.task_id,
+        title: task.task_name || task.title,
+        description: task.description,
+        taskType: task.task_type || 'Simple Task',
+        assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
+        status: task.status || 'pending',
+        completed: task.status === 'completed',
+        createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+        files: task.files || []
+      }));
+
+      setTasks(transformedTasks);
+    }
+  } catch (error) {
+    console.error('Error in task creation callback:', error);
+  } finally {
+    setTaskLoading(false);
+  }
+};
 
   // UPDATE TASK STATUS USING API
   const handleToggleTask = async (taskId) => {
@@ -267,7 +306,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     }
   };
 
-  // Sort tasks: completed tasks at the bottom
+  // Sort tasks
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.completed && !b.completed) return 1;
     if (!a.completed && b.completed) return -1;
@@ -277,18 +316,68 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const remainingTasks = tasks.filter(task => !task.completed).length;
   const totalTasks = tasks.length;
 
-  // Skeleton loading component (keep your existing skeleton code)
-  const SkeletonLoader = () => (
-    <div className="min-h-screen bg-white">
-      {/* Your existing skeleton code remains the same */}
-    </div>
-  );
 
-  if (loading) {
+  // Skeleton Loader Component
+const SkeletonLoader = () => (
+  <div className="min-h-screen theme-bg-primary theme-text-primary">
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Back Button Skeleton */}
+      <div className="w-24 h-4 theme-bg-primary rounded mb-6 animate-pulse"></div>
+
+      {/* Project Header Skeleton */}
+      <div className="mb-8">
+        <div className="w-3/4 h-8 theme-bg-secondary rounded mb-4 animate-pulse"></div>
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="w-20 h-6 theme-bg-secondary rounded animate-pulse"></div>
+          <div className="w-16 h-6 theme-bg-secondary rounded animate-pulse"></div>
+          <div className="w-24 h-6 theme-bg-secondary rounded animate-pulse"></div>
+        </div>
+        <div className="w-theme-bg-primary rounded animate-pulse"></div>
+      </div>
+
+      {/* Tabs Skeleton */}
+      <div className="border-b theme-bg-primary mb-6">
+        <div className="flex space-x-8">
+          <div className="w-16 h-8 theme-bg-primary rounded animate-pulse"></div>
+          <div className="w-20 h-8 theme-bg-primary rounded animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Tasks Skeleton */}
+      <div className="theme-bg-secondary rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <div className="w-32 h-6 theme-bg-primary rounded mb-2 animate-pulse"></div>
+            <div className="w-24 h-4 theme-bg-primary rounded animate-pulse"></div>
+          </div>
+          <div className="w-28 h-10 theme-bg-primary rounded animate-pulse"></div>
+        </div>
+
+        {/* Task Items Skeleton */}
+        <div className="space-y-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="theme-bg-primary rounded-lg border border-gray-200 p-4 flex items-center gap-3 animate-pulse">
+              <div className="w-5 h-5 theme-bg-card rounded"></div>
+              <div className="flex-1">
+                <div className="w-3/4 h-4 theme-bg-card rounded mb-2"></div>
+                <div className="w-1/2 h-3 theme-bg-card rounded"></div>
+              </div>
+              <div className="w-16 h-4 theme-bg-card rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+  if (loading || taskLoading) {
     return <SkeletonLoader />;
   }
 
   const displayProject = project;
+const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.siteMaps.length : 0;
+  
 
   console.log('Project Data:', displayProject);
   console.log('Site Maps:', displayProject.siteMaps);
@@ -314,7 +403,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
               {displayProject.status}
             </span>
-            <span>• Due {displayProject.dueDate}</span>
+            <span>• Due {displayProject.docDate}</span>
             <span>• {displayProject.location}</span>
           </div>
 
@@ -342,7 +431,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              Site Maps ({displayProject.siteMaps?.length || 0})
+              Site Maps ({siteMapsCount})
             </button>
           </nav>
         </div>
@@ -407,7 +496,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       <div className="flex-1 min-w-0">
                         <span className={`block font-medium transition-all duration-200 ${task.completed
                             ? ' text-gray-400 underline decoration-gray-400'
-                            : 'text-gray-700'
+                            : 'text-gray-500'
                           }`}>
                           {task.title}
                         </span>

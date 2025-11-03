@@ -85,8 +85,8 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         description: newProject.project_description || newProject.description || formData.description
       };
 
-      console.log('✅ TRANSFORMED PROJECT:', transformedProject);
-      console.log('📅 DATE DEBUG - Final docDate:', transformedProject.docDate);
+      console.log('TRANSFORMED PROJECT:', transformedProject);
+      console.log('DATE DEBUG - Final docDate:', transformedProject.docDate);
       
       // ==================== SUCCESS ====================
       setSuccess('Project created successfully!');

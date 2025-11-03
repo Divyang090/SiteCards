@@ -218,9 +218,8 @@ function App() {
   };
 
   // Filter projects based on search term
-// Filter projects based on search term - FIXED VERSION
 const filteredProjects = projects.filter(project => {
-  if (!searchTerm.trim()) return true; // Show all projects when search is empty
+  if (!searchTerm.trim()) return true;
   
   const term = searchTerm.toLowerCase().trim();
   return (

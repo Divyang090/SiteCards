@@ -89,7 +89,7 @@ const handleSubmit = async (e) => {
     console.log('Sending request data:', requestData);
 
     //Create the task first
-    const taskResponse = await fetch('http://127.0.0.1:5000/api/tasks/tasks', {
+    const taskResponse = await fetch('http://127.0.0.1:5000/api/tasks/tasks?project_id', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ const handleSubmit = async (e) => {
             </button>
           </div>
 
-          {/* TASK FORM - Reusable component */}
+          {/* TASK FORM*/}
           <TaskForm 
             taskData={taskData}
             uploading={uploading}
@@ -282,9 +282,10 @@ const handleSubmit = async (e) => {
     );
   }
 
-  // Inline form version
+  // Inline form
+  //Change task code here
   return (
-    <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div className="mb-6 theme-bg-card rounded-lg border border-gray-200 p-4 shadow-sm">
       <TaskForm 
         taskData={taskData}
         uploading={uploading}
@@ -499,7 +500,7 @@ return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
             {/* Task Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
                 Task title <span className="text-red-500">*</span>
               </label>
               <input
@@ -516,15 +517,15 @@ return (
 
             {/* Task Type Dropdown */}
             <div className="relative" ref={taskTypeDropdownRef}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
                 Task Type
               </label>
               <button
                 type="button"
                 onClick={toggleTaskTypeDropdown}
-                className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm"
+                className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg theme-bg-card hover:bg-gray-50 text-sm"
               >
-                <span className="text-gray-700 truncate">{taskData.task_type}</span>
+                <span className="text-gray-500 truncate">{taskData.task_type}</span>
                 <svg 
                   className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showTaskTypeDropdown ? 'rotate-180' : ''}`}
                   fill="none" 
@@ -536,14 +537,14 @@ return (
               </button>
 
               {showTaskTypeDropdown && (
-                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                <div className="absolute z-20 w-full mt-1 theme-bg-card border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                   {taskTypeOptions.map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => handleTaskTypeSelect(type)}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${
-                        taskData.task_type === type ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 hover:bg-gray-500 text-sm theme--text-primary ${
+                        taskData.task_type === type ? 'theme-bg-secondary text-blue-600' : 'theme--text-primary'
                       }`}
                     >
                       {type}
@@ -553,20 +554,20 @@ return (
               )}
             </div>
           </div>
-
-          {/* Row 2: Assignee and Description side by side */}
+           {/* change task section here */}
+          {/*Assignee and Description side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
             {/* Assignee Dropdown */}
             <div className="relative" ref={assigneeDropdownRef}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
                 Assignee
               </label>
               <button
                 type="button"
                 onClick={toggleAssigneeDropdown}
-                className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm"
+                className="w-full flex items-center justify-between p-2 border border-gray-300 rounded-lg theme-bg-card hover:bg-gray-50 text-sm"
               >
-                <span className="text-gray-700 truncate">{taskData.assignee}</span>
+                <span className="text-gray-500 truncate">{taskData.assignee}</span>
                 <svg 
                   className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showAssigneeDropdown ? 'rotate-180' : ''}`}
                   fill="none" 
@@ -578,14 +579,14 @@ return (
               </button>
 
               {showAssigneeDropdown && (
-                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                <div className="absolute z-20 w-full mt-1 theme-bg-card border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
                   {assigneeOptions.map((assignee) => (
                     <button
                       key={assignee}
                       type="button"
                       onClick={() => handleAssigneeSelect(assignee)}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-100 text-sm ${
-                        taskData.assignee === assignee ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      className={`w-full text-left px-3 py-2 hover:bg-gray-500 text-sm theme-text-primary${
+                        taskData.assignee === assignee ? 'bg-blue-50 text-blue-600' : 'theme-text-primary'
                       }`}
                     >
                       {assignee}
@@ -597,8 +598,8 @@ return (
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description <span className="text-gray-400 text-xs">(optional)</span>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
+                Description
               </label>
               <textarea
                 name="description"
@@ -611,7 +612,7 @@ return (
             </div>
           </div>
 
-          {/* Row 3: Files and Action Buttons side by side */}
+          {/*Files and Action Buttons side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
             {/* File Upload Section */}
             <div>

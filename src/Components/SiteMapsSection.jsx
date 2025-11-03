@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SiteMapUploadModal from './SiteMapUploadModal';
+import { use } from 'react';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -14,14 +15,23 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   useEffect(() => {
     const fetchSiteMaps = async () => {
       try {
-        console.log('Fetching site maps for project:', projectId);
-        const response = await fetch(`http://127.0.0.1:5000/api/spaces/get/spaces?project_id=${projectId}`);
+        console.log('Fetching ALL site maps');
+        // Get ALL site maps without project_id filter
+        const response = await fetch(`http://127.0.0.1:5000/api/spaces/get/spaces`);
         console.log('Fetch response status:', response.status);
 
         if (response.ok) {
-          const siteMapsData = await response.json();
-          console.log('Fetched site maps data:', siteMapsData);
-          setSiteMapsList(siteMapsData);
+          const allSiteMaps = await response.json();
+          console.log('Fetched ALL site maps data:', allSiteMaps);
+
+          //filtering based on projectId
+          const filteredSiteMaps = allSiteMaps.filter(siteMap => {
+            const siteMapProjectId = siteMap.project_id || siteMap.projectId;
+            return siteMapProjectId?.toString() === projectId;
+          });
+
+          console.log('Filtered site maps for project:', projectId, filteredSiteMaps);
+          setSiteMapsList(filteredSiteMaps);
         } else {
           console.error('Fetch failed with status:', response.status);
           try {
@@ -41,7 +51,6 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       fetchSiteMaps();
     }
   }, [projectId]);
-
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
     setActiveTab('Drawings');
@@ -62,7 +71,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       uploadData.append('space_name', formData.name || formData.space_name || 'Untitled Space');
       uploadData.append('category', formData.category || 'general');
       uploadData.append('project_id', projectId);
-      uploadData.append('file', formData.file);
+      uploadData.append('files', formData.file);
 
       if (formData.description) {
         uploadData.append('description', formData.description);
@@ -72,7 +81,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       for (let [key, value] of uploadData.entries()) {
         console.log(`${key}:`, value);
       }
-
+      // add site maps
       console.log('Sending POST request to upload endpoint');
       const response = await fetch('http://127.0.0.1:5000/api/spaces/post', {
         method: 'POST',
@@ -108,36 +117,44 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     }
   };
 
-  const handleDeleteSiteMap = async (siteMapId) => {
-    if (!window.confirm('Are you sure you want to delete this site map?')) return;
+  const handleDeleteSiteMap = async (siteMap) => {
+    if (!window.confirm('Are you sure you want to delete this site map?'
+
+    )) return;
 
     try {
-      console.log('Attempting to delete site map:', siteMapId);
-      const response = await fetch(`http://127.0.0.1:5000/api/spaces/delete/${siteMapId}`, {
+      const spaceId = siteMap.space_id || siteMap.id;
+      console.log('Attempting to delete site map. Space ID:', spaceId);
+
+      const response = await fetch(`http://127.0.0.1:5000/api/spaces/delete/${spaceId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ project_id: projectId })
       });
 
       console.log('Delete response status:', response.status);
 
       if (response.ok) {
         console.log('Delete successful');
-        setSiteMapsList(prev => prev.filter(sm => sm.id !== siteMapId));
+        setSiteMapsList(prev => prev.filter(sm => sm.space_id !== spaceId));
         alert('Site map deleted successfully!');
       } else {
+        // Read the response only once
+        const errorText = await response.text();
         let errorMessage = `Delete failed: ${response.status}`;
+
         try {
-          const errorData = await response.json();
+          // Try to parse as JSON if it's JSON
+          const errorData = JSON.parse(errorText);
           errorMessage += ` - ${JSON.stringify(errorData)}`;
           console.error('Delete error details:', errorData);
-        } catch (e) {
-          const errorText = await response.text();
+        } catch {
+          // If not JSON, use the text directly
           errorMessage += ` - ${errorText}`;
           console.error('Delete error text:', errorText);
         }
+
         throw new Error(errorMessage);
       }
     } catch (error) {
@@ -157,7 +174,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         <div>
           <h2 className="text-2xl font-bold theme-text-primary">Site Maps</h2>
           <p className='theme-text-secondary mt-1'>
-            {selectedSiteMap ? 'Site Map Details' : `${siteMapsList.length} site maps`}</p>        </div>
+            {selectedSiteMap ? 'Site Map Details' : `${siteMapsList?.length || 0} site maps`}</p>        </div>
 
         {!selectedSiteMap && (
           <button
@@ -173,19 +190,21 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       </div>
 
       {/* Site Maps Grid */}
+      {/* delete here */}
       {!selectedSiteMap ? (
-        siteMapsList.length > 0 ? (
+        siteMapsList?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {siteMapsList.map((siteMap) => (
               <SiteMapCard
-                key={siteMap.id || siteMap.space_id || `sitemap-${siteMap.name}`}
+                key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
                 siteMap={siteMap}
                 onDelete={handleDeleteSiteMap}
-                onClick={handleSiteMapClick} />
+                onClick={handleSiteMapClick}
+              />
             ))}
           </div>
         ) : (
-          <EmptySiteMapsState />
+          <EmptySiteMapsState onUpload={() => setIsUploadModalOpen(true)} />
         )
       ) : (
         // Show detail view
@@ -256,7 +275,7 @@ const SiteMapCard = ({ siteMap, onDelete, onClick }) => {
             }}
           />
         ) : null}
-        <div className={`w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center ${siteMap.file_type?.includes('image') ? 'hidden' : 'flex'}`}>
+        <div className={`w-full h-full bg-linear-to-br from-blue-100 to-purple-100 flex items-center justify-center ${siteMap.file_type?.includes('image') ? 'hidden' : 'flex'}`}>
           <span className="text-4xl">{getFileIcon(siteMap.file_type)}</span>
         </div>
       </div>
@@ -280,9 +299,15 @@ const SiteMapCard = ({ siteMap, onDelete, onClick }) => {
             <span>Uploaded {formatDate(siteMap.created_at)}</span>
           </div>
           <button
+
+            //  delete onClick here
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(siteMap.id);
+              console.log('Delete clicked for site map:', siteMap);
+              console.log('Space ID:', siteMap.space_id);
+              console.log('ID:', siteMap.id);
+              // Pass the entire siteMap object, not just the ID
+              onDelete(siteMap);
             }}
             className="text-red-600 hover:text-red-800 font-medium text-sm"
           >
@@ -295,7 +320,7 @@ const SiteMapCard = ({ siteMap, onDelete, onClick }) => {
 };
 
 // Empty State Component
-const EmptySiteMapsState = () => (
+const EmptySiteMapsState = ({ onUpload }) => (
   <div className="text-center py-12 theme-bg-card rounded-lg border-2 border-dashed theme-border">
     <div className="theme-text-muted mb-3">
       <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,29 +329,29 @@ const EmptySiteMapsState = () => (
     </div>
     <h3 className="text-lg font-medium theme-text-primary mb-2">No site maps yet</h3>
     <p className="theme-text-secondary text-sm mb-4">Upload site maps to visualize your project</p>
-    <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+    <button
+      onClick={onUpload}
+      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+    >
       + Upload your first site map
     </button>
   </div>
 );
+
 const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }) => {
-  console.log('siteMapDetailSection rendering with',{ siteMap, activeTab });
-  const [drawings, setDrawings] = useState([
-    { id: 1, name: 'Floor Plan 1', type: 'image', url: siteMap.file_url, date: '2024-01-15', size: '2.4 MB' },
-    { id: 2, name: 'Electrical Layout', type: 'pdf', url: '/sample.pdf', date: '2024-01-10', size: '1.8 MB' },
-    { id: 3, name: 'Plumbing Diagram', type: 'image', url: '/sample2.jpg', date: '2024-01-08', size: '3.2 MB' },
-  ]);
+  console.log('siteMapDetailSection rendering with', { siteMap, activeTab });
+  const [drawings, setDrawings] = useState([]);
   // State for vendors and tasks from API
   const [vendors, setVendors] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState({ vendors: false, tasks: false });
+  const [loading, setLoading] = useState({ vendors: false, tasks: false, drawings: false });
   const [isAddDrawingOpen, setIsAddDrawingOpen] = useState(false);
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [isAddInspirationOpen, setIsAddInspirationOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
 
-
+  const spaceId = siteMap.space_id || siteMap.id;
   // Fetch vendors data
   useEffect(() => {
     const fetchVendors = async () => {
@@ -343,7 +368,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
           let response;
           if (spaceId) {
-            response = await fetch(`http://127.0.0.1:5000/api/vendors/vendors/?space_id=${spaceId}`);
+            response = await fetch(`http://127.0.0.1:5000/api/vendors/vendors/?space_id=${siteMap.id || siteMap.space_id}`);
           } else {
             throw new Error('No valid IDs found for API call');
           }
@@ -354,11 +379,14 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
             // Handle different response formats
             if (Array.isArray(vendorsData)) {
-              setVendors(vendorsData);
-            } else if (vendorsData && Array.isArray(vendorsData.data)) {
-              setVendors(vendorsData.data);
-            } else if (vendorsData && Array.isArray(vendorsData.vendors)) {
-              setVendors(vendorsData.vendors);
+              const mappedVendors = vendorsData.map(vendor => ({
+                id: vendor.user_name || vendor.id,
+                name: vendor.name || vendor.vendor_name || 'Unnamed Vendor',
+                category: vendor.category || vendor.vendor_category || 'General',
+                contact: vendor.contact || vendor.vendor_contact || vendor.email || 'No contact',
+                phone: vendor.phone || vendor.vendor_phone || vendor.phone_number || 'No phone'
+              }));
+              setVendors(mappedVendors);
             } else {
               console.log('Unexpected vendors response format, using sample data');
               setVendors(getSampleVendors());
@@ -402,7 +430,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
           let response;
           if (spaceId) {
-            response = await fetch(`http://127.0.0.1:5000/api/tasks?space_id=${spaceId}`);
+            response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks?project_id=${siteMap.id || siteMap.space_id}`);
           } else if (projectId) {
             response = await fetch(`http://127.0.0.1:5000/api/tasks?space_id=${projectId}`);
           } else {
@@ -456,10 +484,163 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     fetchTasks();
   }, [activeTab, siteMap.id, siteMap.space_id, siteMap.project_id]);
 
+  //Drawings fetch API
+useEffect(() => {
+  const fetchDrawings = async () => {
+    if (activeTab === 'Drawings' && spaceId) {
+      setLoading(prev => ({ ...prev, drawings: true }));
+      try {
+        console.log('Fetching drawings for space:', spaceId);
+        const response = await fetch(`http://127.0.0.1:5000//api/drawings/get?space_id=${spaceId}`);
+        
+        console.log('Drawings fetch response status:', response.status);
+        
+        if (response.ok) {
+          const drawingsData = await response.json();
+          console.log('Fetched drawings data:', drawingsData);
+          
+          // Handle different response formats
+          if (Array.isArray(drawingsData)) {
+            setDrawings(drawingsData);
+          } else if (drawingsData && Array.isArray(drawingsData.data)) {
+            setDrawings(drawingsData.data);
+          } else if (drawingsData && Array.isArray(drawingsData.drawings)) {
+            setDrawings(drawingsData.drawings);
+          } else {
+            console.log('Unexpected drawings response format:', drawingsData);
+            setDrawings([]);
+          }
+        } else {
+          console.log('Drawings fetch failed with status:', response.status);
+          setDrawings([]);
+        }
+      } catch (error) {
+        console.error('Error fetching drawings:', error);
+        setDrawings([]);
+      } finally {
+        setLoading(prev => ({ ...prev, drawings: false }));
+      }
+    }
+  };
+  useEffect(()=>{
+    if (activeTab === 'Drawings'){
+      fetchDrawings();
+    }
+  })
+}, [activeTab, spaceId]);
+
   // Toggle task completion
   const handleToggleTask = async (taskId) => {
     console.log('Toggle task clicked for ID:', taskId);
     console.log('Current tasks:', tasks);
+
+    // Task handlers
+    const handleEditTask = (task) => {
+      console.log('Edit task:', task);
+      alert(`Edit task: ${task.title}\nWe'll implement the edit modal soon!`);
+    };
+    // delete task in spaces
+    const handleDeleteTask = async (taskId) => {
+      if (!window.confirm('Are you sure you want to delete this task?')) return;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/tasks/${taskId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setTasks(prev => prev.filter(t => t.id !== taskId));
+          alert('Task deleted successfully!');
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete task: ${errorText}`);
+        }
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Failed to delete task: ' + error.message);
+      }
+    };
+
+    // Drawing handlers
+    const handleEditDrawing = (drawing) => {
+      console.log('Edit drawing:', drawing);
+      alert(`Edit drawing: ${drawing.name}\nWe'll implement the edit modal soon!`);
+    };
+
+    const handleDeleteDrawing = async (drawingId) => {
+      if (!window.confirm('Are you sure you want to delete this drawing?')) return;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/drawings/${drawingId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setDrawings(prev => prev.filter(d => d.id !== drawingId));
+          alert('Drawing deleted successfully!');
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete drawing: ${errorText}`);
+        }
+      } catch (error) {
+        console.error('Error deleting drawing:', error);
+        alert('Failed to delete drawing: ' + error.message);
+      }
+    };
+
+    // Vendor handlers
+    const handleEditVendor = (vendor) => {
+      console.log('Edit vendor:', vendor);
+      alert(`Edit vendor: ${vendor.name}\nWe'll implement the edit modal soon!`);
+    };
+
+    const handleDeleteVendor = async (vendorId) => {
+      if (!window.confirm('Are you sure you want to delete this vendor?')) return;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/vendors/${vendorId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setVendors(prev => prev.filter(v => v.id !== vendorId));
+          alert('Vendor deleted successfully!');
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete vendor: ${errorText}`);
+        }
+      } catch (error) {
+        console.error('Error deleting vendor:', error);
+        alert('Failed to delete vendor: ' + error.message);
+      }
+    };
+
+    // Inspiration handlers
+    const handleEditInspiration = (inspiration) => {
+      console.log('Edit inspiration:', inspiration);
+      alert(`Edit inspiration: ${inspiration.name}\nWe'll implement the edit modal soon!`);
+    };
+
+    const handleDeleteInspiration = async (inspirationId) => {
+      if (!window.confirm('Are you sure you want to delete this inspiration?')) return;
+
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/api/inspiration/${inspirationId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          // Update inspiration state when you have real data
+          alert('Inspiration deleted successfully!');
+        } else {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete inspiration: ${errorText}`);
+        }
+      } catch (error) {
+        console.error('Error deleting inspiration:', error);
+        alert('Failed to delete inspiration: ' + error.message);
+      }
+    };
 
     try {
       const task = tasks.find(t => t.id === taskId);
@@ -468,7 +649,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         return;
       }
 
-      // Immediately update UI for better UX (optimistic update)
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
       console.log('Updating task:', taskId, 'from', task.status, 'to', newStatus);
 
@@ -502,11 +682,34 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     }
   };
 
-  const getFileIcon = (fileType) => {
-    if (fileType?.includes('image')) return '🖼️';
-    if (fileType?.includes('pdf')) return '📄';
-    return '📎';
+  //1/11 Vendor Edit
+  // Update Vendor Function
+  const handleUpdateVendor = async (vendorId, updates) => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/api/vendors/vendors/${vendorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates)
+      });
+
+      if (response.ok) {
+        // Update local state
+        setVendors(prev => prev.map(vendor =>
+          vendor.id === vendorId ? { ...vendor, ...updates } : vendor
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating vendor:', error);
+    }
   };
+
+const getFileIcon = (fileType) => {
+  if (fileType?.includes('image')) return '🖼️';
+  if (fileType?.includes('pdf')) return '📄';
+  return '📎';
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
@@ -576,7 +779,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add {activeTab.slice(0, -1)}
+          Add {activeTab.slice()}
         </button>
       </div>
 
@@ -584,46 +787,93 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       <div className="mt-6">
         {/* Drawings Tab*/}
         {activeTab === 'Drawings' && (
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {drawings.map((file) => (
-                <div key={file.id} className="theme-border-light rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                  <div className="aspect-video bg-gray-100 relative overflow-hidden">
-                    {file.type === 'image' ? (
-                      <img
-                        src={file.url}
-                        alt={file.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-linear-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-                        <span className="text-4xl">{getFileIcon(file.type)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* File Info */}
-                  <div className="p-4">
-                    <h3 className="font-semibold theme-text-primary text-lg mb-1 truncate">
-                      {file.name}
-                    </h3>
-                    <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
-                      <span>{file.size}</span>
-                      <span>{formatDate(file.date)}</span>
-                    </div>
-                    <button
-                      onClick={() => window.open(file.url, '_blank')}
-                      className="w-full theme-bg-primary hover:bg-gray-500 theme-text-primary px-3 py-2 rounded text-sm font-medium transition-colors duration-200"
-                    >
-                      Download
-                    </button>
-                  </div>
+  <div>
+    {loading.drawings ? (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="text-gray-500 mt-2">Loading drawings...</p>
+      </div>
+    ) : drawings.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {drawings.map((file) => (
+          <div key={file.drawing_id || file.id} className="theme-border-light rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
+            <div className="aspect-video bg-gray-100 relative overflow-hidden">
+              {/* UPDATE: Check file_type instead of type, use file_url */}
+              {file.file_type?.includes('image') || file.type === 'image' ? (
+                <img
+                  src={file.file_url || file.url || file_path}  
+                  alt={file.drawing_name || file.name}  
+                  onClick={()=>window.open(file.file_url || file.url, 'blank')}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-linear-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+                  <span className="text-4xl">{getFileIcon(file.file_type || file.type)}</span>  {/* UPDATE */}
                 </div>
-              ))}
+              )}
+              {/* Hover Actions */}
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditDrawing(file);
+                  }}
+                  className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors duration-200"
+                  title="Edit"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteDrawing(file.drawing_id || file.id);  {/* UPDATE: Use drawing_id */}
+                  }}
+                  className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors duration-200"
+                  title="Delete"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* File Info */}
+            <div className="p-4">
+              <h3 className="font-semibold theme-text-primary text-lg mb-1 truncate">
+                {file.drawing_name || file.name || filename}  {/* UPDATE: Use drawing_name */}
+              </h3>
+              <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                {/* UPDATE: Use file_size and created_at from API */}
+                <span>{formatFileSize(file.file_size || file.size)}</span>
+                <span>{formatDate(file.created_at || file.date)}</span>
+              </div>
+              <button
+                onClick={() => window.open(file.file_url || file.url || file_size, '_blank')}  
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors duration-200"
+              >
+                Download
+              </button>
             </div>
           </div>
-        )}
-
+        ))}
+      </div>
+    ) : (
+      <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+        <div className="text-gray-400 mb-3">
+          <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium theme-text-secondary mb-2">No drawings yet</h3>
+        <p className="text-gray-500 text-sm">Add your first drawing to get started</p>
+      </div>
+    )}
+  </div>
+)}
+      
         {/* Vendors Tab - List format */}
         {activeTab === 'Vendors' && (
           <div>
@@ -635,7 +885,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : vendors.length > 0 ? (
               <div className="space-y-4">
                 {vendors.map((vendor) => (
-                  <div key={vendor.id} className="border theme-bg-primary rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                  <div key={vendor.id} className="border theme-bg-primary rounded-lg p-4 hover:shadow-md transition-shadow duration-200 group">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold theme-text-primary text-lg mb-1">{vendor.name}</h3>
@@ -645,9 +895,26 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                           <p className="text-sm theme-text-primary">Phone: {vendor.phone}</p>
                         )}
                       </div>
-                      <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                        Edit
-                      </button>
+                      <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                          onClick={() => handleEditVendor(vendor)}
+                          className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors duration-200"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVendor(vendor.id)}
+                          className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors duration-200"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -677,13 +944,40 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                 { id: 4, name: 'Office Space', type: 'image', url: '' },
                 { id: 6, name: 'Outdoor Area', type: 'image', url: '' },
               ].map((item) => (
-                <div key={item.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div key={item.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
                   <div className="aspect-video bg-gray-100 relative overflow-hidden">
                     <img
                       src={item.url}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
+                    {/* Hover Actions */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditInspiration(item);
+                        }}
+                        className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors duration-200"
+                        title="Edit"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteInspiration(item.id);
+                        }}
+                        className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors duration-200"
+                        title="Delete"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold theme-text-primary text-lg">{item.name}</h3>
@@ -704,7 +998,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : tasks.length > 0 ? (
               <div className="space-y-3">
                 {sortedTask.map((task) => (
-                  <div key={task.id} className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
+                  <div key={task.id} className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
                     }`}>
                     {/* Check button */}
                     <button
@@ -738,9 +1032,27 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                       </div>
                     </div>
 
-                    <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                      Edit
-                    </button>
+                    {/* Hover-only action buttons */}
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors duration-200"
+                        title="Edit"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors duration-200"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -760,11 +1072,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       </div>
 
       {/* Footer */}
-      <div className="flex justify-between items-center pt-6 border-t mt-6">
+      {/* <div className="flex justify-between items-center pt-6 border-t mt-6">
         <div className="text-sm text-gray-600">
           Uploaded on {new Date(siteMap.created_at).toLocaleDateString()}
         </div>
-      </div>
+      </div> */}
 
       {/* Add Drawing Modal */}
       {isAddDrawingOpen && (
@@ -821,6 +1133,16 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   );
 };
 
+//remove if there is an error
+  const formatFileSize = (bytes) => {
+    if (!bytes) return 'Unknown size';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
 // Add Drawing Modal Component
 const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
@@ -829,58 +1151,71 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
     description: ''
   });
   const [isUploading, setIsUploading] = useState(false);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsUploading(true);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsUploading(true);
-
-    try {
-      const uploadData = new FormData();
-      uploadData.append('name', formData.name);
-      uploadData.append('space_id', spaceId);
-      uploadData.append('project_id', projectId);
-      uploadData.append('file', formData.file);
-      if (formData.description) {
-        uploadData.append('description', formData.description);
-      }
-
-      const response = await fetch('http://127.0.0.1:5000/api/drawings', {
-        method: 'POST',
-        body: uploadData,
-      });
-
-      if (response.ok) {
-        const newDrawing = await response.json();
-        onAdd(newDrawing);
-      } else {
-        throw new Error('Failed to add drawing');
-      }
-    } catch (error) {
-      console.error('Error adding drawing:', error);
-      alert('Failed to add drawing');
-    } finally {
-      setIsUploading(false);
+  try {
+    const uploadData = new FormData();
+    uploadData.append('drawing_name', formData.name);
+    uploadData.append('space_id', spaceId);
+    uploadData.append('project_id', projectId);
+    uploadData.append('uploads', formData.file);
+    if (formData.description) {
+      uploadData.append('description', formData.description);
     }
-  };
 
+    // DEBUG: Log FormData contents
+    console.log('=== DRAWING UPLOAD DATA ===');
+    console.log('space_id:', spaceId);
+    console.log('project_id:', projectId);
+    for (let [key, value] of uploadData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    const response = await fetch('http://127.0.0.1:5000/api/drawings/post', {
+      method: 'POST',
+      body: uploadData,
+    });
+
+    console.log('Response status:', response.status);
+    
+    if (response.ok) {
+      const newDrawing = await response.json();
+      console.log('New drawing created:', newDrawing);
+      onAdd(newDrawing);
+    } else {
+      // Get detailed error message
+      const errorText = await response.text();
+      console.error('Server error response:', errorText);
+      throw new Error(`Failed to add drawing: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.error('Error adding drawing:', error);
+    alert('Failed to add drawing: ' + error.message);
+  } finally {
+    setIsUploading(false);
+  }
+};
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6">
         <h2 className="text-xl font-bold mb-4">Add New Drawing</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Drawing Name</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Drawing Name</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder='Enter Drawing Name...'
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">File</label>
               <input
                 type="file"
                 required
@@ -890,10 +1225,11 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder='Enter Description here'
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="3"
               />
@@ -903,7 +1239,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-gray-600 hover:text-gray-500"
             >
               Cancel
             </button>
@@ -921,7 +1257,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   );
 };
 
-// Add Vendor Modal Component
+//Vendor Modal Component
 const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -943,6 +1279,11 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
         },
         body: JSON.stringify({
           ...formData,
+          //Frontend -> Backend
+          vendor_name: formData.user_name,
+          vendor_category: formData.category,
+          vendor_contact: formData.contact.person,
+          vendor_phone: formData.phone,
           space_id: spaceId,
           project_id: projectId
         }),
@@ -1051,8 +1392,12 @@ const AddTaskModal = ({ spaceId, projectId, onClose, onAdd }) => {
         },
         body: JSON.stringify({
           ...formData,
+          //Frontend -> Backend
           space_id: spaceId,
           project_id: projectId,
+          task_title: formData.title,
+          task_description: formData.description,
+          task_due_date: formData.due_date,
           status: 'pending'
         }),
       });
@@ -1143,15 +1488,16 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
     try {
       const uploadData = new FormData();
-      uploadData.append('name', formData.name);
+      //'Backend' Frontend
+      uploadData.append('title', formData.name);
       uploadData.append('space_id', spaceId);
       uploadData.append('project_id', projectId);
-      uploadData.append('file', formData.file);
+      uploadData.append('uploads', formData.file);
       if (formData.description) {
         uploadData.append('description', formData.description);
       }
 
-      const response = await fetch('http://127.0.0.1:5000/api/inspiration', {
+      const response = await fetch('http://127.0.0.1:5000/api/inspiration/post', {
         method: 'POST',
         body: uploadData,
       });
@@ -1172,22 +1518,23 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
   return (
     <div className="fixed inset-0 backdrop-blur-[1px] bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6">
         <h2 className="text-xl font-bold mb-4">Add New Inspiration</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Inspiration Name</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Inspiration Name</label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder='Enter Inspiration Name here...'
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Image</label>
               <input
                 type="file"
                 required
@@ -1197,10 +1544,11 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Description</label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder='Write Description here...'
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="3"
               />
@@ -1210,7 +1558,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-gray-600 hover:text-gray-500"
             >
               Cancel
             </button>
@@ -1224,6 +1572,46 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
           </div>
         </form>
       </div>
+    </div>
+  );
+};
+// Editable Vendor Field Component
+const EditableVendorField = ({ vendor, field, onUpdate, className = "" }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(vendor[field]);
+
+  const handleSave = () => {
+    if (value !== vendor[field]) {
+      onUpdate(vendor.id, { [field]: value });
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
+  return (
+    <div className={`inline-block ${className}`}>
+      {isEditing ? (
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyPress={handleKeyPress}
+          className="border-b-2 border-blue-500 bg-transparent outline-none px-1"
+          autoFocus
+        />
+      ) : (
+        <span
+          onClick={() => setIsEditing(true)}
+          className="cursor-pointer hover:bg-blue-50 px-1 rounded transition-colors"
+        >
+          {vendor[field] || 'Click to edit'}
+        </span>
+      )}
     </div>
   );
 };

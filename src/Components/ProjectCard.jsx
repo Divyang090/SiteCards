@@ -11,7 +11,7 @@ const ProjectCard = ({ project }) => {
       rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 w-full
       ${isDark 
         ? 'theme-bg-card theme-border' 
-        : 'bg-gradient-to-r from-blue-100 to-slate-200 border-gray-200'
+        : 'bg-linear-to-r from-blue-100 to-slate-200 border-gray-200'
       }
     `}>
       <div className="flex flex-col md:flex-row">
