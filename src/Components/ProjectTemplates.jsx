@@ -51,7 +51,7 @@ const ProjectTemplates = () => {
       
       try {
         console.log('Fetching templates from API...');
-        const response = await fetch(`http://127.0.0.1:5000/api/templates/templates`);
+        const response = await fetch(`http://192.168.1.22:8087/api/templates/templates`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

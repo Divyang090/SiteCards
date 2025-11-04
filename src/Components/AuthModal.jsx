@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
 const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegister }) => {
-  // ==================== API CONFIG ====================
-  const API_BASE = "http://127.0.0.1:5000/api/user";
+
+  const API_BASE = "http://192.168.1.22:8087/api/user";
   const LOGIN_API = `${API_BASE}/login`;
   const REGISTER_API = `${API_BASE}/register`;
   const FORGOT_PASSWORD_API = `${API_BASE}/forgot-password`;
 
-  // ==================== STATE MANAGEMENT ====================
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // ==================== UTILITY FUNCTIONS ====================
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -25,12 +23,12 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
   // ==================== LOGIN FUNCTION ====================
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Get form values directly from the form elements
     const form = e.target;
     const email = form.email.value.trim();
     const password = form.password.value.trim();
-    
+
     console.log('sLOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
 
     // Basic validation
@@ -92,15 +90,15 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
   // ==================== REGISTER FUNCTION ====================
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Get form values directly from the form elements
     const form = e.target;
     const fullName = form.fullName.value.trim();
     const email = form.email.value.trim();
     const password = form.password.value.trim();
     const confirmPassword = form.confirmPassword.value.trim();
-    
-    console.log('REGISTER DEBUG:', { 
+
+    console.log('REGISTER DEBUG:', {
       fullName, email, password, confirmPassword,
       fullNameLength: fullName.length,
       emailLength: email.length,
@@ -159,7 +157,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
       }
 
       setSuccess('Registration successful! Please check your email to verify your account.');
-      
+
       setTimeout(() => {
         onSwitchView('login');
       }, 2000);
@@ -181,7 +179,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
     // Get email from the login form directly
     const emailInput = document.querySelector('input[name="email"]');
     const email = emailInput ? emailInput.value.trim() : '';
-    
+
     if (!email) {
       setError('Please enter your email address first');
       return;
@@ -215,7 +213,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
       const data = await response.json();
       setSuccess('Password reset instructions have been sent to your email!');
-      
+
     } catch (err) {
       console.error('Forgot password error:', err);
       if (err.message.includes('Failed to fetch')) {
@@ -243,11 +241,11 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
   return (
     <div className="fixed inset-0 z-50 theme-black flex items-center justify-center">
       {/* Overlay */}
-      <div 
+      <div
         className="absolute inset-0  bg-opacity-50 backdrop-blur-[1px]"
         onClick={onClose}
       ></div>
-      
+
       {/* Modal content */}
       <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
@@ -255,7 +253,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
           <h2 className="text-xl font-semibold theme-text-primary">
             {currentView === 'login' ? 'Login to Your Account' : 'Create Your Account'}
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl transition-colors duration-200 focus:outline-none"
             disabled={loading}
@@ -283,22 +281,20 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
           <button
             onClick={() => onSwitchView('login')}
             disabled={loading}
-            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${
-              currentView === 'login'
+            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'login'
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Login
           </button>
           <button
             onClick={() => onSwitchView('register')}
             disabled={loading}
-            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${
-              currentView === 'register'
+            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'register'
                 ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Register
           </button>
@@ -338,15 +334,15 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center">
-                  <input 
-                    type="checkbox" 
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     disabled={loading}
                   />
                   <span className="ml-2 theme-text-primary">Remember me</span>
                 </label>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
                   disabled={loading}
                   onClick={handleForgotPassword}
@@ -455,9 +451,9 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
               <div className="text-sm">
                 <label className="flex items-start">
-                  <input 
-                    type="checkbox" 
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1" 
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
                     required
                     disabled={loading}
                   />

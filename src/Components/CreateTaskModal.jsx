@@ -89,7 +89,7 @@ const handleSubmit = async (e) => {
     console.log('Sending request data:', requestData);
 
     //Create the task first
-    const taskResponse = await fetch('http://127.0.0.1:5000/api/tasks/tasks?project_id', {
+    const taskResponse = await fetch('http://192.168.1.22:8087/api/tasks/tasks?project_id', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ const handleSubmit = async (e) => {
         fileFormData.append('file', file);
         fileFormData.append('task_id', taskResult.id || taskResult.task_id);
         
-        const fileResponse = await fetch('http://127.0.0.1:5000/api/tasks/upload', {
+        const fileResponse = await fetch('http://192.168.1.22:8087/api/tasks/upload', {
           method: 'POST',
           body: fileFormData,
         });
@@ -616,7 +616,7 @@ return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
             {/* File Upload Section */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
                 Add Files (Max 5 files, 25MB each)
               </label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center relative">

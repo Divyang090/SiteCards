@@ -88,7 +88,7 @@ function App() {
         setError('');
         console.log('Fetching projects from API...');
         
-        const response = await fetch('http://127.0.0.1:5000/api/projects/projects');
+        const response = await fetch('http://192.168.1.22:8087/api/projects/projects');
         
         console.log('Response status:', response.status);
         

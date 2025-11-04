@@ -41,7 +41,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         }
 
         console.log('Project not in localStorage, trying API...');
-        let response = await fetch(`http://127.0.0.1:5000/api/projects/projects/${id}`);
+        let response = await fetch(`http://192.168.1.22:8087/api/projects/projects/${id}`);
 
         if (response.ok) {
           const projectData = await response.json();
@@ -49,7 +49,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           console.log('Found project via API:', transformedProject);
           setProject(transformedProject);
         } else {
-          const projectsResponse = await fetch('http://127.0.0.1:5000/api/projects/projects');
+          const projectsResponse = await fetch('http://192.168.1.22:8087/api/projects/projects');
           if (projectsResponse.ok) {
             const projectsData = await projectsResponse.json();
             const projectsArray = extractProjectsArray(projectsData);
@@ -91,7 +91,7 @@ useEffect(() => {
 
     try {
       setTaskLoading(true); 
-      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks`);
+      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks`);
       if (response.ok) {
         const tasksData = await response.json();
         console.log('Fetched ALL tasks from API:', tasksData);
@@ -214,7 +214,7 @@ const handleCreateTask = async (newTaskData, projectId) => {
 
     setTaskLoading(true);
     
-    const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks`);
+    const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks`);
     if (response.ok) {
       const tasksData = await response.json();
       
@@ -258,7 +258,7 @@ const handleCreateTask = async (newTaskData, projectId) => {
       const task = tasks.find(t => t.id === taskId);
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
-      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
+      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ const handleCreateTask = async (newTaskData, projectId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/tasks/tasks/${taskId}`, {
+      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks/${taskId}`, {
         method: 'DELETE',
       });
 
