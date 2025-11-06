@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 
-const Header = ({ onNewProjectClick, onLoginClick }) => {
+const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0 }) => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -19,7 +19,9 @@ const Header = ({ onNewProjectClick, onLoginClick }) => {
         >
           SiteCards
         </Link>
-        {/* <p className="theme-text-secondary mt-1">3 active projects</p> */}
+        <p className="theme-text-secondary mt-1">
+          {activeProjectsCount} active project{activeProjectsCount !== 1 ? 's' : ''}
+        </p>
       </div>
       <div className="flex items-center gap-4">
         {/* Theme Toggle Button */}
@@ -38,7 +40,7 @@ const Header = ({ onNewProjectClick, onLoginClick }) => {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
-                          </>
+            </>
           )}
         </button>
 

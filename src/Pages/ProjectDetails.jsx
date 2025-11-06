@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CreateTaskModal from '../Components/CreateTaskModal';
 import SiteMapsSection from '../Components/SiteMapsSection';
+import { BASE_URL } from '../Configuration/Config';
 
 const ProjectDetails = ({ projects: propProjects = [] }) => {
   const { id } = useParams();
@@ -11,6 +12,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [taskLoading, setTaskLoading] = useState(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
+  const [siteMapsCount, setSiteMapsCount] = useState(0);
+
 
   // Get project data
   useEffect(() => {
@@ -41,7 +44,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         }
 
         console.log('Project not in localStorage, trying API...');
-        let response = await fetch(`http://192.168.1.22:8087/api/projects/projects/${id}`);
+        let response = await fetch(`${BASE_URL}/projects/projects/${id}`);
 
         if (response.ok) {
           const projectData = await response.json();
@@ -49,7 +52,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           console.log('Found project via API:', transformedProject);
           setProject(transformedProject);
         } else {
-          const projectsResponse = await fetch('http://192.168.1.22:8087/api/projects/projects');
+          const projectsResponse = await fetch(`${BASE_URL}/projects/projects`);
           if (projectsResponse.ok) {
             const projectsData = await projectsResponse.json();
             const projectsArray = extractProjectsArray(projectsData);
@@ -84,63 +87,72 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     }
   }, [id, propProjects]);
 
-// FETCH TASKS FROM API
-useEffect(() => {
-  const fetchTasks = async () => {
-    if (!id) return;
-
-    try {
-      setTaskLoading(true); 
-      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks`);
-      if (response.ok) {
-        const tasksData = await response.json();
-        console.log('Fetched ALL tasks from API:', tasksData);
-
-        // Handle different response formats
-        let tasksArray = tasksData;
-        if (tasksData && Array.isArray(tasksData.data)) {
-          tasksArray = tasksData.data;
-        } else if (tasksData && Array.isArray(tasksData.tasks)) {
-          tasksArray = tasksData.tasks;
-        }
-
-        // Filter tasks by project_id
-        const filteredTasks = tasksArray.filter(task => 
-          String(task.project_id) === String(id)
-        );
-
-        console.log(`Filtered tasks for project ${id}:`, filteredTasks);
-
-        // Transform ONLY the filtered tasks
-        const transformedTasks = filteredTasks.map(task => ({
-          id: task.id || task.task_id,
-          title: task.task_name || task.title,
-          description: task.description,
-          taskType: task.task_type || 'Simple Task',
-          assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
-          status: task.status || 'pending',
-          completed: task.status === 'completed',
-          createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-          files: task.files || []
-        }));
-
-        setTasks(transformedTasks);
-      } else {
-        console.log('No tasks found in API');
-        setTasks([]);
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-      setTasks([]);
-    } finally {
-      setTaskLoading(false);
+  useEffect(() => {
+    if (project && Array.isArray(project.siteMaps)) {
+      setSiteMapsCount(project.siteMaps.length);
+    } else {
+      setSiteMapsCount(0);
     }
-  };
+  }, [project]);
 
-  if (id) {
-    fetchTasks();
-  }
-}, [id]);
+
+  // FETCH TASKS FROM API
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (!id) return;
+
+      try {
+        setTaskLoading(true);
+        const response = await fetch(`${BASE_URL}/tasks/tasks`);
+        if (response.ok) {
+          const tasksData = await response.json();
+          console.log('Fetched ALL tasks from API:', tasksData);
+
+          // Handle different response formats
+          let tasksArray = tasksData;
+          if (tasksData && Array.isArray(tasksData.data)) {
+            tasksArray = tasksData.data;
+          } else if (tasksData && Array.isArray(tasksData.tasks)) {
+            tasksArray = tasksData.tasks;
+          }
+
+          // Filter tasks by project_id
+          const filteredTasks = tasksArray.filter(task =>
+            String(task.project_id) === String(id)
+          );
+
+          console.log(`Filtered tasks for project ${id}:`, filteredTasks);
+
+          // Transform ONLY the filtered tasks
+          const transformedTasks = filteredTasks.map(task => ({
+            id: task.id || task.task_id,
+            title: task.task_name || task.title,
+            description: task.description,
+            taskType: task.task_type || 'Simple Task',
+            assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
+            status: task.status || 'pending',
+            completed: task.status === 'completed',
+            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+            files: task.files || []
+          }));
+
+          setTasks(transformedTasks);
+        } else {
+          console.log('No tasks found in API');
+          setTasks([]);
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+        setTasks([]);
+      } finally {
+        setTaskLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchTasks();
+    }
+  }, [id]);
 
   // Helper functions
   const getProjectFromLocalStorage = (projectId) => {
@@ -162,10 +174,17 @@ useEffect(() => {
   };
 
   const transformProjectData = (projectData) => {
-      console.log('projectData',projectData);
+    console.log('projectData', projectData); console.log("✅ RAW projectData.something:", {
+      site_maps: projectData.site_maps,
+      siteMaps: projectData.siteMaps,
+      sitemaps: projectData.sitemaps,
+      site_map: projectData.site_map,
+      siteMap: projectData.siteMap
+    });
+
     return {
-    
-      
+
+
       id: projectData.id || projectData.project_id,
       title: projectData.project_name || projectData.title || 'Project',
       assignee: projectData.client_name || projectData.assignee || 'Unassigned',
@@ -175,7 +194,15 @@ useEffect(() => {
       location: projectData.location || 'No location',
       description: projectData.project_description || projectData.description || 'No description available',
       board: "Site Map",
-      siteMaps: projectData.site_maps || projectData.siteMaps || []
+      siteMaps:
+        projectData.site_maps ||
+        projectData.siteMaps ||
+        projectData.sitemaps ||
+        projectData.site_map ||
+        projectData.siteMap ||
+        projectData.maps ||
+        projectData.files ||
+        []
     };
   };
 
@@ -193,64 +220,64 @@ useEffect(() => {
     };
   };
 
-const handleCreateTask = async (newTaskData, projectId) => {
-  try {
-    console.log('Task creation callback received:', newTaskData, 'for project:', projectId);
-    if (String(projectId) === String(id)) {
-      const transformedTask = {
-        id: newTaskData.id || newTaskData.task_id,
-        title: newTaskData.task_name || newTaskData.title,
-        description: newTaskData.description,
-        taskType: newTaskData.task_type || 'Simple Task',
-        assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
-        status: newTaskData.status || 'pending',
-        completed: (newTaskData.status || 'pending') === 'completed',
-        createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-        files: newTaskData.files || []
-      };
+  const handleCreateTask = async (newTaskData, projectId) => {
+    try {
+      console.log('Task creation callback received:', newTaskData, 'for project:', projectId);
+      if (String(projectId) === String(id)) {
+        const transformedTask = {
+          id: newTaskData.id || newTaskData.task_id,
+          title: newTaskData.task_name || newTaskData.title,
+          description: newTaskData.description,
+          taskType: newTaskData.task_type || 'Simple Task',
+          assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
+          status: newTaskData.status || 'pending',
+          completed: (newTaskData.status || 'pending') === 'completed',
+          createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+          files: newTaskData.files || []
+        };
 
-      setTasks(prev => [transformedTask, ...prev]);
-    }
-
-    setTaskLoading(true);
-    
-    const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks`);
-    if (response.ok) {
-      const tasksData = await response.json();
-      
-      // Handle different response formats
-      let tasksArray = tasksData;
-      if (tasksData && Array.isArray(tasksData.data)) {
-        tasksArray = tasksData.data;
-      } else if (tasksData && Array.isArray(tasksData.tasks)) {
-        tasksArray = tasksData.tasks;
+        setTasks(prev => [transformedTask, ...prev]);
       }
 
-      // Filter by project_id
-      const filteredTasks = tasksArray.filter(task => 
-        String(task.project_id) === String(id)
-      );
+      setTaskLoading(true);
 
-      const transformedTasks = filteredTasks.map(task => ({
-        id: task.id || task.task_id,
-        title: task.task_name || task.title,
-        description: task.description,
-        taskType: task.task_type || 'Simple Task',
-        assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
-        status: task.status || 'pending',
-        completed: task.status === 'completed',
-        createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-        files: task.files || []
-      }));
+      const response = await fetch(`${BASE_URL}/tasks/tasks`);
+      if (response.ok) {
+        const tasksData = await response.json();
 
-      setTasks(transformedTasks);
+        // Handle different response formats
+        let tasksArray = tasksData;
+        if (tasksData && Array.isArray(tasksData.data)) {
+          tasksArray = tasksData.data;
+        } else if (tasksData && Array.isArray(tasksData.tasks)) {
+          tasksArray = tasksData.tasks;
+        }
+
+        // Filter by project_id
+        const filteredTasks = tasksArray.filter(task =>
+          String(task.project_id) === String(id)
+        );
+
+        const transformedTasks = filteredTasks.map(task => ({
+          id: task.id || task.task_id,
+          title: task.task_name || task.title,
+          description: task.description,
+          taskType: task.task_type || 'Simple Task',
+          assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
+          status: task.status || 'pending',
+          completed: task.status === 'completed',
+          createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+          files: task.files || []
+        }));
+
+        setTasks(transformedTasks);
+      }
+    } catch (error) {
+      console.error('Error in task creation callback:', error);
+    } finally {
+      setTaskLoading(false);
     }
-  } catch (error) {
-    console.error('Error in task creation callback:', error);
-  } finally {
-    setTaskLoading(false);
-  }
-};
+  };
 
   // UPDATE TASK STATUS USING API
   const handleToggleTask = async (taskId) => {
@@ -258,7 +285,7 @@ const handleCreateTask = async (newTaskData, projectId) => {
       const task = tasks.find(t => t.id === taskId);
       const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
-      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks/${taskId}`, {
+      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,7 +318,7 @@ const handleCreateTask = async (newTaskData, projectId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      const response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks/${taskId}`, {
+      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: 'DELETE',
       });
 
@@ -318,66 +345,68 @@ const handleCreateTask = async (newTaskData, projectId) => {
 
 
   // Skeleton Loader Component
-const SkeletonLoader = () => (
-  <div className="min-h-screen theme-bg-primary theme-text-primary">
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      {/* Back Button Skeleton */}
-      <div className="w-24 h-4 theme-bg-primary rounded mb-6 animate-pulse"></div>
+  const SkeletonLoader = () => (
+    <div className="min-h-screen theme-bg-primary theme-text-primary">
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Back Button Skeleton */}
+        <div className="w-24 h-4 theme-bg-primary rounded mb-6 animate-pulse"></div>
 
-      {/* Project Header Skeleton */}
-      <div className="mb-8">
-        <div className="w-3/4 h-8 theme-bg-secondary rounded mb-4 animate-pulse"></div>
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div className="w-20 h-6 theme-bg-secondary rounded animate-pulse"></div>
-          <div className="w-16 h-6 theme-bg-secondary rounded animate-pulse"></div>
-          <div className="w-24 h-6 theme-bg-secondary rounded animate-pulse"></div>
-        </div>
-        <div className="w-theme-bg-primary rounded animate-pulse"></div>
-      </div>
-
-      {/* Tabs Skeleton */}
-      <div className="border-b theme-bg-primary mb-6">
-        <div className="flex space-x-8">
-          <div className="w-16 h-8 theme-bg-primary rounded animate-pulse"></div>
-          <div className="w-20 h-8 theme-bg-primary rounded animate-pulse"></div>
-        </div>
-      </div>
-
-      {/* Tasks Skeleton */}
-      <div className="theme-bg-secondary rounded-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <div className="w-32 h-6 theme-bg-primary rounded mb-2 animate-pulse"></div>
-            <div className="w-24 h-4 theme-bg-primary rounded animate-pulse"></div>
+        {/* Project Header Skeleton */}
+        <div className="mb-8">
+          <div className="w-3/4 h-8 theme-bg-secondary rounded mb-4 animate-pulse"></div>
+          <div className="flex flex-wrap gap-4 mb-4">
+            <div className="w-20 h-6 theme-bg-secondary rounded animate-pulse"></div>
+            <div className="w-16 h-6 theme-bg-secondary rounded animate-pulse"></div>
+            <div className="w-24 h-6 theme-bg-secondary rounded animate-pulse"></div>
           </div>
-          <div className="w-28 h-10 theme-bg-primary rounded animate-pulse"></div>
+          <div className="w-theme-bg-primary rounded animate-pulse"></div>
         </div>
 
-        {/* Task Items Skeleton */}
-        <div className="space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="theme-bg-primary rounded-lg border border-gray-200 p-4 flex items-center gap-3 animate-pulse">
-              <div className="w-5 h-5 theme-bg-card rounded"></div>
-              <div className="flex-1">
-                <div className="w-3/4 h-4 theme-bg-card rounded mb-2"></div>
-                <div className="w-1/2 h-3 theme-bg-card rounded"></div>
-              </div>
-              <div className="w-16 h-4 theme-bg-card rounded"></div>
+        {/* Tabs Skeleton */}
+        <div className="border-b theme-bg-primary mb-6">
+          <div className="flex space-x-8">
+            <div className="w-16 h-8 theme-bg-primary rounded animate-pulse"></div>
+            <div className="w-20 h-8 theme-bg-primary rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Tasks Skeleton */}
+        <div className="theme-bg-secondary rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <div className="w-32 h-6 theme-bg-primary rounded mb-2 animate-pulse"></div>
+              <div className="w-24 h-4 theme-bg-primary rounded animate-pulse"></div>
             </div>
-          ))}
+            <div className="w-28 h-10 theme-bg-primary rounded animate-pulse"></div>
+          </div>
+
+          {/* Task Items Skeleton */}
+          <div className="space-y-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="theme-bg-primary rounded-lg border border-gray-200 p-4 flex items-center gap-3 animate-pulse">
+                <div className="w-5 h-5 theme-bg-card rounded"></div>
+                <div className="flex-1">
+                  <div className="w-3/4 h-4 theme-bg-card rounded mb-2"></div>
+                  <div className="w-1/2 h-3 theme-bg-card rounded"></div>
+                </div>
+                <div className="w-16 h-4 theme-bg-card rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
 
   if (loading || taskLoading) {
     return <SkeletonLoader />;
   }
 
   const displayProject = project;
-const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.siteMaps.length : 0;
-  
+  console.log('displayProject:', displayProject);
+  console.log('siteMaps:', displayProject?.siteMaps);
+  console.log('type of siteMaps:', typeof displayProject?.siteMaps);
+  console.log('is array:', Array.isArray(displayProject?.siteMaps));
 
   console.log('Project Data:', displayProject);
   console.log('Site Maps:', displayProject.siteMaps);
@@ -418,20 +447,22 @@ const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.si
             <button
               onClick={() => setActiveTab('tasks')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'tasks'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              Tasks ({totalTasks})
+              Tasks 
+              {/* ({totalTasks}) */}
             </button>
             <button
               onClick={() => setActiveTab('sitemaps')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === 'sitemaps'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              Site Maps ({siteMapsCount})
+              Site Maps
+              {/* ({siteMapsCount}) */}
             </button>
           </nav>
         </div>
@@ -478,8 +509,8 @@ const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.si
                       <button
                         onClick={() => handleToggleTask(task.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
-                            ? 'bg-green-500 border-green-500 text-white shadow-sm'
-                            : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                          ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                          : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
                           }`}
                       >
                         {task.completed && (
@@ -495,8 +526,8 @@ const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.si
                       </button>
                       <div className="flex-1 min-w-0">
                         <span className={`block font-medium transition-all duration-200 ${task.completed
-                            ? ' text-gray-400 underline decoration-gray-400'
-                            : 'text-gray-500'
+                          ? ' text-gray-400 underline decoration-gray-400'
+                          : 'text-gray-500'
                           }`}>
                           {task.title}
                         </span>
@@ -516,8 +547,8 @@ const siteMapsCount = Array.isArray(displayProject.siteMaps) ? displayProject.si
                           <div className="flex gap-1 mt-2">
                             {task.files.map((file, index) => (
                               <span key={index} className={`text-xs px-2 py-1 rounded transition-all duration-200 ${task.completed
-                                  ? 'bg-gray-100 text-gray-400'
-                                  : 'bg-blue-50 text-blue-600'
+                                ? 'bg-gray-100 text-gray-400'
+                                : 'bg-blue-50 text-blue-600'
                                 }`}>
                                 📎 {typeof file === 'string' ? file : file.name}
                               </span>

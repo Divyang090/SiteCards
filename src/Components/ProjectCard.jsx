@@ -1,134 +1,231 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import { useTheme } from './ThemeContext';
 
-const ProjectCard = ({ project }) => {
-  const { isDark } = useTheme(); // Get theme state
+const ProjectCard = ({ project, onEdit, onDelete }) => {
+  const { isDark } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef =useRef(null);
+
+  useEffect(() =>{
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)){
+        setIsMenuOpen(false);
+      }
+    };
+      document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+  },[])
+
+  const handleEdit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onEdit?.(project);
+  };
+
+  const handleDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onDelete?.(project.id);
+  };
 
   return (
-    <div className={`
-      rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 w-full
-      ${isDark 
-        ? 'theme-bg-card theme-border' 
-        : 'bg-linear-to-r from-blue-100 to-slate-200 border-gray-200'
-      }
-    `}>
-      <div className="flex flex-col md:flex-row">
-        <div className={`
-          flex-1 p-6 border-b md:border-b-0 md:border-r
-          ${isDark ? 'theme-border' : 'border-gray-100'}
-        `}>
-          <div className="flex justify-between items-start mb-3">
-            {/*Hardcoded in light, theme in dark */}
-            <h3 className={`
-              text-lg font-semibold
-              ${isDark ? 'theme-text-primary' : 'text-gray-900'}
-            `}>
-              {project.title}
-            </h3>
-            <StatusBadge status={project.status} />
-          </div>
-          
-          {/* CONDITIONAL TEXT COLORS */}
-          <p className={`
-            text-sm mb-4
-            ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
+    <Link
+      to={`/project/${project.id}`}
+      className={`
+        rounded-lg shadow-sm border hover:shadow-md transition-all duration-200 
+        h-full flex flex-col relative
+        ${isDark
+          ? 'theme-bg-card theme-border hover:theme-bg-hover'
+          : 'bg-white border-gray-200 hover:bg-blue-50'
+        }
+      `}
+    >
+      {/* Card Content */}
+      <div className="flex-1 p-6">
+        {/* Title, StatusBadge and Menu in same line */}
+        <div className="flex justify-between items-start mb-3">
+          <h3 className={`
+            text-lg font-semibold line-clamp-2 flex-1 mr-2
+            ${isDark ? 'theme-text-primary' : 'text-gray-900'}
           `}>
-            Assignee: {project.assignee}
-          </p>
-          
-          <div className="mb-3">
-            <div className="flex justify-between items-center">
-              <span className={`
-                text-sm font-medium
-                ${isDark ? 'theme-text-secondary' : 'text-gray-700'}
-              `}>
-                Due Date
-              </span>
-
-              <span className={`text-sm font-medium ${project.isOverdue ? 'text-red-600' : (
-                isDark ? 'theme-text-secondary' : 'text-gray-500'
-              )}`}>
-                {project.docDate} {project.isOverdue && '(Overdue)'}
-              </span>
-            </div>
-            <p className={`
-              text-sm mt-1
-              ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
-            `}>
-              {project.cardsCount} cards
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-1 p-6">
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className={`
-                text-sm
-                ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
-              `}>
-                Location
-              </span>
-              <span className={`
-                text-sm font-medium
-                ${isDark ? 'theme-text-primary' : 'text-gray-900'}
-              `}>
-                {project.location}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className={`
-                text-sm
-                ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
-              `}>
-                Updated
-              </span>
-              <span className={`
-                text-sm
-                ${isDark ? 'theme-text-secondary' : 'text-gray-500'}
-              `}>
-                {project.updated}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CONDITIONAL FOOTER */}
-  <Link
-  to={`/project/${project.id}`}
-  className={`
-    group block px-6 py-3 border-t rounded-b-lg transition-colors duration-200
-    ${isDark
-      ? 'theme-bg-secondary theme-border hover:theme-bg-hover'
-      : 'bg-gray-50 border-gray-100 hover:bg-gray-100'
-    }
-  `}
->
-  {/* View Details Footer */}
-  <div
+            {project.title}
+          </h3>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <StatusBadge
+              status={project.status}
+              dueDate={project.due_date || project.end_date || project.docDate}
+            />
+            {/* Kebab Menu */}
+<div className="relative" ref={menuRef}>
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsMenuOpen(!isMenuOpen);
+    }}
     className={`
-      flex justify-between items-center text-xs transition-colors duration-200
-      ${isDark
-        ? 'theme-bg-secondary group-hover:theme-bg-hover group-hover:theme-text-primary theme-text-secondary'
-        : 'text-gray-500 group-hover:text-gray-900'
+      p-1 rounded transition-colors duration-200
+      ${isDark 
+        ? 'hover:theme-bg-hover text-gray-400 hover:text-gray-200' 
+        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
       }
     `}
   >
-    <span>View details</span>
-    <svg
-      className="w-4 h-4 transition-colors duration-200 group-hover:text-current"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
+    <svg 
+      width="16" 
+      height="16" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="19" r="1" />
     </svg>
-  </div>
-</Link>
+  </button>
+
+  {/* Dropdown Menu */}
+  {isMenuOpen && (
+    <div 
+      className={`
+        absolute right-0 top-6 mt-1 w-32 rounded-md shadow-lg py-1 z-10
+        ${isDark 
+          ? 'theme-bg-card theme-border' 
+          : 'bg-white border border-gray-200'
+        }
+      `}
+    >
+      <button
+        onClick={handleEdit}
+        className={`
+          block w-full text-left px-4 py-2 text-sm transition-colors duration-200
+          ${isDark 
+            ? 'hover:theme-bg-hover theme-text-primary' 
+            : 'hover:bg-gray-100 text-gray-700'
+          }
+        `}
+      >
+        Edit
+      </button>
+      <button
+        onClick={handleDelete}
+        className={`
+          block w-full text-left px-4 py-2 text-sm transition-colors duration-200
+          ${isDark 
+            ? 'hover:theme-bg-hover text-red-400' 
+            : 'hover:bg-gray-100 text-red-600'
+          }
+        `}
+      >
+        Delete
+      </button>
     </div>
+  )}
+</div>
+          </div>
+        </div>
+
+        <p
+          className={`flex items-center gap-1 text-md mb-4 ${isDark ? 'theme-text-secondary' : 'text-gray-600'
+            }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+          </svg>
+          {project.assignee}
+        </p>
+
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className={` flex items-center gap-1 text-sm font-medium
+              ${isDark ? 'theme-text-secondary' : 'text-gray-700'}
+            `}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg> Due Date
+            </span>
+            <span className={`text-sm font-medium ${project.isOverdue ? 'text-red-600' : (
+              isDark ? 'theme-text-secondary' : 'text-gray-500'
+            )}`}>
+              {project.docDate} {project.isOverdue && '(Overdue)'}
+            </span>
+          </div>
+
+          {/* CARDS HERE */}
+          <div className="flex justify-between items-center">
+            <span className={` flex items-center gap-1
+              text-sm
+              ${isDark ? 'theme-text-secondary' : 'text-gray-700'}
+            `}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M21 10c0 6-9 13-9 13S3 16 3 10a9 9 0 0 1 18 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg> Location
+            </span>
+            <span className={`
+              text-sm font-medium
+              ${isDark ? 'theme-text-secondary' : 'text-gray-500'}
+            `}>
+              {project.location}
+            </span>
+          </div>
+        </div>
+        {/* Block below the border */}
+        <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+          <div className="flex items-center gap-1">
+            <span className={`
+              text-sm
+              ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
+            `}>
+              Cards:
+            </span>
+            <span className={`
+              text-sm font-medium
+              ${isDark ? 'theme-text-primary' : 'text-gray-900'}
+            `}>
+              {project.cardsCount}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className={`
+              text-sm
+              ${isDark ? 'theme-text-secondary' : 'text-gray-600'}
+            `}>
+              Updated:
+            </span>
+            <span className={`
+              text-sm
+              ${isDark ? 'theme-text-secondary' : 'text-gray-500'}
+            `}>
+              {project.updated}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 };
 

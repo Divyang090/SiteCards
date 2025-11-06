@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BASE_URL } from '../Configuration/Config';
 
 const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
@@ -32,7 +33,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
         console.log(`${key}:`, value);
       }
 
-      const response = await fetch('http://192.168.1.22:8087/api/inspiration/post', {
+      const response = await fetch(`${BASE_URL}/inspiration/post`, {
         method: 'POST',
         body: uploadData,
       });

@@ -9,6 +9,7 @@ import SiteMapCard from './SiteMapCard';
 import EmptySiteMapsState from './EmptySiteMapsState';
 import DrawingCard from './DrawingCard';
 import { use } from 'react';
+import { BASE_URL } from '../Configuration/Config';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -16,6 +17,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSiteMap, setSelectedSiteMap] = useState(null);
   const [activeTab, setActiveTab] = useState('Drawings');
+
 
   const tabs = ['Drawings', 'Vendors', 'Inspiration', 'Tasks'];
 
@@ -25,7 +27,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       try {
         console.log('Fetching ALL site maps');
         // Get ALL site maps without project_id filter
-        const response = await fetch(`http://192.168.1.22:8087/api/spaces/get/spaces`);
+        const response = await fetch(`${BASE_URL}/spaces/get/spaces`);
         console.log('Fetch response status:', response.status);
 
         if (response.ok) {
@@ -59,6 +61,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       fetchSiteMaps();
     }
   }, [projectId]);
+  
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
     setActiveTab('Drawings');
@@ -91,7 +94,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       }
       // add site maps
       console.log('Sending POST request to upload endpoint');
-      const response = await fetch('http://192.168.1.22:8087/api/spaces/post', {
+      const response = await fetch(`${BASE_URL}/spaces/post`, {
         method: 'POST',
         body: uploadData,
       });
@@ -104,6 +107,8 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         setSiteMapsList(prev => [newSiteMap, ...prev]);
         setIsUploadModalOpen(false);
         alert('Site map uploaded successfully!');
+
+        fetchSiteMaps();
       } else {
         let errorMessage = `Upload failed: ${response.status}`;
         try {
@@ -119,7 +124,6 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload site map: ' + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -134,7 +138,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       const spaceId = siteMap.space_id || siteMap.id;
       console.log('Attempting to delete site map. Space ID:', spaceId);
 
-      const response = await fetch(`http://192.168.1.22:8087/api/spaces/delete/${spaceId}`, {
+      const response = await fetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -170,6 +174,12 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       alert('Failed to delete site map: ' + error.message);
     }
   };
+
+  const handleEditSiteMap = (siteMap) => {
+  console.log('Edit site map:', siteMap);
+  // Add your edit logic here - open edit modal, etc.
+  alert(`Edit site map: ${siteMap.space_name}\nWe'll implement the edit modal soon!`);
+};
 
   const handleCloseModal = () => {
     setSelectedSiteMap(null);
@@ -207,6 +217,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
                 siteMap={siteMap}
                 onDelete={handleDeleteSiteMap}
+                onEdit={handleEditSiteMap}
                 onClick={handleSiteMapClick}
               />
             ))}
@@ -266,7 +277,7 @@ const handleDeleteTask = async (taskId) => {
   if (!window.confirm('Are you sure you want to delete this task?')) return;
 
   try {
-    const response = await fetch(`http://192.168.1.22:8087/api/tasks/${taskId}`, {
+    const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
       method: 'DELETE',
     });
 
@@ -293,7 +304,7 @@ const handleDeleteDrawing = async (drawingId) => {
   if (!window.confirm('Are you sure you want to delete this drawing?')) return;
 
   try {
-    const response = await fetch(`http://192.168.1.22:8087/api/drawings/${drawingId}`, {
+    const response = await fetch(`${BASE_URL}/drawings/${drawingId}`, {
       method: 'DELETE',
     });
 
@@ -320,7 +331,7 @@ const handleDeleteVendor = async (vendorId) => {
   if (!window.confirm('Are you sure you want to delete this vendor?')) return;
 
   try {
-    const response = await fetch(`http://192.168.1.22:8087/api/vendors/${vendorId}`, {
+    const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
       method: 'DELETE',
     });
 
@@ -347,7 +358,7 @@ const handleDeleteInspiration = async (inspirationId) => {
   if (!window.confirm('Are you sure you want to delete this inspiration?')) return;
 
   try {
-    const response = await fetch(`http://192.168.1.22:8087/api/inspiration/${inspirationId}`, {
+    const response = await fetch(`${BASE_URL}/inspiration/${inspirationId}`, {
       method: 'DELETE',
     });
 
@@ -367,80 +378,64 @@ const handleDeleteInspiration = async (inspirationId) => {
   const spaceId = siteMap.space_id || siteMap.id;
 
   // Fetch vendors data
-  useEffect(() => {
-    const fetchVendors = async () => {
-      if (activeTab === 'Vendors') {
-        setLoading(prev => ({ ...prev, vendors: true }));
-        try {
-          console.log('Fetching ALL vendors');
+useEffect(() => {
+  const fetchVendors = async () => {
+    if (activeTab === 'Vendors') {
+      setLoading(prev => ({ ...prev, vendors: true }));
+      try {
+        console.log('🔄 FETCHING ALL VENDORS');
+        
+        const response = await fetch(`${BASE_URL}/vendors/vendors`);
+        console.log('📡 Vendors API response status:', response.status);
 
-          const response = await fetch(`http://192.168.1.22:8087/api/vendors/vendors`);
-          console.log('Vendors fetch response status:', response.status);
+        if (response && response.ok) {
+          const responseData = await response.json();
+          console.log('📦 RAW vendors response from backend:', responseData);
 
-          if (response && response.ok) {
-            const allVendors = await response.json();
-            console.log('Fetched ALL vendors data:', allVendors);
-
-            // Filter vendors by space_id on the frontend
-            const spaceId = siteMap.id || siteMap.space_id;
-            console.log('Filtering vendors for spaceId:', spaceId);
-
-            let filteredVendors = [];
-
-            if (Array.isArray(allVendors)) {
-              filteredVendors = allVendors.filter(vendor => {
-                // Check different possible space_id properties in vendor object
-                const vendorSpaceId = vendor.space_id || vendor.spaceId;
-                console.log(`Vendor ${vendor.id}: vendorSpaceId = ${vendorSpaceId}, target spaceId = ${spaceId}`);
-                return vendorSpaceId?.toString() === spaceId?.toString();
-              });
-            } else if (allVendors && Array.isArray(allVendors.data)) {
-              filteredVendors = allVendors.data.filter(vendor => {
-                const vendorSpaceId = vendor.space_id || vendor.spaceId;
-                return vendorSpaceId?.toString() === spaceId?.toString();
-              });
-            } else if (allVendors && Array.isArray(allVendors.vendors)) {
-              filteredVendors = allVendors.vendors.filter(vendor => {
-                const vendorSpaceId = vendor.space_id || vendor.spaceId;
-                return vendorSpaceId?.toString() === spaceId?.toString();
-              });
-            }
-
-            console.log('Filtered vendors for this space:', filteredVendors);
-
-            // Map the filtered vendors to the required format
-            const mappedVendors = filteredVendors.map(vendor => ({
-              id: vendor.vendor_id || vendor.id,
-              name: vendor.company_name || vendor.name || 'Unnamed Vendor',
-              category: vendor.vendor_category || vendor.category || 'General',
-              contact: vendor.vendor_email || 'No contact',
-              phone: vendor.contact_number || 'No phone',
-              space_id: vendor.space_id
-            }));
-
-            setVendors(mappedVendors);
+          // Handle different response formats
+          let allVendors = [];
+          
+          if (Array.isArray(responseData)) {
+            allVendors = responseData;
+          } else if (responseData && Array.isArray(responseData.data)) {
+            allVendors = responseData.data;
+          } else if (responseData && Array.isArray(responseData.vendors)) {
+            allVendors = responseData.vendors;
+          } else if (responseData && typeof responseData === 'object') {
+            allVendors = Object.values(responseData);
           } else {
-            console.log('Vendors API failed, using sample data');
-            setVendors(getSampleVendors());
+            console.log('❌ Unknown response format:', responseData);
+            allVendors = [];
           }
-        } catch (error) {
-          console.error('Error fetching vendors:', error);
-          setVendors(getSampleVendors());
-        } finally {
-          setLoading(prev => ({ ...prev, vendors: false }));
+
+          console.log('📋 All vendors to display:', allVendors);
+
+          const mappedVendors = allVendors.map(vendor => ({
+            id: vendor.vendor_id || vendor.id,
+            name: vendor.company_name || 'Unnamed Vendor',
+            category: vendor.trade || 'General',
+            contact: vendor.vendor_email || 'No contact',
+            phone: vendor.contact_number || 'No phone',
+            space_id: vendor.space_id 
+          }));
+          
+          console.log('🎯 Final vendors to display:', mappedVendors);
+          setVendors(mappedVendors);
+        } else {
+          console.error('❌ Vendors API failed with status:', response.status);
+          setVendors([]);
         }
+      } catch (error) {
+        console.error('❌ Error fetching vendors:', error);
+        setVendors([]);
+      } finally {
+        setLoading(prev => ({ ...prev, vendors: false }));
       }
-    };
+    }
+  };
 
-    // Helper function for sample data
-    const getSampleVendors = () => [
-      { id: 1, name: 'Construction Co.', category: 'General Contractor', contact: 'john@example.com', phone: '+1-555-0101' },
-      { id: 2, name: 'Electrical Works', category: 'Electrical', contact: 'mike@example.com', phone: '+1-555-0102' },
-      { id: 3, name: 'Plumbing Pros', category: 'Plumbing', contact: 'sarah@example.com', phone: '+1-555-0103' },
-    ];
-
-    fetchVendors();
-  }, [activeTab, siteMap.id, siteMap.space_id]);
+  fetchVendors();
+}, [activeTab, spaceId]);
 
   // Fetch tasks data
   useEffect(() => {
@@ -458,9 +453,9 @@ const handleDeleteInspiration = async (inspirationId) => {
 
           let response;
           if (spaceId) {
-            response = await fetch(`http://192.168.1.22:8087/api/tasks/tasks?project_id=${siteMap.id || siteMap.space_id}`);
+            response = await fetch(`${BASE_URL}/tasks/tasks?project_id=${siteMap.id || siteMap.space_id}`);
           } else if (projectId) {
-            response = await fetch(`http://192.168.1.22:8087/api/tasks?space_id=${projectId}`);
+            response = await fetch(`${BASE_URL}/tasks?space_id=${projectId}`);
           } else {
             throw new Error('No valid IDs found for API call');
           }
@@ -503,11 +498,11 @@ const handleDeleteInspiration = async (inspirationId) => {
     };
 
     // Helper function for sample data
-    const getSampleTasks = () => [
-      { id: 1, title: 'Site Inspection', description: 'Initial site assessment and measurements', status: 'completed', due_date: '2024-01-20' },
-      { id: 2, title: 'Material Order', description: 'Order construction materials from suppliers', status: 'pending', due_date: '2024-01-25' },
-      { id: 3, title: 'Permit Application', description: 'Submit building permits to local authorities', status: 'pending', due_date: '2024-01-30' },
-    ];
+    // const getSampleTasks = () => [
+    //   { id: 1, title: 'Site Inspection', description: 'Initial site assessment and measurements', status: 'completed', due_date: '2024-01-20' },
+    //   { id: 2, title: 'Material Order', description: 'Order construction materials from suppliers', status: 'pending', due_date: '2024-01-25' },
+    //   { id: 3, title: 'Permit Application', description: 'Submit building permits to local authorities', status: 'pending', due_date: '2024-01-30' },
+    // ];
 
     fetchTasks();
   }, [activeTab, siteMap.id, siteMap.space_id, siteMap.project_id]);
@@ -519,7 +514,7 @@ const handleDeleteInspiration = async (inspirationId) => {
         setLoading(prev => ({ ...prev, drawings: true }));
         try {
           console.log('Fetching drawings for space:', spaceId);
-          const response = await fetch(`http://192.168.1.22:8087/api/drawings/get?space_id=${spaceId}`);
+          const response = await fetch(`${BASE_URL}/drawings/get?space_id=${spaceId}`);
 
           console.log('Drawings fetch response status:', response.status);
 
@@ -568,7 +563,7 @@ const handleDeleteInspiration = async (inspirationId) => {
         setLoading(prev => ({ ...prev, inspiration: true }));
         try {
           console.log('Fetching inspiration for space:', spaceId);
-          const response = await fetch(`http://192.168.1.22:8087/api/inspiration/get?space_id=${spaceId}`);
+          const response = await fetch(`${BASE_URL}/inspiration/get?space_id=${spaceId}`);
 
           console.log('Inspiration fetch response status:', response.status);
 
@@ -638,7 +633,7 @@ const handleToggleTask = async (taskId) => {
 
     // Try API call with CORS handling
     try {
-      const response = await fetch(`http://192.168.1.22:8087/api/tasks/${taskId}`, {
+      const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -662,7 +657,7 @@ const handleToggleTask = async (taskId) => {
   // Update Vendor Function
   const handleUpdateVendor = async (vendorId, updates) => {
     try {
-      const response = await fetch(`http://192.168.1.22:8087/api/vendors/vendors/${vendorId}`, {
+      const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -780,7 +775,7 @@ const handleToggleTask = async (taskId) => {
           </div>
         )}
 
-        {/* Vendors Tab - List format */}
+        {/* Vendors Tab*/}
         {activeTab === 'Vendors' && (
           <div>
             {loading.vendors ? (
@@ -796,9 +791,9 @@ const handleToggleTask = async (taskId) => {
                       <div className="flex-1">
                         <h3 className="font-semibold theme-text-primary text-lg mb-1">{vendor.name}</h3>
                         <p className="text-sm theme-text-secondary mb-1">Category: {vendor.category}</p>
-                        <p className="text-sm theme-text-secondary mb-1">Contact: {vendor.contact}</p>
+                        <p className="text-sm theme-text-secondary mb-1">✉ {vendor.contact}</p>
                         {vendor.phone && (
-                          <p className="text-sm theme-text-primary">Phone: {vendor.phone}</p>
+                          <p className="text-sm theme-text-primary">☎{vendor.phone}</p>
                         )}
                       </div>
                       <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { BASE_URL } from '../Configuration/Config';
 
 const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ const handleSubmit = async (e) => {
       console.log(`${key}:`, value);
     }
 
-    const response = await fetch('http://192.168.1.22:8087/api/drawings/post', {
+    const response = await fetch(`${BASE_URL}/drawings/post`, {
       method: 'POST',
       body: uploadData,
     });
