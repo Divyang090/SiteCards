@@ -9,10 +9,9 @@ import NewProjectModal from './Components/NewProjectModal';
 import AuthModal from './Components/AuthModal';
 import Templates from './Components/ProjectTemplates';
 import StatusMessageProvider, { useStatusMessage } from './Alerts/StatusMessage';
-import EditProjectModal from './Components/EditProjectModal';
+import EditProjectModal from './EditModal/EditProjectModal';
 import { BASE_URL } from './Configuration/Config';
 
-// Create a wrapper component that can use the StatusMessage hook
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, searchTerm, loading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
 
@@ -132,7 +131,7 @@ const AppContent = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
 
-  const { showMessage } = useStatusMessage(); // Now this works!
+  const { showMessage } = useStatusMessage();
 
   const activeProjectsCount = projects.filter(project =>
     project.status !== 'completed').length;

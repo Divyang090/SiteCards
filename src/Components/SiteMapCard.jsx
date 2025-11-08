@@ -1,13 +1,14 @@
 import React, { useState } from "react";
+import { BASE_URL } from "../Configuration/Config";
 
-const SiteMapCard = ({ siteMap, onDelete, onClick }) => {
+const SiteMapCard = ({ siteMap, onDelete, onClick, onEdit }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [showActions, setShowActions] =useState(false);
 
 const mainFile = siteMap?.files?.[0] || null;
 const imageUrl = mainFile?.file_path 
-  ? `http://192.168.1.22:8087/api/${mainFile.file_path.replace(/\\/g, '/')}`
+  ? `${BASE_URL}/${mainFile.file_path.replace(/\\/g, '/')}`
   : null;
 const isImage = mainFile?.filename?.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
 const hasFiles = siteMap?.files && siteMap.files.length > 0;
@@ -75,7 +76,7 @@ const getFileIcon = () => {
             }}
           />
         ) : null}
-        <div className={`w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center ${siteMap.file_type?.includes('image') ? 'hidden' : 'flex'}`}>
+        <div className={`w-full h-full bg-linear-to-br from-blue-100 to-purple-100 flex items-center justify-center ${siteMap.file_type?.includes('image') ? 'hidden' : 'flex'}`}>
   <span className="text-4xl">{getFileIcon(siteMap.file_type)}</span>
 </div>
 
@@ -85,7 +86,11 @@ const getFileIcon = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onEdit(siteMap);
+              if(onEdit){
+                onEdit(siteMap);
+              } else {
+                console.warn('Edit functionality not available for sitemaps')
+              }
             }}
             className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors duration-200"
             title="Edit"

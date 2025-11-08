@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
-// Create context
 const StatusMessageContext = createContext();
 
-// Custom hook to use the status message
 const useStatusMessage = () => {
   const context = useContext(StatusMessageContext);
   if (!context) {
@@ -15,22 +13,25 @@ const useStatusMessage = () => {
 // Provider component
 const StatusMessageProvider = ({ children }) => {
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
-  const [confirmation, setConfirmation] = useState({ 
-    show: false, 
-    title: '', 
-    message: '', 
-    onConfirm: null, 
+  const [Failed, setFailed] = useState({ show: false, title: '', message: '', onConfirm: '' })
+  const [confirmation, setConfirmation] = useState({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: null,
     onCancel: null,
-    isLoading: false // Add loading state
+    isLoading: false
   });
 
   const showMessage = useCallback((text, type = 'success') => {
     setMessage({ show: true, text, type });
-    
+
     // Auto-hide after 3 seconds
     setTimeout(() => {
       setMessage({ show: false, text: '', type: '' });
     }, 3000);
+
+    return()=>clearTimeout(timer);
   }, []);
 
   const showConfirmation = useCallback((title, message, onConfirm, onCancel = null) => {
@@ -43,6 +44,10 @@ const StatusMessageProvider = ({ children }) => {
       isLoading: false
     });
   }, []);
+
+  const showFailed = useCallback((text = 'Operation failed. Please try again.') => {
+    showMessage(text, 'error');
+  }, [showMessage]);
 
   const setConfirmationLoading = useCallback((isLoading) => {
     setConfirmation(prev => ({ ...prev, isLoading }));
@@ -57,16 +62,17 @@ const StatusMessageProvider = ({ children }) => {
   }, []);
 
   return (
-    <StatusMessageContext.Provider value={{ 
-      showMessage, 
-      hideMessage, 
+    <StatusMessageContext.Provider value={{
+      showMessage,
+      hideMessage,
       showConfirmation,
       setConfirmationLoading,
-      hideConfirmation
+      hideConfirmation,
+      showFailed
     }}>
       {children}
       <StatusMessageComponent message={message} />
-      <ConfirmationModal 
+      <ConfirmationModal
         confirmation={confirmation}
         setConfirmationLoading={setConfirmationLoading}
         hideConfirmation={hideConfirmation}
@@ -79,11 +85,11 @@ const StatusMessageProvider = ({ children }) => {
 const StatusMessageComponent = ({ message }) => {
   if (!message.show) return null;
 
-  const bgColor = message.type === 'success' 
+  const bgColor = message.type === 'success'
     ? 'bg-green-100 border-green-400 text-green-700'
     : message.type === 'error'
-    ? 'bg-red-100 border-red-400 text-red-700'
-    : 'bg-blue-100 border-blue-400 text-blue-700';
+      ? 'bg-red-100 border-red-400 text-red-700'
+      : 'bg-blue-100 border-blue-400 text-blue-700';
 
   const icon = message.type === 'success' ? (
     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -156,10 +162,10 @@ const ConfirmationModal = ({ confirmation, setConfirmationLoading, hideConfirmat
               {confirmation.isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Deleting...
+                  Processing...
                 </>
               ) : (
-                'Delete'
+                confirmation.title?.toLowerCase().includes('delete')? 'Delete' : 'Confirm'
               )}
             </button>
           </div>

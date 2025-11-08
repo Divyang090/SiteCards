@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import SiteMapUploadModal from './SiteMapUploadModal';
-import AddVendorModal from './AddVendorModal';
-import AddInspirationModal from './AddInspirationModal';
-import AddDrawingModal from './AddDrawingModal';
-import AddTaskModal from './AddTaskModal';
-import EditableVendorField from './EditablevendorField';
+import AddVendorModal from '../AddingModal/AddVendorModal';
+import AddInspirationModal from '../AddingModal/AddInspirationModal';
+import AddDrawingModal from '../AddingModal/AddDrawingModal';
+import AddTaskModal from '../AddingModal/AddTaskModal';
 import SiteMapCard from './SiteMapCard';
 import EmptySiteMapsState from './EmptySiteMapsState';
 import DrawingCard from './DrawingCard';
 import { use } from 'react';
 import { BASE_URL } from '../Configuration/Config';
+import StatusMessageProvider, { useStatusMessage } from '../Alerts/StatusMessage';
+import EditDrawingModal from '../EditModal/EditDrawingModal';
+import EditInspirationModal from '../EditModal/EditInspirationModal';
+import EditTaskModal from '../EditModal/EditTaskModal';
+import EditVendorModal from '../EditModal/EditVendorModal';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -17,6 +21,8 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSiteMap, setSelectedSiteMap] = useState(null);
   const [activeTab, setActiveTab] = useState('Drawings');
+
+  const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
 
   const tabs = ['Drawings', 'Vendors', 'Inspiration', 'Tasks'];
@@ -61,7 +67,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       fetchSiteMaps();
     }
   }, [projectId]);
-  
+
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
     setActiveTab('Drawings');
@@ -106,7 +112,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         console.log('Upload successful, new site map:', newSiteMap);
         setSiteMapsList(prev => [newSiteMap, ...prev]);
         setIsUploadModalOpen(false);
-        alert('Site map uploaded successfully!');
+        showMessage('Site map uploaded successfully!', 'success');
 
         fetchSiteMaps();
       } else {
@@ -130,56 +136,57 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   };
 
   const handleDeleteSiteMap = async (siteMap) => {
-    if (!window.confirm('Are you sure you want to delete this site map?'
 
-    )) return;
-
-    try {
-      const spaceId = siteMap.space_id || siteMap.id;
-      console.log('Attempting to delete site map. Space ID:', spaceId);
-
-      const response = await fetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('Delete response status:', response.status);
-
-      if (response.ok) {
-        console.log('Delete successful');
-        setSiteMapsList(prev => prev.filter(sm => sm.space_id !== spaceId));
-        alert('Site map deleted successfully!');
-      } else {
-        // Read the response only once
-        const errorText = await response.text();
-        let errorMessage = `Delete failed: ${response.status}`;
-
+    showConfirmation(
+      'Delete Site Map',
+      'Are you sure you want to delete site map? This action cannot be undone.',
+      async () => {
         try {
-          // Try to parse as JSON if it's JSON
-          const errorData = JSON.parse(errorText);
-          errorMessage += ` - ${JSON.stringify(errorData)}`;
-          console.error('Delete error details:', errorData);
-        } catch {
-          // If not JSON, use the text directly
-          errorMessage += ` - ${errorText}`;
-          console.error('Delete error text:', errorText);
-        }
+          const spaceId = siteMap.space_id || siteMap.id;
+          console.log('Attempting to delete site map. Space ID:', spaceId);
 
-        throw new Error(errorMessage);
+          const response = await fetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+          );
+
+          console.log('Delete response status:', response.status);
+
+          if (response.ok) {
+            console.log('Delete successful');
+            setSiteMapsList(prev => prev.filter(sm => sm.space_id !== spaceId));
+            showMessage('Site map deleted successfully!', 'success');
+          } else {
+            const errorText = await response.text();
+            let errorMessage = `Delete failed: ${response.status}`;
+
+            try {
+              const errorData = JSON.parse(errorText);
+              errorMessage += ` - ${JSON.stringify(errorData)}`;
+              console.error('Delete error details:', errorData);
+            } catch {
+              errorMessage += ` - ${errorText}`;
+              console.error('Delete error text:', errorText);
+            }
+
+            throw new Error(errorMessage);
+          }
+        } catch (error) {
+          console.error('Error deleting site map:', error);
+          showFailed('Failed to delete site map: ' + error.message);
+        }
       }
-    } catch (error) {
-      console.error('Error deleting site map:', error);
-      alert('Failed to delete site map: ' + error.message);
-    }
+    );
   };
 
-  const handleEditSiteMap = (siteMap) => {
-  console.log('Edit site map:', siteMap);
-  // Add your edit logic here - open edit modal, etc.
-  alert(`Edit site map: ${siteMap.space_name}\nWe'll implement the edit modal soon!`);
-};
+  // const handleEditSiteMap = (siteMap) => {
+  //   console.log('Edit site map:', siteMap);
+  //   // Add your edit logic here - open edit modal, etc.
+  //   alert(`Edit site map: ${siteMap.space_name}\nWe'll implement the edit modal soon!`);
+  // };
 
   const handleCloseModal = () => {
     setSelectedSiteMap(null);
@@ -217,7 +224,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
                 siteMap={siteMap}
                 onDelete={handleDeleteSiteMap}
-                onEdit={handleEditSiteMap}
+                // onEdit={handleEditSiteMap}
                 onClick={handleSiteMapClick}
               />
             ))}
@@ -232,6 +239,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
             siteMap={selectedSiteMap}
             onClose={handleCloseDetail}
             tabs={tabs}
+            projectId={projectId}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />
@@ -265,177 +273,208 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [refreshDrawings, setRefreshDrawings] = useState(0);
   const [inspiration, setInspiration] = useState([]);
   const [refreshInspiration, setRefreshInspiration] = useState(0);
+  const [editingDrawing, setEditingDrawing] = useState();
+  const [editingVendor, setEditingVendor] = useState();
+  const [editingInspiration, setEditingInspiration] = useState();
+  const [editingTask, setEditingTask] = useState();
+
+  const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
   // All Handlers
   // Task handlers
-const handleEditTask = (task) => {
-  console.log('Edit task:', task);
-  alert(`Edit task: ${task.title}\nWe'll implement the edit modal soon!`);
-};
+  const handleEditTask = (task) => {
+    console.log('Edit task:', task);
+    setEditingTask(task);
+  };
 
-const handleDeleteTask = async (taskId) => {
-  if (!window.confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTask = async (taskId) => {
+    const task = tasks.find(t => t.id === taskId);
+    const taskName = task?.task_name || task?.task_title || task?.title || task?.name || 'this task';
 
-  try {
-    const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
-      method: 'DELETE',
-    });
+    showConfirmation(
+      'Delete Task',
+      `Are you sure you want to delete "${taskName}"? This action cannot be undone.`,
+      async () => {
+        try {
+          const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+            method: 'DELETE',
+          });
 
-    if (response.ok) {
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      alert('Task deleted successfully!');
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete task: ${errorText}`);
+          if (response.ok) {
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            showMessage(`Task "${taskName}" deleted successfully!`, 'success');
+          } else {
+            const errorText = await response.text();
+            throw new Error(`Failed to delete task: ${errorText}`);
+          }
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          showFailed('Failed to delete task: ' + error.message);
+        }
+      }
+    );
+  };
+
+  // Drawing handlers
+  const handleEditDrawing = (drawing) => {
+    console.log('Edit drawing:', drawing);
+    setEditingDrawing(drawing);
+  };
+  //Delete Drawing
+  const handleDeleteDrawing = async (drawingId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/drawings/${drawingId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setDrawings(prev => prev.filter(d => d.drawing_id !== drawingId)); // Use drawing_id here
+        showMessage('Drawing deleted successfully!', 'success');
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to delete drawing: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error deleting drawing:', error);
+      showFailed('Failed to delete drawing: ' + error.message);
     }
-  } catch (error) {
-    console.error('Error deleting task:', error);
-    alert('Failed to delete task: ' + error.message);
-  }
-};
+  };
 
-// Drawing handlers
-const handleEditDrawing = (drawing) => {
-  console.log('Edit drawing:', drawing);
-  alert(`Edit drawing: ${drawing.name}\nWe'll implement the edit modal soon!`);
-};
+  // Vendor handlers
+  const handleEditVendor = (vendor) => {
+    console.log('Edit vendor:', vendor);
+    setEditingVendor(vendor)
+  };
+  //Delete Vendor
+  const handleDeleteVendor = async (vendorId) => {
+    const vendor = vendors.find(v => v.id === vendorId);
+    // console.log('Vendor object:', vendor);
+    // console.log('Vendor properties:', Object.keys(vendor || {}));
+    const vendorname = vendor?.vendor_name || vendor?.vendorname || vendor?.company_name || vendor?.name || 'Fallback';
+    // console.log('selected vendor name', vendorname)
+    showConfirmation(
+      'Delete Vendor',
+      `Are you sure you want to delete "${vendorname}"? This action cannot be undone`,
+      async () => {
+        try {
+          const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
 
-const handleDeleteDrawing = async (drawingId) => {
-  if (!window.confirm('Are you sure you want to delete this drawing?')) return;
+          if (response.ok) {
+            setVendors(prev => prev.filter(v => v.id !== vendorId));
+            showMessage('Vendor deleted successfully!', 'success');
+          } else {
+            const errorText = await response.text();
+            throw new Error(`Failed to delete vendor: ${errorText}`);
+          }
+        } catch (error) {
+          console.error('Error deleting vendor:', error);
+          showFailed('Failed to delete vendor: ' + error.message);
+        }
+      }
+    );
+  };
 
-  try {
-    const response = await fetch(`${BASE_URL}/drawings/${drawingId}`, {
-      method: 'DELETE',
-    });
+  // Inspiration handlers
+  const handleEditInspiration = (inspiration) => {
+    console.log('Edit inspiration:', inspiration);
+    setEditingInspiration(inspiration)
+  };
+  //deleteinspiration
+  const handleDeleteInspiration = async (inspirationId, inspiration) => {
+    console.log('Inspiration object:', inspiration);
+    console.log('Available properties:', Object.keys(inspiration || {}));
+    const inspirationName = inspiration?.title || inspiration?.name || inspiration?.filename || 'this inspiration';
 
-    if (response.ok) {
-      setDrawings(prev => prev.filter(d => d.id !== drawingId));
-      alert('Drawing deleted successfully!');
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete drawing: ${errorText}`);
-    }
-  } catch (error) {
-    console.error('Error deleting drawing:', error);
-    alert('Failed to delete drawing: ' + error.message);
-  }
-};
+    showConfirmation(
+      'Delete Inspiration',
+      `Are you sure you want to delete "${inspirationName}"? This action cannot be undone`,
+      async () => {
+        try {
+          const response = await fetch(`${BASE_URL}/inspiration/${inspirationId}`, {
+            method: 'DELETE',
+          });
 
-// Vendor handlers
-const handleEditVendor = (vendor) => {
-  console.log('Edit vendor:', vendor);
-  alert(`Edit vendor: ${vendor.name}\nWe'll implement the edit modal soon!`);
-};
-
-const handleDeleteVendor = async (vendorId) => {
-  if (!window.confirm('Are you sure you want to delete this vendor?')) return;
-
-  try {
-    const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
-      method: 'DELETE',
-    });
-
-    if (response.ok) {
-      setVendors(prev => prev.filter(v => v.id !== vendorId));
-      alert('Vendor deleted successfully!');
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete vendor: ${errorText}`);
-    }
-  } catch (error) {
-    console.error('Error deleting vendor:', error);
-    alert('Failed to delete vendor: ' + error.message);
-  }
-};
-
-// Inspiration handlers
-const handleEditInspiration = (inspiration) => {
-  console.log('Edit inspiration:', inspiration);
-  alert(`Edit inspiration: ${inspiration.name}\nWe'll implement the edit modal soon!`);
-};
-
-const handleDeleteInspiration = async (inspirationId) => {
-  if (!window.confirm('Are you sure you want to delete this inspiration?')) return;
-
-  try {
-    const response = await fetch(`${BASE_URL}/inspiration/${inspirationId}`, {
-      method: 'DELETE',
-    });
-
-    if (response.ok) {
-      setInspiration(prev => prev.filter(item => item.id !== inspirationId));
-      alert('Inspiration deleted successfully!');
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete inspiration: ${errorText}`);
-    }
-  } catch (error) {
-    console.error('Error deleting inspiration:', error);
-    alert('Failed to delete inspiration: ' + error.message);
-  }
-};
+          if (response.ok) {
+            setInspiration(prev => prev.filter(item => item.id !== inspirationId));
+            showMessage(`Inspiration "${inspirationName}" deleted successfully!`, 'success');
+          } else {
+            const errorText = await response.text();
+            throw new Error(`Failed to delete inspiration: ${errorText}`);
+          }
+        } catch (error) {
+          console.error('Error deleting inspiration:', error);
+          showFailed('Failed to delete inspiration: ' + error.message);
+        }
+      }
+    );
+  };
 
   const spaceId = siteMap.space_id || siteMap.id;
 
   // Fetch vendors data
-useEffect(() => {
-  const fetchVendors = async () => {
-    if (activeTab === 'Vendors') {
-      setLoading(prev => ({ ...prev, vendors: true }));
-      try {
-        console.log('🔄 FETCHING ALL VENDORS');
-        
-        const response = await fetch(`${BASE_URL}/vendors/vendors`);
-        console.log('📡 Vendors API response status:', response.status);
+  useEffect(() => {
+    const fetchVendors = async () => {
+      if (activeTab === 'Vendors') {
+        setLoading(prev => ({ ...prev, vendors: true }));
+        try {
+          console.log('🔄 FETCHING ALL VENDORS');
 
-        if (response && response.ok) {
-          const responseData = await response.json();
-          console.log('📦 RAW vendors response from backend:', responseData);
+          const response = await fetch(`${BASE_URL}/vendors/vendors`);
+          console.log('📡 Vendors API response status:', response.status);
 
-          // Handle different response formats
-          let allVendors = [];
-          
-          if (Array.isArray(responseData)) {
-            allVendors = responseData;
-          } else if (responseData && Array.isArray(responseData.data)) {
-            allVendors = responseData.data;
-          } else if (responseData && Array.isArray(responseData.vendors)) {
-            allVendors = responseData.vendors;
-          } else if (responseData && typeof responseData === 'object') {
-            allVendors = Object.values(responseData);
+          if (response && response.ok) {
+            const responseData = await response.json();
+            console.log('📦 RAW vendors response from backend:', responseData);
+
+            // Handle different response formats
+            let allVendors = [];
+
+            if (Array.isArray(responseData)) {
+              allVendors = responseData;
+            } else if (responseData && Array.isArray(responseData.data)) {
+              allVendors = responseData.data;
+            } else if (responseData && Array.isArray(responseData.vendors)) {
+              allVendors = responseData.vendors;
+            } else if (responseData && typeof responseData === 'object') {
+              allVendors = Object.values(responseData);
+            } else {
+              console.log('❌ Unknown response format:', responseData);
+              allVendors = [];
+            }
+
+            console.log('📋 All vendors to display:', allVendors);
+
+            const mappedVendors = allVendors.map(vendor => ({
+              id: vendor.vendor_id || vendor.id,
+              name: vendor.company_name || 'Unnamed Vendor',
+              category: vendor.trade || 'General',
+              contact: vendor.vendor_email || 'No contact',
+              phone: vendor.contact_number || 'No phone',
+              space_id: vendor.space_id
+            }));
+
+            console.log('🎯 Final vendors to display:', mappedVendors);
+            setVendors(mappedVendors);
           } else {
-            console.log('❌ Unknown response format:', responseData);
-            allVendors = [];
+            console.error('❌ Vendors API failed with status:', response.status);
+            setVendors([]);
           }
-
-          console.log('📋 All vendors to display:', allVendors);
-
-          const mappedVendors = allVendors.map(vendor => ({
-            id: vendor.vendor_id || vendor.id,
-            name: vendor.company_name || 'Unnamed Vendor',
-            category: vendor.trade || 'General',
-            contact: vendor.vendor_email || 'No contact',
-            phone: vendor.contact_number || 'No phone',
-            space_id: vendor.space_id 
-          }));
-          
-          console.log('🎯 Final vendors to display:', mappedVendors);
-          setVendors(mappedVendors);
-        } else {
-          console.error('❌ Vendors API failed with status:', response.status);
+        } catch (error) {
+          console.error('❌ Error fetching vendors:', error);
           setVendors([]);
+        } finally {
+          setLoading(prev => ({ ...prev, vendors: false }));
         }
-      } catch (error) {
-        console.error('❌ Error fetching vendors:', error);
-        setVendors([]);
-      } finally {
-        setLoading(prev => ({ ...prev, vendors: false }));
       }
-    }
-  };
+    };
 
-  fetchVendors();
-}, [activeTab, spaceId]);
+    fetchVendors();
+  }, [activeTab, spaceId]);
 
   // Fetch tasks data
   useEffect(() => {
@@ -496,13 +535,6 @@ useEffect(() => {
         }
       }
     };
-
-    // Helper function for sample data
-    // const getSampleTasks = () => [
-    //   { id: 1, title: 'Site Inspection', description: 'Initial site assessment and measurements', status: 'completed', due_date: '2024-01-20' },
-    //   { id: 2, title: 'Material Order', description: 'Order construction materials from suppliers', status: 'pending', due_date: '2024-01-25' },
-    //   { id: 3, title: 'Permit Application', description: 'Submit building permits to local authorities', status: 'pending', due_date: '2024-01-30' },
-    // ];
 
     fetchTasks();
   }, [activeTab, siteMap.id, siteMap.space_id, siteMap.project_id]);
@@ -612,47 +644,47 @@ useEffect(() => {
   };
 
   // Toggle task completion
-const handleToggleTask = async (taskId) => {
-  console.log('Toggle task clicked for ID:', taskId);
+  const handleToggleTask = async (taskId) => {
+    console.log('Toggle task clicked for ID:', taskId);
 
-  try {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      console.error('Task not found:', taskId);
-      return;
-    }
-
-    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-    
-    // Update local state immediately
-    setTasks(prevTasks =>
-      prevTasks.map(t =>
-        t.id === taskId ? { ...t, status: newStatus } : t
-      )
-    );
-
-    // Try API call with CORS handling
     try {
-      const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (response.ok) {
-        console.log('Task status updated successfully in API');
-      } else {
-        console.error('API update failed with status:', response.status);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        console.error('Task not found:', taskId);
+        return;
       }
-    } catch (apiError) {
-      console.log('API call failed due to CORS, but UI updated:', apiError);
+
+      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+
+      // Update local state immediately
+      setTasks(prevTasks =>
+        prevTasks.map(t =>
+          t.id === taskId ? { ...t, status: newStatus } : t
+        )
+      );
+
+      // Try API call with CORS handling
+      try {
+        const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (response.ok) {
+          console.log('Task status updated successfully in API');
+        } else {
+          console.error('API update failed with status:', response.status);
+        }
+      } catch (apiError) {
+        console.log('API call failed due to CORS, but UI updated:', apiError);
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
     }
-  } catch (error) {
-    console.error('Error updating task:', error);
-  }
-};
+  };
   //1/11 Vendor Edit
   // Update Vendor Function
   const handleUpdateVendor = async (vendorId, updates) => {
@@ -754,10 +786,11 @@ const handleToggleTask = async (taskId) => {
                 {drawings.map((file) => (
                   <DrawingCard
                     key={file.drawing_id || file.id}
+                    drawings={drawings}
                     file={file}
-                  // Check it
-                  // onEdit={handleEditDrawing}
-                  // onDelete={handleDeleteDrawing}
+                    // Check it
+                    onEdit={handleEditDrawing}
+                    onDelete={handleDeleteDrawing}
                   />
                 ))}
               </div>
@@ -1058,6 +1091,68 @@ const handleToggleTask = async (taskId) => {
             setTasks(prev => [...prev, newTask]);
             setIsAddTaskOpen(false);
           }}
+        />
+      )}
+
+      {/* Editing Section */}
+      {/* Edit Drawing */}
+      {editingDrawing && (
+        <EditDrawingModal
+          drawing={editingDrawing}
+          spaceId={siteMap?.space_id || siteMap?.id}
+          projectId={siteMap?.project_id}
+          onClose={() => setEditingDrawing(null)}
+          onUpdate={(updatedDrawing) => {
+            setDrawings(prev => prev.map(d =>
+              d.drawing_id === updatedDrawing.drawing_id ? updatedDrawing : d
+            ));
+            setEditingDrawing(null);
+          }}
+        />
+      )}
+
+      {/* Edit Vendors */}
+      {editingVendor && (
+        <EditVendorModal
+        vendor={editingVendor}
+        spaceId={siteMap?.space_id || siteMap?.id}
+        projectId={siteMap?.project_id}
+        onClose={()=>setEditingVendor(null)}
+        onUpdate={(updatedVendor) => {
+          setVendors(prev => prev.map(v =>
+            v.vendor_id === updatedVendor.vendor_id ? updatedVendor : v
+          ));
+          setEditingVendor(null)
+        }}
+        />
+      )}
+      {/*Edit Inspirations*/}
+      {editingInspiration && (
+        <EditInspirationModal
+        inspiration={editingInspiration}
+        spaceId={siteMap?.space_id || space.id}
+        projectId={siteMap?.project_id}
+        onClose={()=>setEditingInspiration(null)}
+        onUpdate={(updatedInspiration) => {
+          setInspiration(prev => prev.map(i=>
+            i.inspiration_id === updatedInspiration.inspiration_id ? updatedInspiration : i
+          ));
+          setEditingInspiration(null)
+        }}
+        />
+      )}
+      {/* Edit Tasks */}
+      {editingTask && (
+        <editingtaskModal
+        task={editingTask}
+        spaceId={siteMap?.space_id || spaace.id}
+        projectId={siteMap?.project_id}
+        onClose={()=>setEditingTask(null)}
+        onUpdate={(updatedTask)=>{
+          setTasks(prev=>prev.map(t=> t.task_id === updatedTask.task_id ? updatedTask : t));
+          setEditingTask(null)
+        }}
+        setEditingTask
         />
       )}
     </div>

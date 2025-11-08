@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { BASE_URL } from '../Configuration/Config';
+import StatusMessageProvider from "../Alerts/StatusMessage";
+import { useStatusMessage } from "../Alerts/StatusMessage";
 
 const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
+
+  const {showMessage, showConfirmation} = useStatusMessage();
   const [formData, setFormData] = useState({
     name: '',
     file: null,
@@ -49,7 +53,7 @@ const handleSubmit = async (e) => {
     }
   } catch (error) {
     console.error('Error adding drawing:', error);
-    alert('Failed to add drawing: ' + error.message);
+    showMessage('Failed to add drawing: ' + error.message, 'failed');
   } finally {
     setIsUploading(false);
   }
@@ -61,7 +65,7 @@ const handleSubmit = async (e) => {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">Drawing Name</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">Drawing Name<span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
@@ -72,7 +76,7 @@ const handleSubmit = async (e) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">File</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">File<span className="text-red-500">*</span></label>
               <input
                 type="file"
                 required

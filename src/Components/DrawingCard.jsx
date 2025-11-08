@@ -1,6 +1,33 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { useStatusMessage } from '../Alerts/StatusMessage';
+import StatusMessageProvider from '../Alerts/StatusMessage';
 
 const DrawingCard = ({ file, onEdit, onDelete }) => {
+
+  const {showConfirmation} = useStatusMessage();
+  // console.log('showDelete function', showDelete);
+
+const handleDelete = () => {
+  console.log('File object:', file);
+  console.log('Available file properties:', Object.keys(file));
+  
+  // Try different possible ID properties
+  const drawingId = file.drawing_id || file.id || file.file_id;
+  console.log('Drawing ID to delete:', drawingId);
+  const drawingName = file.drawing_name;
+
+  if (!drawingId) {
+    console.error('No valid ID found for deletion');
+    return;
+  }
+  
+  showConfirmation(
+    'Delete Drawing',
+    `Are you sure you want to delete "${drawingName}"? This action cannot be undone`,
+    () => onDelete(drawingId)
+  );
+};
+
   const getFileIcon = (fileType) => {
     if (fileType?.includes('image')) return '🖼️';
     if (fileType?.includes('pdf')) return '📄';
@@ -58,7 +85,7 @@ const DrawingCard = ({ file, onEdit, onDelete }) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(file.drawing_id || file.id);
+              handleDelete();
             }}
             className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors duration-200"
             title="Delete"

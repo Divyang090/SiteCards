@@ -21,7 +21,12 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
                 assignee: project.assignee || '',
                 location: project.location || '',
                 description: project.description || '',
-                dueDate:project.dueDate || project.docDate ? new Date(project.docDate).toISOString().split('T')[0] : '',
+                dueDate: project.docDate && project.docDate !== 'No date' ?
+                    (() => {
+                        const date = new Date(project.docDate);
+                        date.setDate(date.getDate() + 1);
+                        return date.toISOString().split('T')[0];
+                    })() : '',
                 status: project.status || '',
             });
             setError('');
@@ -29,46 +34,46 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
     }, [project, isOpen]);
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+        e.preventDefault();
+        setLoading(true);
+        setError('');
 
-    try {
-        if (!formData.title.trim() || !formData.assignee.trim()) {
-            throw new Error('Project title and client name are required');
+        try {
+            if (!formData.title.trim() || !formData.assignee.trim()) {
+                throw new Error('Project title and client name are required');
+            }
+
+            const updateData = {
+                project_name: formData.title,
+                client_name: formData.assignee,
+                location: formData.location,
+                project_description: formData.description,
+                due_date: formData.dueDate,
+                status: formData.status
+            };
+
+            const response = await fetch(`${BASE_URL}/projects/projects/${project.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || `Failed to update project: ${response.status}`);
+            }
+
+            const updatedProject = await response.json();
+            onSave(updatedProject);
+            onClose();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
-
-        const updateData = {
-            project_name: formData.title,
-            client_name: formData.assignee,
-            location: formData.location,
-            project_description: formData.description,
-            due_date: formData.dueDate,
-            status: formData.status
-        };
-
-        const response = await fetch(`${BASE_URL}/projects/projects/${project.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(errorData?.message || `Failed to update project: ${response.status}`);
-        }
-        
-        const updatedProject = await response.json();
-        onSave(updatedProject);
-        onClose();
-    } catch (err) {
-        setError(err.message);
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     if (!isOpen || !project) return null;
 

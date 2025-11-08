@@ -16,9 +16,9 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     try {
       const uploadData = new FormData();
       uploadData.append('title', formData.name);
-      uploadData.append('space_id', spaceId);
-      uploadData.append('project_id', projectId);
-      uploadData.append('tags','inspiration');
+      uploadData.append('space_id', formData.spaceId);
+      uploadData.append('project_id', formData.projectId);
+      // uploadData.append('tags','inspiration');
       uploadData.append('uploads', formData.file);
       
       if (formData.description) {

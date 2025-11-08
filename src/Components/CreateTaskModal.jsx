@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 
-const CreateTaskModal = ({ 
-  isOpen, 
-  onClose, 
-  onCreate, 
+const CreateTaskModal = ({
+  isOpen,
+  onClose,
+  onCreate,
   projectId,
   isInline = false,
-  onCancel 
+  onCancel
 }) => {
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
     task_type: 'Simple Task',
     assignee: 'Unassigned',
-    files: []
+    files: [],
+    date: '',
+    location: ''
   });
 
   const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
@@ -42,7 +44,7 @@ const CreateTaskModal = ({
 
   const taskTypeOptions = [
     'Simple Task',
-    'Site Visits', 
+    'Site Visits',
     'Meeting',
     'Design Review',
     'Client Meeting',
@@ -52,7 +54,7 @@ const CreateTaskModal = ({
   const assigneeOptions = [
     'Unassigned',
     'Sarah Johnson',
-    'The Martinez Family', 
+    'The Martinez Family',
     'TechCorp Inc.',
     'John Doe',
     'Jane Smith',
@@ -71,9 +73,11 @@ const CreateTaskModal = ({
         description: taskData.description,
         task_type: taskData.task_type,
         project_id: String(projectId),
-        status: 'pending'
+        status: 'pending',
+        date: taskData.date || 'null',
+        location: taskData.location || 'null'
       };
-      
+
       if (!projectId) {
         throw new Error('Project ID is required for task creation');
       }
@@ -102,18 +106,18 @@ const CreateTaskModal = ({
         console.error('Task creation error:', errorData);
         throw new Error(errorData.error || `Failed to create task: ${taskResponse.status}`);
       }
-      
+
       const taskResult = await taskResponse.json();
       console.log('Task created successfully:', taskResult);
 
       if (taskData.files.length > 0) {
         console.log('Uploading files:', taskData.files);
-        
+
         for (const file of taskData.files) {
           const fileFormData = new FormData();
           fileFormData.append('file', file);
           fileFormData.append('task_id', taskResult.id || taskResult.task_id);
-          
+
           const fileResponse = await fetch(`${BASE_URL}/tasks/upload`, {
             method: 'POST',
             body: fileFormData,
@@ -132,15 +136,17 @@ const CreateTaskModal = ({
         description: '',
         task_type: 'Simple Task',
         assignee: 'Unassigned',
-        files: []
+        files: [],
+        date: '',
+        location: ''
       });
-      
+
       onCreate(taskResult, projectId);
-      
+
       if (!isInline && onClose) {
         onClose();
       }
-      
+
     } catch (error) {
       console.error('Error creating task:', error);
       alert(`Failed to create task: ${error.message}`);
@@ -159,7 +165,9 @@ const CreateTaskModal = ({
   const handleTaskTypeSelect = (type) => {
     setTaskData({
       ...taskData,
-      task_type: type
+      task_type: type,
+      date: type === 'Site Visits' || type === 'Meeting' ? taskData.date : '',
+      location: type === 'Meeting' ? taskData.location : ''
     });
     setShowTaskTypeDropdown(false);
   };
@@ -184,18 +192,18 @@ const CreateTaskModal = ({
 
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
-    
+
     if (taskData.files.length + selectedFiles.length > 5) {
       alert('Maximum 5 files allowed');
       return;
     }
-    
+
     const oversizedFiles = selectedFiles.filter(file => file.size > 25 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       alert('Some files exceed 25MB limit. Please select smaller files.');
       return;
     }
-    
+
     setTaskData({
       ...taskData,
       files: [...taskData.files, ...selectedFiles]
@@ -216,9 +224,11 @@ const CreateTaskModal = ({
       description: '',
       task_type: 'Simple Task',
       assignee: 'Unassigned',
-      files: []
+      files: [],
+      date: '',
+      location: ''
     });
-    
+
     if (isInline && onCancel) {
       onCancel();
     } else if (onClose) {
@@ -252,15 +262,15 @@ const CreateTaskModal = ({
   if (!isInline) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <div 
+        <div
           className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-[1px]"
           onClick={onClose}
         ></div>
-        
+
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
           <div className="flex justify-between items-center p-6 border-b border-gray-100">
             <h2 className="text-xl font-semibold text-gray-900">Create New Task</h2>
-            <button 
+            <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl transition-colors duration-200 focus:outline-none"
             >
@@ -299,15 +309,15 @@ const TextInput = ({ label, name, value, onChange, required, placeholder, isInli
   </div>
 );
 
-const DropdownField = ({ 
-  label, 
-  value, 
-  options, 
-  isOpen, 
-  dropdownRef, 
-  onToggle, 
-  onSelect, 
-  isInline 
+const DropdownField = ({
+  label,
+  value,
+  options,
+  isOpen,
+  dropdownRef,
+  onToggle,
+  onSelect,
+  isInline
 }) => (
   <div className="relative" ref={dropdownRef}>
     <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
@@ -319,10 +329,10 @@ const DropdownField = ({
       className={`w-full flex items-center justify-between p-${isInline ? '2' : '3'} border border-gray-300 rounded-lg ${isInline ? 'theme-bg-card hover:bg-gray-50' : 'bg-white hover:bg-gray-50'} transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
     >
       <span className={isInline ? "text-gray-500 truncate" : "text-gray-700"}>{value}</span>
-      <svg 
+      <svg
         className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        fill="none" 
-        stroke="currentColor" 
+        fill="none"
+        stroke="currentColor"
         viewBox="0 0 24 24"
       >
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -336,9 +346,8 @@ const DropdownField = ({
             key={option}
             type="button"
             onClick={() => onSelect(option)}
-            className={`w-full text-left px-${isInline ? '3' : '4'} py-2 hover:bg-gray-100 transition-colors duration-200 text-sm ${
-              value === option ? 'bg-blue-50 text-blue-600' : (isInline ? 'theme-text-primary' : 'text-gray-700')
-            }`}
+            className={`w-full text-left px-${isInline ? '3' : '4'} py-2 hover:bg-gray-500 transition-colors duration-200 text-sm ${value === option ? 'bg-blue-50 text-blue-600' : (isInline ? 'theme-text-primary' : 'text-gray-700')
+              }`}
           >
             {option}
           </button>
@@ -407,7 +416,7 @@ const FileUpload = ({ files, onFileChange, onRemoveFile, isInline }) => (
 );
 
 const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
-  <div className={`flex items-end gap-2 ${!isInline ? 'p-4 border-t border-gray-100 bg-white flex justify-end space-x-3 mt-6' : ''}`}>
+  <div className={`flex items-end mt-10 gap-2 ${!isInline ? 'p-4 border-t border-gray-100 bg-white flex justify-end space-x-3 mt-6' : ''}`}>
     <button
       type="button"
       onClick={onCancel}
@@ -426,7 +435,68 @@ const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
   </div>
 );
 
-// Main TaskForm component using the reusable field components
+// Conditional fields for selecting task type
+const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
+  if (taskType === 'Site Visits') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
+            Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="date"
+            value={taskData.date}
+            onChange={handleChange}
+            required
+            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
+          />
+        </div>
+        {/* Empty div to maintain grid structure - location hidden for Site Visits */}
+        <div></div>
+      </div>
+    );
+  }
+
+  if (taskType === 'Meeting') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
+            Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            name="date"
+            value={taskData.date}
+            onChange={handleChange}
+            required
+            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
+          />
+        </div>
+        <div>
+          <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
+            Location <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="location"
+            value={taskData.location}
+            onChange={handleChange}
+            required
+            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
+            placeholder="Enter meeting location"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+// Main TaskForm component
 const TaskForm = (props) => {
   const { isInline, taskData, uploading, showTaskTypeDropdown, showAssigneeDropdown } = props;
 
@@ -434,10 +504,10 @@ const TaskForm = (props) => {
     <form onSubmit={props.handleSubmit} className={isInline ? "" : "p-6 overflow-y-auto flex-1"}>
       {!isInline && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Details</h3>
+          <h3 className="text-lg font-semibold theme-text-primary mb-4">Task Details</h3>
         </div>
       )}
-      
+
       <div className="space-y-4">
         {!isInline ? (
           // Modal layout
@@ -482,6 +552,13 @@ const TaskForm = (props) => {
               placeholder="Enter task description"
               isInline={false}
             />
+            {/* Conditional fields for task_type dropdown */}
+            <ConditionalFields
+              taskType={taskData.task_type}
+              taskData={taskData}
+              handleChange={props.handleChange}
+              isInline={false}
+            />
 
             <FileUpload
               files={taskData.files}
@@ -493,42 +570,58 @@ const TaskForm = (props) => {
         ) : (
           // Inline layout
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
-              <TextInput
-                label="Task title"
-                name="title"
-                value={taskData.title}
-                onChange={props.handleChange}
-                required={true}
-                placeholder="Enter task title"
-                isInline={true}
-                autoFocus={true}
-              />
+            {/* Row 1: Title (2/4), Task Type (1/4), Assignee (1/4) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
+              <div className="md:col-span-2">
+                <TextInput
+                  label="Task title"
+                  name="title"
+                  value={taskData.title}
+                  onChange={props.handleChange}
+                  required={true}
+                  placeholder="Enter task title"
+                  isInline={true}
+                  autoFocus={true}
+                />
+              </div>
 
-              <DropdownField
-                label="Task Type"
-                value={taskData.task_type}
-                options={props.taskTypeOptions}
-                isOpen={showTaskTypeDropdown}
-                dropdownRef={props.taskTypeDropdownRef}
-                onToggle={props.toggleTaskTypeDropdown}
-                onSelect={props.handleTaskTypeSelect}
-                isInline={true}
-              />
+              <div className="md:col-span-1">
+                <DropdownField
+                  label="Task Type"
+                  value={taskData.task_type}
+                  options={props.taskTypeOptions}
+                  isOpen={showTaskTypeDropdown}
+                  dropdownRef={props.taskTypeDropdownRef}
+                  onToggle={props.toggleTaskTypeDropdown}
+                  onSelect={props.handleTaskTypeSelect}
+                  isInline={true}
+                />
+              </div>
+
+              <div className="md:col-span-1">
+                <DropdownField
+                  label="Assigned to"
+                  value={taskData.assignee}
+                  options={props.assigneeOptions}
+                  isOpen={showAssigneeDropdown}
+                  dropdownRef={props.assigneeDropdownRef}
+                  onToggle={props.toggleAssigneeDropdown}
+                  onSelect={props.handleAssigneeSelect}
+                  isInline={true}
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
-              <DropdownField
-                label="Assigned to"
-                value={taskData.assignee}
-                options={props.assigneeOptions}
-                isOpen={showAssigneeDropdown}
-                dropdownRef={props.assigneeDropdownRef}
-                onToggle={props.toggleAssigneeDropdown}
-                onSelect={props.handleAssigneeSelect}
-                isInline={true}
-              />
+            {/* Conditional Fields Row - Use the component instead of manual fields */}
+            <ConditionalFields
+              taskType={taskData.task_type}
+              taskData={taskData}
+              handleChange={props.handleChange}
+              isInline={true}
+            />
 
+            {/* Description Row */}
+            <div>
               <TextArea
                 label="Description"
                 name="description"
@@ -539,6 +632,7 @@ const TaskForm = (props) => {
               />
             </div>
 
+            {/* Files and Action Buttons Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               <FileUpload
                 files={taskData.files}

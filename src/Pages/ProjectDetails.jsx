@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import CreateTaskModal from '../Components/CreateTaskModal';
 import SiteMapsSection from '../Components/SiteMapsSection';
 import { BASE_URL } from '../Configuration/Config';
+import { useStatusMessage } from '../Alerts/StatusMessage';
 
 const ProjectDetails = ({ projects: propProjects = [] }) => {
   const { id } = useParams();
@@ -13,7 +14,16 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
   const [siteMapsCount, setSiteMapsCount] = useState(0);
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
+  const {showMessage, showConfirmation} =useStatusMessage();
+
+  const handleToggleDescription = (taskId) => {
+    setExpandedDescriptions(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }));
+  };
 
   // Get project data
   useEffect(() => {
@@ -403,20 +413,20 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   }
 
   const displayProject = project;
-  console.log('displayProject:', displayProject);
-  console.log('siteMaps:', displayProject?.siteMaps);
-  console.log('type of siteMaps:', typeof displayProject?.siteMaps);
-  console.log('is array:', Array.isArray(displayProject?.siteMaps));
+  // console.log('displayProject:', displayProject);
+  // console.log('siteMaps:', displayProject?.siteMaps);
+  // console.log('type of siteMaps:', typeof displayProject?.siteMaps);
+  // console.log('is array:', Array.isArray(displayProject?.siteMaps));
 
-  console.log('Project Data:', displayProject);
-  console.log('Site Maps:', displayProject.siteMaps);
-  console.log('Project ID:', id);
+  // console.log('Project Data:', displayProject);
+  // console.log('Site Maps:', displayProject.siteMaps);
+  // console.log('Project ID:', id);
 
   return (
     <div className="min-h-screen theme-bg-primary theme-text-primary">
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Back Button */}
-        <Link to="/" className="inline-flex items-center text-gray-600 hover:text-gray-500 mb-6">
+        <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-400 mb-6">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -437,7 +447,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           </div>
 
           <div className="border-t border-b border-gray-200 py-4 my-6">
-            <p className="text-gray-700">{displayProject.description}</p>
+            <p className="theme-text-secondary">{displayProject.description}</p>
           </div>
         </div>
 
@@ -451,7 +461,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              Tasks 
+              Tasks
               {/* ({totalTasks}) */}
             </button>
             <button
@@ -489,7 +499,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
               )}
             </div>
 
-            {/* INLINE TASK CREATION FORM - Using CreateTaskModal component */}
+            {/* INLINE TASK CREATION FORM*/}
             {isCreatingTask && (
               <CreateTaskModal
                 isInline={true}
@@ -503,14 +513,18 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto' : ''}`}>
               {sortedTasks.length > 0 ? (
                 sortedTasks.map((task) => (
-                  <div key={task.id} className={`theme-bg-primary rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
-                    }`}>
+                  <div
+                    key={task.id}
+                    className={`theme-bg-primary rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
+                      }`}
+                  >
                     <div className="flex items-center gap-3 flex-1">
+                      {/* Checkbox*/}
                       <button
                         onClick={() => handleToggleTask(task.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
-                          ? 'bg-green-500 border-green-500 text-white shadow-sm'
-                          : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                            ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                            : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
                           }`}
                       >
                         {task.completed && (
@@ -524,32 +538,41 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                           </svg>
                         )}
                       </button>
-                      <div className="flex-1 min-w-0">
-                        <span className={`block font-medium transition-all duration-200 ${task.completed
-                          ? ' text-gray-400 underline decoration-gray-400'
-                          : 'text-gray-500'
-                          }`}>
-                          {task.title}
-                        </span>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                          <span className="theme-bg-secondary px-2 py-1 rounded">{task.taskType}</span>
-                          {task.assignee !== 'Unassigned' && (
-                            <span>Assigned to: {task.assignee}</span>
-                          )}
+
+                      {/* Task content*/}
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleToggleDescription(task.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`block font-medium theme-text-secondary transition-all duration-200 ${task.completed ? 'text-gray-400 line-through' : 'theme-text-primary'
+                            }`}>
+                            {task.title}
+                          </span>
+                          <div className="flex items-center gap-2 ml-4">
+                            <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
+                            {/* {task.assignee !== 'Unassigned' && ()} */}
+                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
+                            
+                          </div>
                         </div>
-                        {task.description && (
-                          <p className={`text-sm theme-text-primary mt-1 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
+
+                        {task.description && expandedDescriptions[task.id] && (
+                          <p className={`text-sm theme-bg-secondary theme-text-secondary mt-2 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
                             }`}>
                             {task.description}
                           </p>
                         )}
+
+                        {/* Files section */}
                         {task.files && task.files.length > 0 && (
                           <div className="flex gap-1 mt-2">
                             {task.files.map((file, index) => (
-                              <span key={index} className={`text-xs px-2 py-1 rounded transition-all duration-200 ${task.completed
-                                ? 'bg-gray-100 text-gray-400'
-                                : 'bg-blue-50 text-blue-600'
-                                }`}>
+                              <span
+                                key={index}
+                                className={`text-xs px-2 py-1 rounded ${task.completed ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'
+                                  }`}
+                              >
                                 📎 {typeof file === 'string' ? file : file.name}
                               </span>
                             ))}
@@ -557,6 +580,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                         )}
                       </div>
                     </div>
+
+                    {/* Date and delete button */}
                     <div className="flex items-center gap-2 ml-4">
                       <span className={`text-xs whitespace-nowrap transition-all duration-200 ${task.completed ? 'text-gray-400' : 'text-gray-500'
                         }`}>

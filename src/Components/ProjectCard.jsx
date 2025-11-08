@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import { useTheme } from './ThemeContext';
+import { BASE_URL } from '../Configuration/Config';
 
 const ProjectCard = ({ project, onEdit, onDelete }) => {
   const { isDark } = useTheme();
@@ -56,7 +57,7 @@ const ProjectCard = ({ project, onEdit, onDelete }) => {
           `}>
             {project.title}
           </h3>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <StatusBadge
               status={project.status}
               dueDate={project.due_date || project.end_date || project.docDate}

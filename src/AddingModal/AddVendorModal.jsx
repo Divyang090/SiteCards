@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BASE_URL } from '../Configuration/Config';
 
 const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [formData, setFormData] = useState({
