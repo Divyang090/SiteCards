@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useStatusMessage } from '../Alerts/StatusMessage';
 
 const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
+  const {showConfirmation, showMessage} = useStatusMessage();
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -9,6 +11,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
   });
 
   const categories = [
+    'Custom',
     'Floor Plan',
     'Electrical',
     'Plumbing',
@@ -33,8 +36,8 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.category || !formData.file) {
-      alert('Please fill all fields and select a file');
+    if (!formData.name.trim() || !formData.category) {
+      ('Please fill all fields and select a file');
       return;
     }
     onSubmit(formData);
@@ -63,7 +66,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
             {/* Name Field */}
             <div>
               <label className="block text-sm font-medium theme-text-secondary mb-2">
-                Site Map Name <span className="text-red-500">*</span>
+                Site Map Name
               </label>
               <input
                 type="text"
@@ -77,18 +80,19 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
             </div>
 
             {/* Category Dropdown */}
-            <div>
+            <div className='w-[120px]'>
               <label className="block text-sm font-medium theme-text-secondary mb-2">
-                Category <span className="text-red-500">*</span>
+                Category
               </label>
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 theme-bg-card theme-text-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-500 transition-colors duration-200"
+                size={1}
+                className="w-full px-3 py-2 theme-bg-card theme-text-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-500 transition-colors duration-200 overflow-y-auto max-h-20"
               >
-                <option value="">Select a category</option>
+                <option value="">Category</option>
                 {categories.map(category => (
                   <option key={category} value={category} className="theme-bg-card theme-text-secondary">
                     {category}
@@ -96,7 +100,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
                 ))}
               </select>
             </div>
-            <div>
+            {/* <div>
               <label className='block text-sm font-medium theme-text-secondary mb-2'>
                 Description
               </label>
@@ -109,24 +113,24 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
                 placeholder="Enter Description here"
               />
 
-            </div>
+            </div> */}
 
             {/* File Upload */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium theme-text-secondary mb-2">
-                File <span className="text-red-500">*</span>
+                File
               </label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.pdf"
                 onChange={handleFileChange}
-                required
+                
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Supported formats: JPG, PNG, PDF (Max 10MB)
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Action Buttons */}

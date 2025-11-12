@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 
+
 const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0 }) => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -11,11 +12,11 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0 }) =>
   };
 
   return (
-    <div className="flex justify-between items-center mb-8 theme-bg-primary theme-text-primary">
+    <div className="flex justify-between items-center mb-8 theme-bg-primary theme-text-primary header">
       <div>
         <Link
           to="/"
-          className="text-2xl font-bold theme-text-primary hover:opacity-70 transition-opacity duration-200"
+          className="md:text-2xl text-xl font-bold theme-text-primary hover:opacity-70 transition-opacity duration-200"
         >
           SiteCards
         </Link>

@@ -5,11 +5,13 @@ import { useTheme } from './ThemeContext';
 import { BASE_URL } from '../Configuration/Config';
 
 const ProjectCard = ({ project, onEdit, onDelete }) => {
+  console.log('ProjectCard rendering',project.title)
   const { isDark } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef =useRef(null);
 
   useEffect(() =>{
+    console.log('ProjectCard mounted', project.title)
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)){
         setIsMenuOpen(false);

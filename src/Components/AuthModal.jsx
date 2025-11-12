@@ -53,10 +53,9 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
         headers: {
           'Content-Type': 'application/json',
         },
-        //Use backend field names
         body: JSON.stringify({
-          user_email: email,        // Changed to user_email
-          user_password: password   // Changed to user_password
+          user_email: email,   
+          user_password: password
         })
       });
 

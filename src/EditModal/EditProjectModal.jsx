@@ -21,6 +21,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
                 assignee: project.assignee || '',
                 location: project.location || '',
                 description: project.description || '',
+                //setting it +1 day to not move 1 day earlier when editing the project 
                 dueDate: project.docDate && project.docDate !== 'No date' ?
                     (() => {
                         const date = new Date(project.docDate);

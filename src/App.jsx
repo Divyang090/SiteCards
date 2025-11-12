@@ -49,7 +49,6 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
     );
   };
 
-  // ... rest of HomeWithDelete component remains the same
   if (loading) {
     return (
       <>
@@ -93,11 +92,12 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
         activeProjectsCount={activeProjectsCount}
       />
       <SearchBar onSearch={onSearch} />
+      <div className='mt-8 h-[800px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <div className="text-gray-400 text-6xl mb-4"></div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium theme-text-primary mb-2">
               {searchTerm ? 'No projects found' : 'No projects yet'}
             </h3>
             <p className="text-gray-500">
@@ -114,6 +114,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
             />
           ))
         )}
+      </div>
       </div>
     </>
   );
@@ -135,6 +136,13 @@ const AppContent = () => {
 
   const activeProjectsCount = projects.filter(project =>
     project.status !== 'completed').length;
+
+  // Add this to debug when projects are actually set
+  useEffect(() => {
+    console.log('🔄 PROJECTS STATE UPDATED:', projects);
+    console.log('🔄 Loading state:', loading);
+    console.log('🔄 Error state:', error);
+  }, [projects, loading, error]);
 
   // Fetch projects from API
   useEffect(() => {
@@ -217,7 +225,7 @@ const AppContent = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-  // Save Project
+  // Save Project API
   const handleSaveProject = async (backendResponse) => {
     try {
       console.log('Raw backend response received:', backendResponse);
@@ -383,8 +391,8 @@ const AppContent = () => {
 
   return (
     <Router>
-      <div className="min-h-screen theme-bg-primary">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="min-h-screen theme-bg-primary text-size">
+        <div className="max-w-6xl mx-auto md:px-4 md:py-8 px-2 py-4">
           <Routes>
             <Route
               path="/"

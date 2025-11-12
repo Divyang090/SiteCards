@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
+import { useStatusMessage } from '../Alerts/StatusMessage';
 
 const CreateTaskModal = ({
   isOpen,
@@ -9,6 +10,7 @@ const CreateTaskModal = ({
   isInline = false,
   onCancel
 }) => {
+  const {showMessage, showConfirmation} = useStatusMessage();
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
@@ -340,7 +342,7 @@ const DropdownField = ({
     </button>
 
     {isOpen && (
-      <div className={`absolute z-20 w-full mt-1 ${isInline ? 'theme-bg-card' : 'bg-white'} border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto`}>
+      <div className={`absolute z-20 w-full mt-1 ${isInline ? 'theme-bg-card' : 'bg-white'} border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hidden`}>
         {options.map((option) => (
           <button
             key={option}
@@ -501,7 +503,7 @@ const TaskForm = (props) => {
   const { isInline, taskData, uploading, showTaskTypeDropdown, showAssigneeDropdown } = props;
 
   return (
-    <form onSubmit={props.handleSubmit} className={isInline ? "" : "p-6 overflow-y-auto flex-1"}>
+    <form onSubmit={props.handleSubmit} className={isInline ? "" : "p-6 overflow-y-auto scrollbar-hidden flex-1"}>
       {!isInline && (
         <div className="mb-6">
           <h3 className="text-lg font-semibold theme-text-primary mb-4">Task Details</h3>

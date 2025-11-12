@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { BASE_URL } from '../Configuration/Config';
+import { useStatusMessage } from '../Alerts/StatusMessage';
+import StatusMessageProvider from '../Alerts/StatusMessage';
 
 const AddTaskModal = ({ spaceId, projectId, onClose, onAdd }) => {
-  const [formData, setFormData] = useState({
+  const {showMessage, showConfirmation} = useStatusMessage();  const [formData, setFormData] = useState({
     title: '',
     description: '',
     due_date: ''
@@ -62,7 +64,7 @@ const handleSubmit = async (e) => {
         due_date: formData.due_date
       };
       onAdd(mockTask);
-      alert('Task added successfully! (CORS workaround)');
+      showMessage('Task added successfully! (CORS workaround)','success');
       return;
     }
 
@@ -81,7 +83,7 @@ const handleSubmit = async (e) => {
       };
       
       onAdd(transformedTask);
-      alert('Task added successfully!');
+      showMessage('Task added successfully!','success');
     } else {
       const errorText = await response.text();
       console.error('Server error response:', errorText);
@@ -89,7 +91,7 @@ const handleSubmit = async (e) => {
     }
   } catch (error) {
     console.error('Error adding task:', error);
-    alert('Failed to add task: ' + error.message);
+    showMessage('Failed to add task: ' + error.message,'error');
   } finally {
     setIsSubmitting(false);
   }

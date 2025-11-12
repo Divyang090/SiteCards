@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import UseTemplateModal from './UseTemplateModal';
+import { BASE_URL } from '../Configuration/Config';
 
 const defaultTemplates = [
   {
@@ -51,7 +52,7 @@ const ProjectTemplates = () => {
       
       try {
         console.log('Fetching templates from API...');
-        const response = await fetch(`http://192.168.1.22:8087/api/templates/templates`);
+        const response = await fetch(`${BASE_URL}/templates/templates`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -300,10 +301,12 @@ const ProjectTemplates = () => {
                     </div>
                       {/* use Template */}
                     <div className="border-t border-gray-200 pt-6">
-                      <button onClick={() => {
-                        setselectedTemplates(template);
-                        setIsUseTemplateModalOpen(true);
-                      }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
+                      <button 
+                      // onClick={() => {
+                      //   setselectedTemplates(template);
+                      //   setIsUseTemplateModalOpen(true);
+                      // }} 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
                         <span className="text-lg">+</span>
                         <span>Use Template</span>
                       </button>

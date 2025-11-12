@@ -14,6 +14,8 @@ import EditDrawingModal from '../EditModal/EditDrawingModal';
 import EditInspirationModal from '../EditModal/EditInspirationModal';
 import EditTaskModal from '../EditModal/EditTaskModal';
 import EditVendorModal from '../EditModal/EditVendorModal';
+import DrawingClickModal from './DrawingClickModal';
+
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -21,6 +23,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSiteMap, setSelectedSiteMap] = useState(null);
   const [activeTab, setActiveTab] = useState('Drawings');
+  const [isEditingSiteMap, setIsEditingSiteMap] = useState();
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -114,7 +117,6 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         setIsUploadModalOpen(false);
         showMessage('Site map uploaded successfully!', 'success');
 
-        fetchSiteMaps();
       } else {
         let errorMessage = `Upload failed: ${response.status}`;
         try {
@@ -182,11 +184,10 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     );
   };
 
-  // const handleEditSiteMap = (siteMap) => {
-  //   console.log('Edit site map:', siteMap);
-  //   // Add your edit logic here - open edit modal, etc.
-  //   alert(`Edit site map: ${siteMap.space_name}\nWe'll implement the edit modal soon!`);
-  // };
+  const handleEditSiteMap = (siteMap) => {
+    console.log('Edit site map:', siteMap);
+    isEditingSiteMap('siteMap')
+  };
 
   const handleCloseModal = () => {
     setSelectedSiteMap(null);
@@ -194,10 +195,10 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   };
 
   return (
-    <div className="theme-bg-secondary rounded-lg p-6 mb-6">
+    <div className="theme-bg-secondary rounded-lg md:p-6 p-2 mb-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold theme-text-primary">Site Maps</h2>
+          <h2 className="md:text-2xl text-xl font-bold theme-text-primary">Site Maps</h2>
           <p className='theme-text-secondary mt-1'>
             {selectedSiteMap ? 'Site Map Details' : `${siteMapsList?.length || 0} site maps`}</p>        </div>
 
@@ -215,7 +216,6 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       </div>
 
       {/* Site Maps Grid */}
-      {/* delete here */}
       {!selectedSiteMap ? (
         siteMapsList?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -224,7 +224,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
                 siteMap={siteMap}
                 onDelete={handleDeleteSiteMap}
-                // onEdit={handleEditSiteMap}
+                onEdit={handleEditSiteMap}
                 onClick={handleSiteMapClick}
               />
             ))}
@@ -277,10 +277,21 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [editingVendor, setEditingVendor] = useState();
   const [editingInspiration, setEditingInspiration] = useState();
   const [editingTask, setEditingTask] = useState();
+  const [selectedDrawing, setSelectedDrawing] = useState(null);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
   // All Handlers
+
+
+  // Click Drawing
+  const handleDrawingClick = (file) => {
+    setSelectedDrawing(file);
+  };
+  //Close Drawing Click Modal
+  const handleCloseDrawingClickModal = () => {
+    setSelectedDrawing(null);
+  }
   // Task handlers
   const handleEditTask = (task) => {
     console.log('Edit task:', task);
@@ -309,7 +320,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           }
         } catch (error) {
           console.error('Error deleting task:', error);
-          showFailed('Failed to delete task: ' + error.message);
+          showMessage('Failed to delete task: ' + error.message, 'error');
         }
       }
     );
@@ -539,7 +550,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     fetchTasks();
   }, [activeTab, siteMap.id, siteMap.space_id, siteMap.project_id]);
 
-  //Drawings fetch API
+  // Fetch drawing
   useEffect(() => {
     const fetchDrawings = async () => {
       if (activeTab === 'Drawings' && spaceId) {
@@ -716,11 +727,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
 
   return (
-    <div className="theme-bg-secondary rounded-lg">
+    <div className="theme-bg-secondary text-sm md:text-l rounded-lg">
       {/* Header */}
       <div className="flex justify-between items-center pb-4 border-b">
         <div>
-          <h2 className="text-2xl font-bold theme-text-primary">
+          <h2 className="text-md md:text-2xl font-bold theme-text-primary">
             {siteMap.space_name || siteMap.name || siteMap.title || 'Untitled Site Map'}
           </h2>
           <p className="theme-text-secondary mt-1">{siteMap.category || 'Uncategorized'}</p>
@@ -737,7 +748,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
       {/* Tabs */}
       <div className="border-b">
-        <div className="flex space-x-8">
+        <div className="flex space-x-8 overflow-x-auto whitespace-nowrap scrollbar-hidden">
           {tabs.map((tab) => (
             <button
               key={tab}
@@ -775,22 +786,22 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       <div className="mt-6">
         {/* Drawings Tab*/}
         {activeTab === 'Drawings' && (
-          <div>
+          <div className="h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden"> {/* Adjust height as needed */}
             {loading.drawings ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-gray-500 mt-2">Loading drawings...</p>
               </div>
             ) : drawings.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pr-4"> {/* Added padding for scrollbar */}
                 {drawings.map((file) => (
                   <DrawingCard
                     key={file.drawing_id || file.id}
                     drawings={drawings}
                     file={file}
-                    // Check it
                     onEdit={handleEditDrawing}
                     onDelete={handleDeleteDrawing}
+                    onClick={handleDrawingClick}
                   />
                 ))}
               </div>
@@ -808,9 +819,17 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           </div>
         )}
 
+        {/* Drawing Click */}
+        {selectedDrawing && (
+          <DrawingClickModal
+            drawing={selectedDrawing}
+            onClose={handleCloseDrawingClickModal}
+          />
+        )}
+
         {/* Vendors Tab*/}
         {activeTab === 'Vendors' && (
-          <div>
+          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
             {loading.vendors ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -819,15 +838,17 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : vendors.length > 0 ? (
               <div className="space-y-4">
                 {vendors.map((vendor) => (
-                  <div key={vendor.id} className="border theme-bg-primary rounded-lg p-4 hover:shadow-md transition-shadow duration-200 group">
+                  <div key={vendor.id} className="border theme-bg-primary rounded-lg p-4 hover:shadow-md transition-shadow duration-200 group overflow-x-auto whitespace-nowrap scrollbar-hidden">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h3 className="font-semibold theme-text-primary text-lg mb-1">{vendor.name}</h3>
-                        <p className="text-sm theme-text-secondary mb-1">Category: {vendor.category}</p>
-                        <p className="text-sm theme-text-secondary mb-1">✉ {vendor.contact}</p>
-                        {vendor.phone && (
-                          <p className="text-sm theme-text-primary">☎{vendor.phone}</p>
-                        )}
+                        <p className="text-sm theme-text-secondary mb-1">{vendor.category}</p>
+                        <div className='flex gap-2 grid-cols-2 justify-start'>
+                          <p className="text-sm theme-text-secondary mb-1">✉ {vendor.contact}</p>
+                          {vendor.phone && (
+                            <p className="text-sm theme-text-primary">☎{vendor.phone}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
@@ -869,7 +890,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
         {/* Inspiration Tab*/}
         {activeTab === 'Inspiration' && (
-          <div>
+          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
             {console.log('=== INSPIRATION TAB DEBUG ===', {
               activeTab,
               loading: loading.inspiration,
@@ -960,7 +981,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         )}
         {/* Tasks Tab*/}
         {activeTab === 'Tasks' && (
-          <div>
+          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
             {loading.tasks ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -969,7 +990,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : tasks.length > 0 ? (
               <div className="space-y-3">
                 {sortedTask.map((task) => (
-                  <div key={task.id} className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
+                  <div key={task.id} className={` overflow-x-auto whitespace-nowrap scrollbar-hidden border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
                     }`}>
                     {/* Check button */}
                     <button
@@ -1114,45 +1135,47 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       {/* Edit Vendors */}
       {editingVendor && (
         <EditVendorModal
-        vendor={editingVendor}
-        spaceId={siteMap?.space_id || siteMap?.id}
-        projectId={siteMap?.project_id}
-        onClose={()=>setEditingVendor(null)}
-        onUpdate={(updatedVendor) => {
-          setVendors(prev => prev.map(v =>
-            v.vendor_id === updatedVendor.vendor_id ? updatedVendor : v
-          ));
-          setEditingVendor(null)
-        }}
+          vendor={editingVendor}
+          spaceId={siteMap?.space_id || siteMap?.id}
+          projectId={siteMap?.project_id}
+          onClose={() => setEditingVendor(null)}
+          onUpdate={(updatedVendor) => {
+            setVendors(prev => prev.map(v =>
+              v.vendor_id === updatedVendor.vendor_id ? updatedVendor : v
+            ));
+            setEditingVendor(null)
+          }}
         />
       )}
       {/*Edit Inspirations*/}
       {editingInspiration && (
         <EditInspirationModal
-        inspiration={editingInspiration}
-        spaceId={siteMap?.space_id || space.id}
-        projectId={siteMap?.project_id}
-        onClose={()=>setEditingInspiration(null)}
-        onUpdate={(updatedInspiration) => {
-          setInspiration(prev => prev.map(i=>
-            i.inspiration_id === updatedInspiration.inspiration_id ? updatedInspiration : i
-          ));
-          setEditingInspiration(null)
-        }}
+          inspiration={editingInspiration}
+          spaceId={siteMap?.space_id || space.id}
+          projectId={siteMap?.project_id}
+          onClose={() => setEditingInspiration(null)}
+          onUpdate={(updatedInspiration) => {
+            setInspiration(prev => prev.map(i =>
+              i.inspiration_id === updatedInspiration.inspiration_id ? updatedInspiration : i
+            ));
+            setEditingInspiration(null)
+          }}
         />
       )}
+
+      {/* edit tasks in space */}
       {/* Edit Tasks */}
       {editingTask && (
         <editingtaskModal
-        task={editingTask}
-        spaceId={siteMap?.space_id || spaace.id}
-        projectId={siteMap?.project_id}
-        onClose={()=>setEditingTask(null)}
-        onUpdate={(updatedTask)=>{
-          setTasks(prev=>prev.map(t=> t.task_id === updatedTask.task_id ? updatedTask : t));
-          setEditingTask(null)
-        }}
-        setEditingTask
+          task={editingTask}
+          spaceId={siteMap?.space_id || spaace.id}
+          projectId={siteMap?.project_id}
+          onClose={() => setEditingTask(null)}
+          onUpdate={(updatedTask) => {
+            setTasks(prev => prev.map(t => t.task_id === updatedTask.task_id ? updatedTask : t));
+            setEditingTask(null)
+          }}
+          setEditingTask
         />
       )}
     </div>

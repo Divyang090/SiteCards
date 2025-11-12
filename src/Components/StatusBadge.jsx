@@ -1,7 +1,6 @@
 import React from 'react';
 
 const StatusBadge = ({ status, dueDate }) => {
-  // Calculate days remaining/overdue
   const getDueDateInfo = () => {
     if (!dueDate) return null;
     

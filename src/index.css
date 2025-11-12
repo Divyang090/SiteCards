@@ -88,6 +88,10 @@ body {
   box-shadow: var(--shadow) !important;
 }
 
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
 /* Project Card Dark Mode Overrides */
 [data-theme="dark"] .project-card {
   background: var(--bg-card) !important;
@@ -123,4 +127,37 @@ body {
   background-color: var(--bg-card) !important;
   border-color: var(--border-color) !important;
   color: var(--text-primary) !important;
+}
+
+
+@media only screen and (max-width: 767px) {
+  .header {
+    display: flex;
+    flex-direction: column;
+    font-size: small;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+.always-visible{
+  opacity: 1;
+  visibility: visible ;
+  display: block ;
+}
+.text-size{
+  font-size: x-small;
+}
+
+}
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+}
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+}
+@media (min-width: 1300px) and (max-width: 1400px) {
+}
+@media (min-width: 1400px) and (max-width: 1500px){
 }

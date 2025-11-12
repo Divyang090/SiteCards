@@ -16,7 +16,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [siteMapsCount, setSiteMapsCount] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
 
-  const {showMessage, showConfirmation} =useStatusMessage();
+  const { showMessage, showConfirmation } = useStatusMessage();
 
   const handleToggleDescription = (taskId) => {
     setExpandedDescriptions(prev => ({
@@ -138,11 +138,13 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             id: task.id || task.task_id,
             title: task.task_name || task.title,
             description: task.description,
+            location: task.location || 'Location undefined',
+            visit_date: task.Date || 'No Date',
             taskType: task.task_type || 'Simple Task',
             assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
             status: task.status || 'pending',
             completed: task.status === 'completed',
-            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+            // createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
             files: task.files || []
           }));
 
@@ -163,6 +165,25 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       fetchTasks();
     }
   }, [id]);
+
+  //Edit tasks Project details
+  //   const handleEditTask = (taskId) => {
+  //   const taskToEdit = sortedTasks.find(task => task.id === taskId);
+  //   if (taskToEdit) {
+  //     // Set the form data for editing
+  //     setFormData({
+  //       title: taskToEdit.title,
+  //       description: taskToEdit.description || '',
+  //       taskType: taskToEdit.taskType || 'Task',
+  //       assignee: taskToEdit.assignee || 'Unassigned',
+  //       location: taskToEdit.location || '',
+  //       date: taskToEdit.date || '',
+  //       files: taskToEdit.files || []
+  //     });
+  //     setEditingTaskId(taskId);
+  //     setIsCreatingTask(true);
+  //   }
+  // };
 
   // Helper functions
   const getProjectFromLocalStorage = (projectId) => {
@@ -319,29 +340,34 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       }
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Failed to update task status');
+      showMessage('Failed to update task status', 'error');
     }
   };
 
   // DELETE TASK USING API
   const handleDeleteTask = async (taskId) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    showConfirmation(
+      'Delete Task',
+      `Are ypu sure ypu want to delete this task? This action cannot be undone`,
+      async () => {
+        try {
+          const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+            method: 'DELETE',
+          });
 
-    try {
-      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setTasks(tasks.filter(task => task.id !== taskId));
-      } else {
-        throw new Error('Failed to delete task');
+          if (response.ok) {
+            setTasks(tasks.filter(task => task.id !== taskId));
+            showMessage('Task deleted Successfully','success')
+          } else {
+            throw new Error('Failed to delete task');
+          }
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          showMessage('Failed to delete task', 'error');
+        }
       }
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      alert('Failed to delete task');
-    }
-  };
+    );
+  }
 
   // Sort tasks
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -413,18 +439,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   }
 
   const displayProject = project;
-  // console.log('displayProject:', displayProject);
-  // console.log('siteMaps:', displayProject?.siteMaps);
-  // console.log('type of siteMaps:', typeof displayProject?.siteMaps);
-  // console.log('is array:', Array.isArray(displayProject?.siteMaps));
-
-  // console.log('Project Data:', displayProject);
-  // console.log('Site Maps:', displayProject.siteMaps);
-  // console.log('Project ID:', id);
 
   return (
-    <div className="min-h-screen theme-bg-primary theme-text-primary">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen theme-bg-primary theme-text-primary text-size">
+      <div className="max-w-6xl mx-auto px-2 py-2 md:px-6 md:py-8 ">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-400 mb-6">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,7 +453,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
         {/* Project Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold theme-text-primary mb-4">{displayProject.title}</h1>
+          <h1 className="md:text-3xl text-2xl font-bold theme-text-primary mb-4">{displayProject.title}</h1>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
             <span>• {displayProject.assignee}</span>
@@ -479,10 +497,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
         {/* Tasks Tab Content */}
         {activeTab === 'tasks' && (
-          <div className="theme-bg-secondary rounded-lg p-6 mb-6">
+          <div className="theme-bg-secondary rounded-lg md:p-6 p-2 mb-6">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-2xl font-bold theme-text-primary">Tasks</h2>
+                <h2 className="md:text-2xl text-xl font-bold theme-text-primary">Tasks</h2>
                 <p className="theme-text-secondary mt-1">{remainingTasks} of {totalTasks} remaining</p>
               </div>
 
@@ -510,12 +528,12 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             )}
 
             {/* Tasks List with Scroll */}
-            <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto' : ''}`}>
+            <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto scrollbar-hidden' : ''}`}>
               {sortedTasks.length > 0 ? (
                 sortedTasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`theme-bg-primary rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
+                    className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
                       }`}
                   >
                     <div className="flex items-center gap-3 flex-1">
@@ -523,8 +541,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       <button
                         onClick={() => handleToggleTask(task.id)}
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
-                            ? 'bg-green-500 border-green-500 text-white shadow-sm'
-                            : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                          ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                          : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
                           }`}
                       >
                         {task.completed && (
@@ -552,10 +570,32 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                           <div className="flex items-center gap-2 ml-4">
                             <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
                             {/* {task.assignee !== 'Unassigned' && ()} */}
-                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
-                            
+                            <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
+
                           </div>
                         </div>
+
+                        {(task.location || task.Date) && (
+                          <div className='flex items-center gap-3 mt-1'>
+                            {task.location && (
+                              <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'tet-gray-500'}`}>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                {task.location}
+                              </span>
+                            )}
+                            {task.Date && (
+                              <span className={`text-xs flex items-center gap-1 ${task.completed} ? 'text-gray-400':'text-gray-500'`}>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {task.visit_date}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         {task.description && expandedDescriptions[task.id] && (
                           <p className={`text-sm theme-bg-secondary theme-text-secondary mt-2 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
@@ -581,14 +621,34 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       </div>
                     </div>
 
-                    {/* Date and delete button */}
+                    {/* Date and action buttons */}
                     <div className="flex items-center gap-2 ml-4">
                       <span className={`text-xs whitespace-nowrap transition-all duration-200 ${task.completed ? 'text-gray-400' : 'text-gray-500'
                         }`}>
                         {task.createdAt}
                       </span>
+
+                      {/* Edit Button */}
                       <button
-                        onClick={() => handleDeleteTask(task.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEditTask(task.id);
+                        }}
+                        className="text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteTask(task.id);
+                        }}
                         className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useStatusMessage } from '../Alerts/StatusMessage';
 
 const UseTemplateModal = ({ template, onClose, onSave }) => {
-  const [projectData, setProjectData] = useState({
+  const {showConfirmation, showMessage} = useStatusMessage();  const [projectData, setProjectData] = useState({
     project_name: `${template.title} Project`,
     description: template.description,
     location: '',
@@ -36,7 +37,7 @@ const UseTemplateModal = ({ template, onClose, onSave }) => {
       await onSave(saveData);
     } catch (error) {
       console.error('Error creating project from template:', error);
-      alert('Failed to create project from template');
+      showMessage('Failed to create project from template');
     } finally {
       setSaving(false);
     }

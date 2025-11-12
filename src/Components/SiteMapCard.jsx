@@ -2,31 +2,44 @@ import React, { useState } from "react";
 import { BASE_URL } from "../Configuration/Config";
 
 const SiteMapCard = ({ siteMap, onDelete, onClick, onEdit }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [showActions, setShowActions] =useState(false);
+  const [showActions, setShowActions] = useState(false);
 
-const mainFile = siteMap?.files?.[0] || null;
-const imageUrl = mainFile?.file_path 
-  ? `${BASE_URL}/${mainFile.file_path.replace(/\\/g, '/')}`
-  : null;
-const isImage = mainFile?.filename?.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
-const hasFiles = siteMap?.files && siteMap.files.length > 0;
+  const getCategoryIcon = (category) => {
+    const icons = {
+      'Custom': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+      'Floor Plan': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+      'Electrical': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      'Plumbing': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2v4m0 4v4m0 4v4m8-12h-4m4 4h-4m4 4h-4M4 6h4m-4 4h4m-4 4h4" />
+          <circle cx="12" cy="2" r="1" fill="currentColor" />
+        </svg>
+      ),
+      'Structural': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+      'Landscape': (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v18m-8-6l4-4 4 4m8 0l-4-4 4 4M7 8l5-5 5 5M7 16l5 5 5-5" />
+        </svg>
+      )
+    };
 
-const getFileIcon = () => {
-  if (!hasFiles) return '📁'; // Folder icon for no files
-  if (isImage) return '🖼️'; // Image icon
-  return '📎'; // File icon for other types
-};
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return 'Unknown size';
-    const bytesNum = typeof bytes === 'string' ? parseFloat(bytes) : bytes;
-    if (bytesNum === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytesNum) / Math.log(k));
-    return parseFloat((bytesNum / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return icons[category] || icons['Custom'];
   };
 
   const formatDate = (dateString) => {
@@ -38,25 +51,6 @@ const getFileIcon = () => {
     });
   };
 
-  const handleImageError = (e) => {
-    console.log('Image failed to load:', imageUrl);
-    setImageError(true);
-    setImageLoading(false);
-    e.target.style.display = 'none';
-  };
-
-  const handleImageLoad = () => {
-    setImageLoading(false);
-    setImageError(false);
-  };
-
-  console.log('SiteMap file debug:', {
-    files: siteMap.files,
-    mainFile: mainFile,
-    imageUrl: imageUrl,
-    isImage: isImage
-  });
-
   return (
     <div
       className="theme-bg-card rounded-lg theme-border overflow-hidden hover:shadow-lg transition-shadow duration-300 group cursor-pointer relative"
@@ -64,21 +58,11 @@ const getFileIcon = () => {
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Preview Container */}
-      <div className="aspect-video bg-gray-200 relative overflow-hidden">
-        {siteMap.file_type?.includes('image') ? (
-          <img
-            src={siteMap.file_url}
-            alt={siteMap.title}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        ) : null}
-        <div className={`w-full h-full bg-linear-to-br from-blue-100 to-purple-100 flex items-center justify-center ${siteMap.file_type?.includes('image') ? 'hidden' : 'flex'}`}>
-  <span className="text-4xl">{getFileIcon(siteMap.file_type)}</span>
-</div>
+      {/* Preview Container with Category Icon */}
+      <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 relative overflow-hidden flex items-center justify-center">
+        <div className="text-gray-600">
+          {getCategoryIcon(siteMap.category)}
+        </div>
 
         {/* Hover Actions Overlay */}
         <div className={`absolute top-2 right-2 flex gap-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0'}`}>
@@ -86,7 +70,7 @@ const getFileIcon = () => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if(onEdit){
+              if (onEdit) {
                 onEdit(siteMap);
               } else {
                 console.warn('Edit functionality not available for sitemaps')
@@ -126,18 +110,8 @@ const getFileIcon = () => {
             {siteMap.category || 'Uncategorized'}
           </span>
         </div>
-        <p className="theme-text-secondary text-sm mb-2 line-clamp-2">
-          {siteMap.description || 'No description'}
-        </p>
 
-        {/* Bottom actions - always visible but subtle */}
-        <div className="flex justify-between items-center text-xs theme-text-secondary mt-2">
-          <div className="flex-1">
-            {/* Empty space - you can add other info here if needed */}
-          </div>
-          <div className={`flex gap-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-30'}`}>    
-          </div>
-        </div>
+        {/* Bottom info */}
       </div>
     </div>
   );

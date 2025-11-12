@@ -10,6 +10,24 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
     description: ''
   });
   const [isUploading, setIsUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+
+    useEffect(() => {
+      return () => {
+        if (imagePreview) {
+          URL.revokeObjectURL(imagePreview);
+        }
+      };
+    }, [imagePreview]);
+
+      const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, file }));
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
 
   // Initialize form with current drawing data
   useEffect(() => {
@@ -104,7 +122,7 @@ const handleSubmit = async (e) => {
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.dwg"
-                onChange={(e) => setFormData(prev => ({ ...prev, file: e.target.files[0] }))}
+                onChange={handleFileChange}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
