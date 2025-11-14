@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import SiteMapUploadModal from './SiteMapUploadModal';
+import SiteMapUploadModal from '../AddingModal/SiteMapUploadModal';
 import AddVendorModal from '../AddingModal/AddVendorModal';
 import AddInspirationModal from '../AddingModal/AddInspirationModal';
 import AddDrawingModal from '../AddingModal/AddDrawingModal';
 import AddTaskModal from '../AddingModal/AddTaskModal';
-import SiteMapCard from './SiteMapCard';
+import SiteMapCard from '../Cards/SiteMapCard';
 import EmptySiteMapsState from './EmptySiteMapsState';
-import DrawingCard from './DrawingCard';
-import { use } from 'react';
+import DrawingCard from '../Cards/DrawingCard';
 import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider, { useStatusMessage } from '../Alerts/StatusMessage';
 import EditDrawingModal from '../EditModal/EditDrawingModal';
@@ -15,6 +14,11 @@ import EditInspirationModal from '../EditModal/EditInspirationModal';
 import EditTaskModal from '../EditModal/EditTaskModal';
 import EditVendorModal from '../EditModal/EditVendorModal';
 import DrawingClickModal from './DrawingClickModal';
+import InspirationCard from '../Cards/InspirationCard';
+import VendorCard from '../Cards/VendorCard';
+import SiteTaskCard from '../Cards/SiteTaskCard';
+import InspirationClickModal from './InspirationClickModal';
+import BulkPresetModal from '../AddingModal/BulkPresetModal';
 
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
@@ -24,6 +28,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [selectedSiteMap, setSelectedSiteMap] = useState(null);
   const [activeTab, setActiveTab] = useState('Drawings');
   const [isEditingSiteMap, setIsEditingSiteMap] = useState();
+  const [isBulkPresetModalOpen, setIsBulkPresetModalOpen] = useState(false);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -35,7 +40,6 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     const fetchSiteMaps = async () => {
       try {
         console.log('Fetching ALL site maps');
-        // Get ALL site maps without project_id filter
         const response = await fetch(`${BASE_URL}/spaces/get/spaces`);
         console.log('Fetch response status:', response.status);
 
@@ -70,6 +74,8 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       fetchSiteMaps();
     }
   }, [projectId]);
+
+
 
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
@@ -194,31 +200,53 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     setActiveTab('Drawings');
   };
 
+  // Bulk Preset 
+  const handleSiteMapsCreated = (newSiteMaps) => {
+    setSiteMapsList(prev => [...prev, ...newSiteMaps]);
+  };
+
   return (
     <div className="theme-bg-secondary rounded-lg md:p-6 p-2 mb-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="md:text-2xl text-xl font-bold theme-text-primary">Site Maps</h2>
+          <h2 className="md:text-2xl text-xl font-semibold theme-text-primary">Site Maps</h2>
           <p className='theme-text-secondary mt-1'>
-            {selectedSiteMap ? 'Site Map Details' : `${siteMapsList?.length || 0} site maps`}</p>        </div>
+            {selectedSiteMap ? 'Site Map Details' : `${siteMapsList?.length || 0} site maps`}
+          </p>
+        </div>
 
         {!selectedSiteMap && (
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            disabled={isUploading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Upload Site Map
-          </button>)}
+          <div className="flex items-center gap-3">
+            {/* Bulk Preset Button */}
+            <button
+              onClick={() => setIsBulkPresetModalOpen(true)}
+              className="theme-bg-primary theme-text-secondary border text-xs md:text-xl border-gray-500 hover:bg-blue-300 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              Bulk Preset
+            </button>
+
+            {/* Upload Site Map Button */}
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              disabled={isUploading}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-xl rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Upload Site Map
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Site Maps Grid */}
       {!selectedSiteMap ? (
         siteMapsList?.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {siteMapsList.map((siteMap) => (
               <SiteMapCard
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
@@ -234,7 +262,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         )
       ) : (
         // Show detail view
-        <div className="theme-bg-card rounded-lg border theme-border p-6">
+        <div className="theme-bg-card rounded-lg border theme-border p-3 md:p-6">
           <SiteMapDetailSection
             siteMap={selectedSiteMap}
             onClose={handleCloseDetail}
@@ -244,6 +272,16 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
             onTabChange={setActiveTab}
           />
         </div>
+      )}
+
+      {/* Bulk Preset Modal */}
+      {isBulkPresetModalOpen && (
+        <BulkPresetModal
+          isOpen={isBulkPresetModalOpen}
+          onClose={() => setIsBulkPresetModalOpen(false)}
+          onSiteMapsCreated={handleSiteMapsCreated}
+          projectId={projectId}
+        />
       )}
 
       {/* Upload Modal */}
@@ -260,9 +298,8 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
 };
 
 const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }) => {
-  console.log('siteMapDetailSection rendering with', { siteMap, activeTab });
+  // console.log('siteMapDetailSection rendering with', { siteMap, activeTab });
   const [drawings, setDrawings] = useState([]);
-  // State for vendors and tasks from API
   const [vendors, setVendors] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState({ vendors: false, tasks: false, drawings: false, inspiration: false });
@@ -278,11 +315,20 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [editingInspiration, setEditingInspiration] = useState();
   const [editingTask, setEditingTask] = useState();
   const [selectedDrawing, setSelectedDrawing] = useState(null);
+  const [selectedInspiration, setSelectedInspiration] = useState(null);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
   // All Handlers
 
+  // Click handler for inspiration cards
+  const handleInspirationClick = (item) => {
+    setSelectedInspiration(item);
+  };
+
+  const handleCloseInspirationModal = () => {
+    setSelectedInspiration(null);
+  };
 
   // Click Drawing
   const handleDrawingClick = (file) => {
@@ -334,12 +380,12 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   //Delete Drawing
   const handleDeleteDrawing = async (drawingId) => {
     try {
-      const response = await fetch(`${BASE_URL}/drawings/${drawingId}`, {
+      const response = await fetch(`${BASE_URL}/drawings/delete/${drawingId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        setDrawings(prev => prev.filter(d => d.drawing_id !== drawingId)); // Use drawing_id here
+        setDrawings(prev => prev.filter(d => d.drawing_id !== drawingId));
         showMessage('Drawing deleted successfully!', 'success');
       } else {
         const errorText = await response.text();
@@ -368,7 +414,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${vendorname}"? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
+          const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -512,7 +558,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
           if (response && response.ok) {
             const tasksData = await response.json();
-            console.log('Fetched tasks data:', tasksData);
+            // console.log('Fetched tasks data:', tasksData);
 
             // Handle different response formats
             let tasksArray = [];
@@ -553,29 +599,38 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   // Fetch drawing
   useEffect(() => {
     const fetchDrawings = async () => {
-      if (activeTab === 'Drawings' && spaceId) {
+      if (activeTab === 'Drawings') {
         setLoading(prev => ({ ...prev, drawings: true }));
         try {
-          console.log('Fetching drawings for space:', spaceId);
-          const response = await fetch(`${BASE_URL}/drawings/get?space_id=${spaceId}`);
+          console.log('Fetching all drawings...');
+          const response = await fetch(`${BASE_URL}/drawings/get`);
 
           console.log('Drawings fetch response status:', response.status);
 
           if (response.ok) {
             const drawingsData = await response.json();
-            console.log('Fetched drawings data:', drawingsData);
+            console.log('Fetched all drawings data:', drawingsData);
 
-            // Handle different response formats
+            // Handle different response formats and filter by space_id
+            let allDrawings = [];
             if (Array.isArray(drawingsData)) {
-              setDrawings(drawingsData);
+              allDrawings = drawingsData;
             } else if (drawingsData && Array.isArray(drawingsData.data)) {
-              setDrawings(drawingsData.data);
+              allDrawings = drawingsData.data;
             } else if (drawingsData && Array.isArray(drawingsData.drawings)) {
-              setDrawings(drawingsData.drawings);
+              allDrawings = drawingsData.drawings;
             } else {
               console.log('Unexpected drawings response format:', drawingsData);
-              setDrawings([]);
+              allDrawings = [];
             }
+
+            // Filter drawings by space_id
+            const filteredDrawings = allDrawings.filter(drawing =>
+              drawing.space_id === spaceId
+            );
+
+            console.log(`Filtered drawings for space ${spaceId}:`, filteredDrawings);
+            setDrawings(filteredDrawings);
           } else {
             console.log('Drawings fetch failed with status:', response.status);
             setDrawings([]);
@@ -588,10 +643,10 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         }
       }
     };
+
     if (activeTab === 'Drawings') {
       fetchDrawings();
     }
-
   }, [activeTab, spaceId, refreshDrawings]);
 
   // Inspiration fetch API
@@ -606,7 +661,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, inspiration: true }));
         try {
           console.log('Fetching inspiration for space:', spaceId);
-          const response = await fetch(`${BASE_URL}/inspiration/get?space_id=${spaceId}`);
+          const response = await fetch(`${BASE_URL}/inspiration/get`);
 
           console.log('Inspiration fetch response status:', response.status);
 
@@ -626,7 +681,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
               inspirationArray = [];
             }
 
-            setInspiration(inspirationArray);
+            const filteredInspiration = inspirationArray.filter(inspiration =>
+              inspiration.space_id === spaceId
+            );
+
+            setInspiration(filteredInspiration);
           } else {
             console.log('Inspiration fetch failed with status:', response.status);
             setInspiration([]);
@@ -793,7 +852,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                 <p className="text-gray-500 mt-2">Loading drawings...</p>
               </div>
             ) : drawings.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pr-4"> {/* Added padding for scrollbar */}
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {drawings.map((file) => (
                   <DrawingCard
                     key={file.drawing_id || file.id}
@@ -838,40 +897,12 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : vendors.length > 0 ? (
               <div className="space-y-4">
                 {vendors.map((vendor) => (
-                  <div key={vendor.id} className="border theme-bg-primary rounded-lg p-4 hover:shadow-md transition-shadow duration-200 group overflow-x-auto whitespace-nowrap scrollbar-hidden">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-semibold theme-text-primary text-lg mb-1">{vendor.name}</h3>
-                        <p className="text-sm theme-text-secondary mb-1">{vendor.category}</p>
-                        <div className='flex gap-2 grid-cols-2 justify-start'>
-                          <p className="text-sm theme-text-secondary mb-1">✉ {vendor.contact}</p>
-                          {vendor.phone && (
-                            <p className="text-sm theme-text-primary">☎{vendor.phone}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <button
-                          onClick={() => handleEditVendor(vendor)}
-                          className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors duration-200"
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteVendor(vendor.id)}
-                          className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors duration-200"
-                          title="Delete"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <VendorCard
+                    key={vendor.id}
+                    vendor={vendor}
+                    onEdit={handleEditVendor}
+                    onDelete={handleDeleteVendor}
+                  />
                 ))}
               </div>
             ) : (
@@ -891,7 +922,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         {/* Inspiration Tab*/}
         {activeTab === 'Inspiration' && (
           <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
-            {console.log('=== INSPIRATION TAB DEBUG ===', {
+            {/* {console.log('=== INSPIRATION TAB DEBUG ===', {
               activeTab,
               loading: loading.inspiration,
               inspirationData: inspiration,
@@ -899,71 +930,22 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
               spaceId: spaceId,
               hasHandleEdit: !!handleEditInspiration,
               hasHandleDelete: !!handleDeleteInspiration
-            })}
+            })} */}
             {loading.inspiration ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="text-gray-500 mt-2">Loading inspiration...</p>
               </div>
             ) : inspiration.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {inspiration.map((item) => (
-                  <div key={item.inspiration_id || item.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
-                    <div className="aspect-video bg-gray-100 relative overflow-hidden">
-                      <img
-                        src={item.file_url || item.url || item.image_url}
-                        alt={item.title || item.name}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => window.open(item.file_url || item.url, '_blank')}
-                      />
-                      {/* Hover Actions */}
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditInspiration(item);
-                          }}
-                          className="bg-blue-600 text-white p-1.5 rounded hover:bg-blue-700 transition-colors duration-200"
-                          title="Edit"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteInspiration(item.inspiration_id || item.id);
-                          }}
-                          className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors duration-200"
-                          title="Delete"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold theme-text-primary text-lg mb-2">
-                        {item.title || item.name || 'Untitled Inspiration'}
-                      </h3>
-                      {item.description && (
-                        <p className="text-sm theme-text-secondary mb-2 line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>{formatDate(item.created_at || item.upload_date)}</span>
-                        <button
-                          onClick={() => window.open(item.file_url || item.url, '_blank')}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          View Full Size
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <InspirationCard
+                    key={item.inspiration_id || item.id}
+                    item={item}
+                    onEdit={handleEditInspiration}
+                    onDelete={handleDeleteInspiration}
+                    onClick={handleInspirationClick}
+                  />
                 ))}
               </div>
             ) : (
@@ -979,6 +961,17 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             )}
           </div>
         )}
+
+        {/* Inspiration Click */}
+        {selectedInspiration && (
+          <InspirationClickModal
+            inspiration={selectedInspiration}
+            onClose={handleCloseInspirationModal}
+          />
+        )}
+
+        {/* Check Tasks All */}
+
         {/* Tasks Tab*/}
         {activeTab === 'Tasks' && (
           <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
@@ -990,62 +983,13 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             ) : tasks.length > 0 ? (
               <div className="space-y-3">
                 {sortedTask.map((task) => (
-                  <div key={task.id} className={` overflow-x-auto whitespace-nowrap scrollbar-hidden border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
-                    }`}>
-                    {/* Check button */}
-                    <button
-                      onClick={() => handleToggleTask(task.id)}
-                      className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200 mt-1 ${task.status === 'completed'
-                        ? 'bg-green-500 border-green-500 text-white'
-                        : 'border-gray-300 hover:border-green-500'
-                        }`}
-                    >
-                      {task.status === 'completed' && (
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-
-                    <div className="flex-1">
-                      <h3 className={`font-semibold theme-text-primary text-lg mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''
-                        }`}>
-                        {task.title}
-                      </h3>
-                      {task.description && (
-                        <p className="text-sm text-gray-500 mb-2">{task.description}</p>
-                      )}
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span className={`px-2 py-1 rounded-full ${task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                          {task.status}
-                        </span>
-                        <span>Due: {formatDate(task.due_date)}</span>
-                      </div>
-                    </div>
-
-                    {/* Hover-only action buttons */}
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button
-                        onClick={() => handleEditTask(task)}
-                        className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors duration-200"
-                        title="Edit"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors duration-200"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  <SiteTaskCard
+                    key={task.id}
+                    task={task}
+                    onToggle={handleToggleTask}
+                    onEdit={handleEditTask}
+                    onDelete={handleDeleteTask}
+                  />
                 ))}
               </div>
             ) : (
@@ -1102,6 +1046,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           }}
         />
       )}
+
       {/* Add Task Modal */}
       {isAddTaskOpen && (
         <AddTaskModal
@@ -1118,18 +1063,28 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       {/* Editing Section */}
       {/* Edit Drawing */}
       {editingDrawing && (
-        <EditDrawingModal
-          drawing={editingDrawing}
-          spaceId={siteMap?.space_id || siteMap?.id}
-          projectId={siteMap?.project_id}
-          onClose={() => setEditingDrawing(null)}
-          onUpdate={(updatedDrawing) => {
-            setDrawings(prev => prev.map(d =>
-              d.drawing_id === updatedDrawing.drawing_id ? updatedDrawing : d
-            ));
-            setEditingDrawing(null);
-          }}
-        />
+        <>
+          {/* Debug what's being passed to the modal */}
+          {console.log('=== PARENT COMPONENT DEBUG ===')}
+          {console.log('Editing Drawing:', editingDrawing)}
+          {console.log('Drawing ID to pass:', editingDrawing.drawing_id)}
+          {console.log('Space ID to pass:', editingDrawing.space_id)}
+          {console.log('SiteMap space_id:', siteMap?.space_id)}
+          {console.log('SiteMap id:', siteMap?.id)}
+
+          <EditDrawingModal
+            drawing={editingDrawing}
+            spaceId={editingDrawing.space_id}  // This should be "8744585a..."
+            projectId={siteMap?.project_id}
+            onClose={() => setEditingDrawing(null)}
+            onUpdate={(updatedDrawing) => {
+              setDrawings(prev => prev.map(d =>
+                d.drawing_id === updatedDrawing.drawing_id ? updatedDrawing : d
+              ));
+              setEditingDrawing(null);
+            }}
+          />
+        </>
       )}
 
       {/* Edit Vendors */}
@@ -1147,6 +1102,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           }}
         />
       )}
+
       {/*Edit Inspirations*/}
       {editingInspiration && (
         <EditInspirationModal

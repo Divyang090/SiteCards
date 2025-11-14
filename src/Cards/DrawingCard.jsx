@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import StatusMessageProvider from '../Alerts/StatusMessage';
 import { BASE_URL } from '../Configuration/Config';
-import DrawingClickModal from './DrawingClickModal';
+import DrawingClickModal from '../Components/DrawingClickModal';
 
 //Check Backend for files preview
 
@@ -21,7 +21,6 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
     // console.log('File object:', file);
     // console.log('Available file properties:', Object.keys(file));
 
-    // Try different possible ID properties
     const drawingId = file.drawing_id || file.id || file.file_id;
     console.log('Drawing ID to delete:', drawingId);
     const drawingName = file.drawing_name;
@@ -112,7 +111,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
             onClick={() => window.open(getFileUrl(file), 'blank')}
             className="w-full h-full object-cover cursor-pointer"
             onError={(e) => {
-              console.log('Image Failed to load', getFileUrl(file), 'blank')
+              // console.log('Image Failed to load', getFileUrl(file), 'blank')
               e.target.style.display = 'none';
             }}
           />
@@ -123,7 +122,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
         )}
 
         {/* Hover Actions */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+        <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity duration-200 flex gap-1">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -165,6 +164,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
           <span className='mr-2'>{formatDate(file.uploaded_at)}</span>
+          <p>Description</p>
           {file.description && (
             <>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">

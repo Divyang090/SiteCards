@@ -4,6 +4,7 @@ import CreateTaskModal from '../Components/CreateTaskModal';
 import SiteMapsSection from '../Components/SiteMapsSection';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import EditTaskModal from '../EditModal/EditTaskModal';
 
 const ProjectDetails = ({ projects: propProjects = [] }) => {
   const { id } = useParams();
@@ -15,6 +16,18 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [activeTab, setActiveTab] = useState('tasks');
   const [siteMapsCount, setSiteMapsCount] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    taskType: 'Task',
+    assignee: 'Unassigned',
+    location: '',
+    date: '',
+    files: []
+  });
+
+  const [editingTask, setEditingTask] = useState(null);
+  const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
 
   const { showMessage, showConfirmation } = useStatusMessage();
 
@@ -167,23 +180,12 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   }, [id]);
 
   //Edit tasks Project details
-  //   const handleEditTask = (taskId) => {
-  //   const taskToEdit = sortedTasks.find(task => task.id === taskId);
-  //   if (taskToEdit) {
-  //     // Set the form data for editing
-  //     setFormData({
-  //       title: taskToEdit.title,
-  //       description: taskToEdit.description || '',
-  //       taskType: taskToEdit.taskType || 'Task',
-  //       assignee: taskToEdit.assignee || 'Unassigned',
-  //       location: taskToEdit.location || '',
-  //       date: taskToEdit.date || '',
-  //       files: taskToEdit.files || []
-  //     });
-  //     setEditingTaskId(taskId);
-  //     setIsCreatingTask(true);
-  //   }
-  // };
+  const handleEditTask = (taskId) => {
+    const taskToEdit = tasks.find(task => task.id === taskId);
+    if (taskToEdit) {
+      setEditingTask(taskToEdit);
+    }
+  };
 
   // Helper functions
   const getProjectFromLocalStorage = (projectId) => {
@@ -205,7 +207,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   const transformProjectData = (projectData) => {
-    console.log('projectData', projectData); console.log("✅ RAW projectData.something:", {
+    console.log('projectData', projectData);
+    console.log("✅ RAW projectData.something:", {
       site_maps: projectData.site_maps,
       siteMaps: projectData.siteMaps,
       sitemaps: projectData.sitemaps,
@@ -357,7 +360,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
           if (response.ok) {
             setTasks(tasks.filter(task => task.id !== taskId));
-            showMessage('Task deleted Successfully','success')
+            showMessage('Task deleted Successfully', 'success')
           } else {
             throw new Error('Failed to delete task');
           }
@@ -531,134 +534,147 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto scrollbar-hidden' : ''}`}>
               {sortedTasks.length > 0 ? (
                 sortedTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
-                      }`}
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {/* Checkbox*/}
-                      <button
-                        onClick={() => handleToggleTask(task.id)}
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
-                          ? 'bg-green-500 border-green-500 text-white shadow-sm'
-                          : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
-                          }`}
-                      >
-                        {task.completed && (
-                          <svg
-                            className="w-3 h-3 transition-all duration-200"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </button>
+                  editingTask?.id === task.id ? (
+                    <EditTaskModal
+                      key={task.id}
+                      task={editingTask}
+                      projectId={id}
+                      isInline={true} // CHANGED: Added isInline prop for inline styling
+                      onClose={() => setEditingTask(null)} // CHANGED: Simplified close handler
+                      onUpdate={(updatedTask) => {
+                        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+                        setEditingTask(null); // CHANGED: Clear editing state after update
+                      }}
+                    />
+                  ) : (
+                    <div
+                      key={task.id}
+                      className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
+                        }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {/* Checkbox*/}
+                        <button
+                          onClick={() => handleToggleTask(task.id)}
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
+                            ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                            : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                            }`}
+                        >
+                          {task.completed && (
+                            <svg
+                              className="w-3 h-3 transition-all duration-200"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
 
-                      {/* Task content*/}
-                      <div
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => handleToggleDescription(task.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className={`block font-medium theme-text-secondary transition-all duration-200 ${task.completed ? 'text-gray-400 line-through' : 'theme-text-primary'
-                            }`}>
-                            {task.title}
-                          </span>
-                          <div className="flex items-center gap-2 ml-4">
-                            <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
-                            {/* {task.assignee !== 'Unassigned' && ()} */}
-                            <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
-
+                        {/* Task content*/}
+                        <div
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => handleToggleDescription(task.id)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`block font-medium theme-text-secondary transition-all duration-200 ${task.completed ? 'text-gray-400 line-through' : 'theme-text-primary'
+                              }`}>
+                              {task.title}
+                            </span>
+                            <div className="flex items-center gap-2 ml-4">
+                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
+                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
+                            </div>
                           </div>
+
+                          {(task.location || task.Date) && (
+                            <div className='flex items-center gap-3 mt-1'>
+                              {task.location && (
+                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'tet-gray-500'}`}>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  {task.location}
+                                </span>
+                              )}
+                              {task.Date && (
+                                <span className={`text-xs flex items-center gap-1 ${task.completed} ? 'text-gray-400':'text-gray-500'`}>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  {task.visit_date}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {task.description && expandedDescriptions[task.id] && (
+                            <p className={`text-sm theme-bg-secondary theme-text-secondary mt-2 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
+                              }`}>
+                              {task.description}
+                            </p>
+                          )}
+
+                          {/* Files section - UNCHANGED */}
+                          {task.files && task.files.length > 0 && (
+                            <div className="flex gap-1 mt-2">
+                              {task.files.map((file, index) => (
+                                <span
+                                  key={index}
+                                  className={`text-xs px-2 py-1 rounded ${task.completed ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'
+                                    }`}
+                                >
+                                  📎 {typeof file === 'string' ? file : file.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
+                      </div>
 
-                        {(task.location || task.Date) && (
-                          <div className='flex items-center gap-3 mt-1'>
-                            {task.location && (
-                              <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'tet-gray-500'}`}>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                {task.location}
-                              </span>
-                            )}
-                            {task.Date && (
-                              <span className={`text-xs flex items-center gap-1 ${task.completed} ? 'text-gray-400':'text-gray-500'`}>
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                {task.visit_date}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                      {/* Date and action buttons */}
+                      <div className="flex items-center gap-2 ml-4">
+                        <span className={`text-xs whitespace-nowrap transition-all duration-200 ${task.completed ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                          {task.createdAt}
+                        </span>
 
-                        {task.description && expandedDescriptions[task.id] && (
-                          <p className={`text-sm theme-bg-secondary theme-text-secondary mt-2 transition-all duration-200 ${task.completed ? 'text-gray-400' : ''
-                            }`}>
-                            {task.description}
-                          </p>
-                        )}
+                        {/* Edit Button*/}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleEditTask(task.id);
+                          }}
+                          className="text-gray-400 hover:text-blue-500 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-all duration-200"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
 
-                        {/* Files section */}
-                        {task.files && task.files.length > 0 && (
-                          <div className="flex gap-1 mt-2">
-                            {task.files.map((file, index) => (
-                              <span
-                                key={index}
-                                className={`text-xs px-2 py-1 rounded ${task.completed ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'
-                                  }`}
-                              >
-                                📎 {typeof file === 'string' ? file : file.name}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteTask(task.id);
+                          }}
+                          className="text-gray-400 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 opacitty-100 transition-all duration-200"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-
-                    {/* Date and action buttons */}
-                    <div className="flex items-center gap-2 ml-4">
-                      <span className={`text-xs whitespace-nowrap transition-all duration-200 ${task.completed ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                        {task.createdAt}
-                      </span>
-
-                      {/* Edit Button */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleEditTask(task.id);
-                        }}
-                        className="text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-
-                      {/* Delete Button */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDeleteTask(task.id);
-                        }}
-                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  )
                 ))
               ) : !isCreatingTask ? (
+                // Empty state
                 <div className="text-center py-12 theme-bg-primary rounded-lg border-2 border-dashed border-gray-300">
                   <div className="text-gray-400 mb-3">
                     <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -151,7 +151,7 @@ const CreateTaskModal = ({
 
     } catch (error) {
       console.error('Error creating task:', error);
-      alert(`Failed to create task: ${error.message}`);
+      showMessage(`Failed to create task: ${error.message}`,'success');
     } finally {
       setUploading(false);
     }
@@ -196,13 +196,13 @@ const CreateTaskModal = ({
     const selectedFiles = Array.from(e.target.files);
 
     if (taskData.files.length + selectedFiles.length > 5) {
-      alert('Maximum 5 files allowed');
+      showMessage('Maximum 5 files allowed','error');
       return;
     }
 
     const oversizedFiles = selectedFiles.filter(file => file.size > 25 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      alert('Some files exceed 25MB limit. Please select smaller files.');
+      showMessage('Some files exceed 25MB limit. Please select smaller files.','error');
       return;
     }
 
@@ -271,7 +271,7 @@ const CreateTaskModal = ({
 
         <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
           <div className="flex justify-between items-center p-6 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-900">Create New Task</h2>
+            <h2 className="text-xl font-semibold  theme-text-primary">Create New Task</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl transition-colors duration-200 focus:outline-none"

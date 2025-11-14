@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 
-const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, drawingId }) => {
+const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, drawingId, onClick }) => {
+  console.log('=== EDIT MODAL PROPS ===');
+  console.log('drawing:', drawing);
+  console.log('spaceId prop:', spaceId);
+  console.log('projectId prop:', projectId);
+  console.log('drawingId prop:', drawingId);
   const { showMessage, showFailed } = useStatusMessage();
   const [formData, setFormData] = useState({
     name: '',
@@ -12,15 +17,15 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
 
-    useEffect(() => {
-      return () => {
-        if (imagePreview) {
-          URL.revokeObjectURL(imagePreview);
-        }
-      };
-    }, [imagePreview]);
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
-      const handleFileChange = (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setFormData(prev => ({ ...prev, file }));
@@ -33,7 +38,7 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
   useEffect(() => {
     if (drawing) {
       setFormData({
-        name: drawing.drawing_name || drawing.name || '',
+        name: drawing.drawing_name || '',
         file: null,
         description: drawing.description || ''
       });
@@ -45,51 +50,56 @@ const handleSubmit = async (e) => {
   setIsUploading(true);
 
   try {
-    const drawingId = drawing.drawing_id || drawing.id;
-    
+    const currentDrawingId = drawing.drawing_id;
+
     const uploadData = new FormData();
-    
-    uploadData.append('drawing_id', drawingId);
+    uploadData.append('drawing_id', currentDrawingId);
     uploadData.append('drawing_name', formData.name);
     uploadData.append('space_id', spaceId);
     uploadData.append('project_id', projectId);
-    
+
     if (formData.file) {
       uploadData.append('uploads', formData.file);
     }
-    
+
     if (formData.description) {
       uploadData.append('description', formData.description);
     }
 
-    // DEBUG: Log FormData contents
-    console.log('=== DRAWING UPDATE DATA ===');
-    console.log('drawing_id:', drawingId);
-    console.log('space_id:', spaceId);
-    console.log('project_id:', projectId);
+    // EXTREME DEBUGGING - Log EVERYTHING
+    console.log('🔍 === EXTREME DEBUGGING ===');
+    console.log('📝 Drawing object:', drawing);
+    console.log('🆔 Current Drawing ID:', currentDrawingId);
+    console.log('🏠 Space ID being sent:', spaceId);
+    console.log('📋 Project ID being sent:', projectId);
+    console.log('🌐 Full URL:', `${BASE_URL}/drawings/update/${currentDrawingId}`);
+    
+    console.log('📦 FormData contents:');
     for (let [key, value] of uploadData.entries()) {
-      console.log(`${key}:`, value);
+      console.log(`   ${key}:`, value, `(type: ${typeof value})`);
     }
-        //${drawingId} update using drawingid
-    const response = await fetch(`${BASE_URL}/drawings/update/${drawingId}`, {
+
+    const response = await fetch(`${BASE_URL}/drawings/update/${currentDrawingId}`, {
       method: 'PUT',
       body: uploadData,
     });
 
-    console.log('Response status:', response.status);
+    console.log('📡 Response Status:', response.status);
     
-    if (response.ok) {
-      const updatedDrawing = await response.json();
-      console.log('Drawing updated:', updatedDrawing);
-      onUpdate(updatedDrawing);
-      showMessage('Drawing updated successfully!', 'success');
-    } else {
+    if (!response.ok) {
       const errorText = await response.text();
-      console.error('Server error response:', errorText);
+      console.log('❌ Backend Error Response:', errorText);
       throw new Error(`Failed to update drawing: ${response.status} - ${errorText}`);
     }
+
+    const updatedDrawing = await response.json();
+    console.log('✅ Drawing updated successfully:', updatedDrawing);
+    onUpdate(updatedDrawing);
+    showMessage('Drawing updated successfully!', 'success');
+    onClose();
+    
   } catch (error) {
-    console.error('Error updating drawing:', error);
+    console.error('💥 Error updating drawing:', error);
     showFailed('Failed to update drawing: ' + error.message);
   } finally {
     setIsUploading(false);
@@ -99,8 +109,12 @@ const handleSubmit = async (e) => {
   if (!drawing) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]">
-      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
+    onClick={onClose}
+    >
+      <div className="theme-bg-secondary shadow-2xl rounded-lg max-w-md w-full p-6"
+      onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-bold mb-4">Edit Drawing</h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -126,8 +140,13 @@ const handleSubmit = async (e) => {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Current file: {drawing.filename || drawing.drawing_name}
+                Current file: {drawing.files?.[0]?.filename || drawing.drawing_name}
               </p>
+              {drawing.files?.[0]?.file_path && (
+                <p className="text-xs text-gray-500">
+                  File path: {drawing.files[0].file_path}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium theme-text-secondary mb-1">Description</label>

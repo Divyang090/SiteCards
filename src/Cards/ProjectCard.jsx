@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import StatusBadge from './StatusBadge';
-import { useTheme } from './ThemeContext';
+import StatusBadge from '../Components/StatusBadge';
+import { useTheme } from '../Components/ThemeContext';
 import { BASE_URL } from '../Configuration/Config';
 
 const ProjectCard = ({ project, onEdit, onDelete }) => {
-  console.log('ProjectCard rendering',project.title)
+  // console.log('ProjectCard rendering',project.title)
   const { isDark } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef =useRef(null);
 
   useEffect(() =>{
-    console.log('ProjectCard mounted', project.title)
+    // console.log('ProjectCard mounted', project.title)
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)){
         setIsMenuOpen(false);

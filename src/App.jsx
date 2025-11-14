@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './Components/ThemeContext';
 import Header from './Components/Header';
-import ProjectCard from './Components/ProjectCard';
+import ProjectCard from './Cards/ProjectCard';
 import SearchBar from './Components/SearchBar';
 import ProjectDetails from './Pages/ProjectDetails';
-import NewProjectModal from './Components/NewProjectModal';
+import NewProjectModal from './AddingModal/NewProjectModal';
 import AuthModal from './Components/AuthModal';
 import Templates from './Components/ProjectTemplates';
 import StatusMessageProvider, { useStatusMessage } from './Alerts/StatusMessage';
 import EditProjectModal from './EditModal/EditProjectModal';
 import { BASE_URL } from './Configuration/Config';
+import InspirationClickModal from './Components/InspirationClickModal';
 
-const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, searchTerm, loading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
+const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, loading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const handleDeleteWithMessage = async (projectId) => {
     console.log('Project ID received:', projectId);
@@ -49,6 +51,11 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
     );
   };
 
+  const handleStatusFilter = (filterValue) => {
+    setStatusFilter(filterValue);
+    onFilter(filterValue);
+  };
+
   if (loading) {
     return (
       <>
@@ -57,7 +64,11 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
           onLoginClick={onLoginClick}
           activeProjectsCount={activeProjectsCount}
         />
-        <SearchBar onSearch={onSearch} />
+        <SearchBar
+          onSearch={onSearch}
+          onFilter={handleStatusFilter}
+          currentFilter={statusFilter}
+        />
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-300"></div>
           <span className="ml-3 text-gray-600">Loading projects...</span>
@@ -74,7 +85,11 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
           onLoginClick={onLoginClick}
           activeProjectsCount={activeProjectsCount}
         />
-        <SearchBar onSearch={onSearch} />
+        <SearchBar
+          onSearch={onSearch}
+          onFilter={handleStatusFilter}
+          currentFilter={statusFilter}
+        />
         <div className="text-center py-12">
           <div className="text-red-400 text-6xl mb-4"></div>
           <h3 className="text-lg font-medium theme-text-primary mb-2">Failed to load projects</h3>
@@ -91,30 +106,34 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, search
         onLoginClick={onLoginClick}
         activeProjectsCount={activeProjectsCount}
       />
-      <SearchBar onSearch={onSearch} />
+      <SearchBar
+        onSearch={onSearch}
+        onFilter={handleStatusFilter}
+        currentFilter={statusFilter}
+      />
       <div className='mt-8 h-[800px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <div className="text-gray-400 text-6xl mb-4"></div>
-            <h3 className="text-lg font-medium theme-text-primary mb-2">
-              {searchTerm ? 'No projects found' : 'No projects yet'}
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Try adjusting your search terms' : 'Create your first project to get started'}
-            </p>
-          </div>
-        ) : (
-          projects.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              onDelete={handleDeleteWithMessage}
-              onEdit={onEditProject}
-            />
-          ))
-        )}
-      </div>
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-400 text-6xl mb-4"></div>
+              <h3 className="text-lg font-medium theme-text-primary mb-2">
+                {searchTerm ? 'No projects found' : 'No projects yet'}
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm ? 'Try adjusting your search terms' : 'Create your first project to get started'}
+              </p>
+            </div>
+          ) : (
+            projects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onDelete={handleDeleteWithMessage}
+                onEdit={onEditProject}
+              />
+            ))
+          )}
+        </div>
       </div>
     </>
   );
@@ -131,18 +150,12 @@ const AppContent = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const { showMessage } = useStatusMessage();
 
   const activeProjectsCount = projects.filter(project =>
     project.status !== 'completed').length;
-
-  // Add this to debug when projects are actually set
-  useEffect(() => {
-    console.log('🔄 PROJECTS STATE UPDATED:', projects);
-    console.log('🔄 Loading state:', loading);
-    console.log('🔄 Error state:', error);
-  }, [projects, loading, error]);
 
   // Fetch projects from API
   useEffect(() => {
@@ -181,8 +194,6 @@ const AppContent = () => {
           }
         }
 
-        console.log('Final projects array:', projectsArray);
-
         if (!Array.isArray(projectsArray)) {
           throw new Error('Invalid response format: projects data is not an array');
         }
@@ -202,7 +213,6 @@ const AppContent = () => {
           description: project.project_description || project.description
         }));
 
-        console.log('Transformed projects:', transformedProjects);
         setProjects(transformedProjects);
 
       } catch (err) {
@@ -333,6 +343,11 @@ const AppContent = () => {
     }
   };
 
+  // Status Filter Function
+  const handleStatusFilter = (filterValue) => {
+    setStatusFilter(filterValue);
+  };
+
   // Edit handler
   const handleEditProject = (project) => {
     setEditingProject(project);
@@ -373,25 +388,41 @@ const AppContent = () => {
     setSearchTerm(term);
   };
 
-  // Filter projects based on search term
-  const filteredProjects = projects.filter(project => {
-    if (!searchTerm.trim()) return true;
+  // New comprehensive filtering function
+  const getFilteredAndSortedProjects = () => {
+    // First filter by search term and status
+    const filteredProjects = projects.filter(project => {
+      // Search term filter
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase().trim();
+        const matchesSearch = (
+          (project.title && project.title.toLowerCase().includes(term)) ||
+          (project.assignee && project.assignee.toLowerCase().includes(term)) ||
+          (project.location && project.location.toLowerCase().includes(term)) ||
+          (project.description && project.description.toLowerCase().includes(term))
+        );
+        if (!matchesSearch) return false;
+      }
+      
+      // Status filter
+      if (statusFilter !== 'all') {
+        return project.status === statusFilter;
+      }
+      
+      return true;
+    });
 
-    const term = searchTerm.toLowerCase().trim();
-    return (
-      (project.title && project.title.toLowerCase().includes(term)) ||
-      (project.assignee && project.assignee.toLowerCase().includes(term)) ||
-      (project.location && project.location.toLowerCase().includes(term))
-    );
-  });
+    // Then sort by title
+    return filteredProjects.sort((a, b) => {
+      return a.title.localeCompare(b.title);
+    });
+  };
 
-  const sortedAndFilteredProjects = filteredProjects.sort((a, b) => {
-    return a.title.localeCompare(b.title);
-  });
+  const sortedAndFilteredProjects = getFilteredAndSortedProjects();
 
   return (
     <Router>
-      <div className="min-h-screen theme-bg-primary text-size">
+      <div className="min-h-screen min-w-screen theme-bg-primary text-size">
         <div className="max-w-6xl mx-auto md:px-4 md:py-8 px-2 py-4">
           <Routes>
             <Route
@@ -402,6 +433,7 @@ const AppContent = () => {
                   onAddProject={handleOpenModal}
                   onLoginClick={() => handleOpenAuthModal('login')}
                   onSearch={handleSearch}
+                  onFilter={handleStatusFilter}
                   searchTerm={searchTerm}
                   loading={loading}
                   error={error}

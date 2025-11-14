@@ -264,7 +264,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="overflow-y-scroll whitespace-nowrap scrollbar-hidden theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className="overflow-y-scroll shadow-2xl whitespace-nowrap scrollbar-hidden theme-bg-secondary rounded-lg max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4 theme-text-primary">Add Vendor</h2>
@@ -471,7 +471,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
                 <div
                   key={vendor.id}
                   onClick={() => handleVendorSelect(vendor)}
-                  className='w-full text-left p-3 rounded-lg border border-gray-300 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer'
+                  className='w-full text-left p-3 rounded-lg border border-gray-300 hover:bg-blue-220 hover:border-blue-300 transition-colors cursor-pointer'
                 >
                   <div className="font-medium theme-text-primary">{vendor.name}</div>
                   <div className='text-xs theme-text-secondary mt-0.5'>{vendor.description}</div>

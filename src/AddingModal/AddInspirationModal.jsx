@@ -102,7 +102,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
       <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
         onClick={onClose}
       >
-        <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6"
+        <div className="border border-dashed  theme-bg-secondary rounded-lg max-w-md w-full p-6"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="text-xl font-bold mb-2">Add Inspiration Images</h2>
@@ -145,7 +145,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className="border border-dashed theme-bg-secondary rounded-lg max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-sm font-bold mb-2">Add Inspiration Images</h2>

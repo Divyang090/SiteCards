@@ -46,12 +46,12 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
-        className="absolute inset-0 bg-opacity-50 backdrop-blur-[1px]"
+        className="absolute modal-enter modal-enter-active inset-0 bg-opacity-50 backdrop-blur-[1px]"
         onClick={onClose}
       ></div>
 
       <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+        <div className="flex justify-between items-center p-2 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">Upload Site Map</h2>
           <button
             onClick={onClose}
@@ -61,7 +61,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-2">
           <div className="space-y-4">
             {/* Name Field */}
             <div>
@@ -134,7 +134,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-100">
+          <div className="flex justify-end space-x-3 pt-2 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}

@@ -72,7 +72,7 @@ const DrawingClickModal = ({ drawing, onClose }) => {
 
           {/* Date */}
           <div className="text-sm text-gray-500">
-            <strong>Uploaded:</strong> {formatDate(drawing.created_at || drawing.uploaded_at)}
+          {formatDate(drawing.created_at || drawing.uploaded_at)}
           </div>
         </div>
       </div>

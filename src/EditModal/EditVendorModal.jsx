@@ -5,27 +5,64 @@ import { useStatusMessage } from '../Alerts/StatusMessage';
 const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
   const { showMessage, showFailed } = useStatusMessage();
   const [formData, setFormData] = useState({
+    name: '',
     company_name: '',
-    trade: '',
-    vendor_email: '',
-    contact_number: ''
+    phone: '',
+    email: '',
+    tags: [],
+    notes: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [customTag, setCustomTag] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const predefinedTags = [
+    'supplier', 'contractor', 'service-provider', 'furniture', 'paint', 'tiles',
+    'hardware', 'kitchen', 'sanitaryware', 'lighting', 'glass',
+    'interior-design', 'plumbing', 'electrical', 'carpentry'
+  ];
 
   useEffect(() => {
     if (vendor) {
       setFormData({
-        company_name: vendor.company_name || vendor.name || '',
-        trade: vendor.trade || vendor.category || '',
-        vendor_email: vendor.vendor_email || vendor.contact || '',
-        contact_number: vendor.contact_number || vendor.phone || ''
+        name: vendor.name || vendor.contact_person || '',
+        company_name: vendor.company_name || '',
+        phone: vendor.contact_number || vendor.phone || '',
+        email: vendor.vendor_email || vendor.email || '',
+        tags: vendor.trade ? vendor.trade.split(', ').map(tag => tag.trim()) : [],
+        notes: vendor.notes || ''
       });
     }
   }, [vendor]);
 
+  const handleTagToggle = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag]
+    }));
+  };
+
+  const handleAddCustomTag = () => {
+    if (customTag.trim() && !formData.tags.includes(customTag.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, customTag.trim()]
+      }));
+      setCustomTag('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       const vendorId = vendor.vendor_id || vendor.id;
@@ -35,7 +72,12 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          name: formData.company_name,
+          company_name: formData.company_name,
+          vendor_email: formData.email,
+          contact_number: formData.phone,
+          trade: formData.tags.join(', '),
+          notes: formData.notes,
           space_id: spaceId,
           project_id: projectId
         }),
@@ -53,7 +95,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
       console.error('Error updating vendor:', error);
       showFailed('Failed to update vendor: ' + error.message);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -63,65 +105,167 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]">
       <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6">
         <h2 className="text-xl font-bold mb-4">Edit Vendor</h2>
+        
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Name Field */}
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">Company Name</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
+                Name *
+              </label>
               <input
                 type="text"
                 required
-                value={formData.company_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
-                placeholder='Enter company name...'
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Vendor name"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary"
               />
             </div>
+
+            {/* Company Field */}
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">Trade/Category</label>
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
+                Company
+              </label>
               <input
                 type="text"
-                value={formData.trade}
-                onChange={(e) => setFormData(prev => ({ ...prev, trade: e.target.value }))}
-                placeholder='Enter trade or category...'
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.company_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, company_name: e.target.value }))}
+                placeholder="Company name"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary"
               />
             </div>
+
+            <div className='grid grid-cols-2 gap-4'>
+              {/* Phone Field */}
+              <div>
+                <label className="block text-sm font-medium theme-text-secondary mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+91 XXXXX XXXXX"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary"
+                />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label className="block text-sm font-medium theme-text-secondary mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="vendor@example.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary"
+                />
+              </div>
+            </div>
+
+            {/* Tags Field */}
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">Email</label>
-              <input
-                type="email"
-                value={formData.vendor_email}
-                onChange={(e) => setFormData(prev => ({ ...prev, vendor_email: e.target.value }))}
-                placeholder='Enter email address...'
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
+                Tags
+              </label>
+
+              {/* Selected Tags */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {formData.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-xs theme-bg-blue theme-text-blue border border-blue-200"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-2 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+
+              {/* Predefined Tags */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {predefinedTags.map(tag => (
+                  <button
+                    type="button"
+                    key={tag}
+                    onClick={() => handleTagToggle(tag)}
+                    className={`px-3 py-1 rounded-full text-xs border ${formData.tags.includes(tag)
+                      ? 'theme-bg-blue theme-text-blue border-blue-200'
+                      : 'theme-bg-secondary theme-text-secondary border-gray-300 hover:border-blue-300'
+                      }`}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Tag Input */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customTag}
+                  onChange={(e) => setCustomTag(e.target.value)}
+                  placeholder="Add custom tag..."
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomTag();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomTag}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:border-blue-500 theme-bg-secondary theme-text-primary text-sm"
+                >
+                  Add
+                </button>
+              </div>
             </div>
+
+            {/* Notes Field */}
             <div>
-              <label className="block text-sm font-medium theme-text-secondary mb-1">Phone Number</label>
-              <input
-                type="tel"
-                value={formData.contact_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, contact_number: e.target.value }))}
-                placeholder='Enter phone number...'
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <label className="block text-sm font-medium theme-text-secondary mb-1">
+                Notes
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Additional notes about the vendor..."
+                rows="3"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 theme-bg-secondary theme-text-primary resize-none"
               />
             </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-500"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isLoading ? 'Updating...' : 'Update Vendor'}
-            </button>
+
+            {/* BUTTONS */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="px-4 py-2 theme-text-secondary hover:theme-text-primary disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Updating...' : 'Update Vendor'}
+              </button>
+            </div>
           </div>
         </form>
       </div>
