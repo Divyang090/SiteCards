@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
+import { useAuth } from './AuthContext';
 
-const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegister }) => {
+const AuthModal = () => {
+  const { showAuthModal, closeAuthModal, login } = useAuth();
+  const [currentView, setCurrentView] = useState('login');
 
-  const API_BASE = "http://192.168.1.22:8087/api/user";
+  console.log('AuthModal rendered, showAuthModal:', showAuthModal);
+  const API_BASE = `${BASE_URL}/user`;
   const LOGIN_API = `${API_BASE}/login`;
   const REGISTER_API = `${API_BASE}/register`;
   const FORGOT_PASSWORD_API = `${API_BASE}/forgot-password`;
@@ -21,6 +25,10 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
     return password.length >= 6;
   };
 
+  const handleLoginSuccess = (userData) => {
+    login(userData); // This updates global state
+  };
+
   // ==================== LOGIN FUNCTION ====================
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +38,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
     const email = form.email.value.trim();
     const password = form.password.value.trim();
 
-    console.log('sLOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
+    console.log('LOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
 
     // Basic validation
     if (!email || !password) {
@@ -54,7 +62,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_email: email,   
+          user_email: email,
           user_password: password
         })
       });
@@ -66,13 +74,23 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
       const data = await response.json();
 
-      if (onLogin) {
-        onLogin(data);
+      // ✅ DEBUG: Check what's in the response
+      console.log('🔍 Login API response data:', data);
+      console.log('🔍 All keys in response:', Object.keys(data));
+
+      // Check if user data is nested
+      if (data.user) {
+        console.log('🔍 User object keys:', Object.keys(data.user));
       }
+
+      login({
+        name: data.user_name || 'user',
+        email: data.user_email
+      })
 
       setSuccess('Login successful!');
       setTimeout(() => {
-        onClose();
+        closeAuthModal();
       }, 1500);
 
     } catch (err) {
@@ -139,9 +157,9 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
         },
         //Use backend field names
         body: JSON.stringify({
-          user_name: fullName,    // Changed to user_fullname
-          user_email: email,          // Changed to user_email
-          user_password: password     // Changed to user_password
+          user_name: fullName,
+          user_email: email,
+          user_password: password
         })
       });
 
@@ -152,14 +170,10 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
       const data = await response.json();
 
-      if (onRegister) {
-        onRegister(data);
-      }
-
       setSuccess('Registration successful! Please check your email to verify your account.');
 
       setTimeout(() => {
-        onSwitchView('login');
+        setCurrentView('login');
       }, 2000);
 
     } catch (err) {
@@ -202,7 +216,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
         },
         //Use backend field name
         body: JSON.stringify({
-          user_email: email  // Changed to user_email
+          user_email: email
         })
       });
 
@@ -228,14 +242,14 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
 
   // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {
-    if (!isOpen) {
+    if (!showAuthModal) {
       setError('');
       setSuccess('');
       setLoading(false);
     }
-  }, [isOpen]);
+  }, [showAuthModal]);
 
-  if (!isOpen) return null;
+  if (!showAuthModal) return null;
 
   // ==================== JSX RENDER ====================
   return (
@@ -243,7 +257,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
       {/* Overlay */}
       <div
         className="absolute inset-0  bg-opacity-50 backdrop-blur-[1px]"
-        onClick={onClose}
+        onClick={closeAuthModal}
       ></div>
 
       {/* Modal content */}
@@ -254,7 +268,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
             {currentView === 'login' ? 'Login to Your Account' : 'Create Your Account'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={closeAuthModal}
             className="text-gray-400 hover:text-gray-600 text-2xl transition-colors duration-200 focus:outline-none"
             disabled={loading}
           >
@@ -279,21 +293,21 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
         {/* Tabs */}
         <div className="flex border-b border-gray-100">
           <button
-            onClick={() => onSwitchView('login')}
+            onClick={() => setCurrentView('login')}
             disabled={loading}
             className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'login'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Login
           </button>
           <button
-            onClick={() => onSwitchView('register')}
+            onClick={() => setCurrentView('register')}
             disabled={loading}
             className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'register'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Register
@@ -377,7 +391,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                 Don't have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => onSwitchView('register')}
+                  onClick={() => setCurrentView('register')}
                   disabled={loading}
                   className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none disabled:opacity-50"
                 >
@@ -496,7 +510,7 @@ const AuthModal = ({ isOpen, onClose, currentView, onSwitchView, onLogin, onRegi
                 Already have an account?{' '}
                 <button
                   type="button"
-                  onClick={() => onSwitchView('login')}
+                  onClick={() => setCurrentView('login')}
                   disabled={loading}
                   className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none disabled:opacity-50"
                 >

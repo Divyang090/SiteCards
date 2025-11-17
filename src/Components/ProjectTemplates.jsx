@@ -193,7 +193,7 @@ const ProjectTemplates = () => {
 
           {/* Single Line Tabs */}
           <div className="border-b theme-border mb-6">
-            <nav className="mb-px flex space-x-8">
+            <nav className=" overflow-x-auto whitespace-nowrap scrollbar-hidden">
               {tabs.map((tab) => (
                 <button
                   key={tab}

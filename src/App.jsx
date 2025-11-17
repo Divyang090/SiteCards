@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ThemeProvider } from './Components/ThemeContext';
 import Header from './Components/Header';
 import ProjectCard from './Cards/ProjectCard';
@@ -12,6 +13,8 @@ import StatusMessageProvider, { useStatusMessage } from './Alerts/StatusMessage'
 import EditProjectModal from './EditModal/EditProjectModal';
 import { BASE_URL } from './Configuration/Config';
 import InspirationClickModal from './Components/InspirationClickModal';
+import { AuthProvider } from './Components/AuthContext';
+import { useAuth } from './Components/AuthContext';
 
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, loading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
@@ -111,7 +114,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
         onFilter={handleStatusFilter}
         currentFilter={statusFilter}
       />
-      <div className='mt-8 h-[800px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
+      <div className='mt-2 h-screen overflow-y-auto whitespace-nowrap scrollbar-hidden'>
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.length === 0 ? (
             <div className="col-span-full text-center py-12">
@@ -139,12 +142,11 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
   );
 };
 
-// Main App Content with Status Messages
+// Main App Content with Status Messages MAIN CONTENT
 const AppContent = () => {
+  const { user, openAuthModal } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authView, setAuthView] = useState('login');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -362,21 +364,14 @@ const AppContent = () => {
     setEditingProject(null);
   };
 
-  const handleOpenAuthModal = (view = 'login') => {
-    setAuthView(view);
-    setIsAuthModalOpen(true);
-  };
-
-  const handleCloseAuthModal = () => {
-    setIsAuthModalOpen(false);
-    setAuthView('login');
-  };
-
-  const handleSwitchAuthView = (view) => setAuthView(view);
-
   const handleLogin = (loginData) => {
     console.log('Login data:', loginData);
     handleCloseAuthModal();
+  };
+
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
   };
 
   const handleRegister = (registerData) => {
@@ -403,12 +398,12 @@ const AppContent = () => {
         );
         if (!matchesSearch) return false;
       }
-      
+
       // Status filter
       if (statusFilter !== 'all') {
         return project.status === statusFilter;
       }
-      
+
       return true;
     });
 
@@ -420,10 +415,49 @@ const AppContent = () => {
 
   const sortedAndFilteredProjects = getFilteredAndSortedProjects();
 
-  return (
-    <Router>
-      <div className="min-h-screen min-w-screen theme-bg-primary text-size">
-        <div className="max-w-6xl mx-auto md:px-4 md:py-8 px-2 py-4">
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary ">
+        <div className="flex md:justify-between justify-center items-center p-6">
+          <Link to="/" className=" md:text-2xl text-6xl font-bold theme-text-primary">
+            SiteCards
+          </Link>
+          <button
+            onClick={openAuthModal}
+            className="px-4 py-2  theme-border theme-text-primary hidden sm:inline-block theme-bg-secondary border rounded-lg"
+          >
+            Login
+          </button>
+        </div>
+
+        {/* Optional: Add a landing page content here */}
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold theme-text-primary mb-4">
+              Welcome to SiteCards
+            </h1>
+            <p className="theme-text-secondary mb-6">
+              Please login or register to access your projects
+            </p>
+            <button
+              onClick={openAuthModal}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+
+        {/* AuthModal for login/register */}
+        <AuthModal />
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary text-size">
+        <div className="mx-auto md:px-4 md:py-8 px-2 py-4">
           <Routes>
             <Route
               path="/"
@@ -431,7 +465,6 @@ const AppContent = () => {
                 <HomeWithDelete
                   projects={sortedAndFilteredProjects}
                   onAddProject={handleOpenModal}
-                  onLoginClick={() => handleOpenAuthModal('login')}
                   onSearch={handleSearch}
                   onFilter={handleStatusFilter}
                   searchTerm={searchTerm}
@@ -457,35 +490,36 @@ const AppContent = () => {
             onSave={handleSaveProject}
           />
 
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={handleCloseAuthModal}
-            currentView={authView}
-            onSwitchView={handleSwitchAuthView}
-            onLogin={handleLogin}
-            onRegister={handleRegister}
-          />
-
           <EditProjectModal
             isOpen={isEditModalOpen}
             onClose={handleCloseEditModal}
             project={editingProject}
             onSave={handleUpdateProject}
           />
+          <AuthModal />
         </div>
       </div>
-    </Router>
-  );
+    );
+  }
+  return (
+    <div>
+      <Header />
+    </div>
+  )
 };
 
 // Main App Component
 function App() {
   return (
-    <ThemeProvider>
-      <StatusMessageProvider>
-        <AppContent />
-      </StatusMessageProvider>
-    </ThemeProvider>
+    <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <StatusMessageProvider>
+            <AppContent />
+          </StatusMessageProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 

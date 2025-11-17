@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SiteMapUploadModal from '../AddingModal/SiteMapUploadModal';
 import AddVendorModal from '../AddingModal/AddVendorModal';
 import AddInspirationModal from '../AddingModal/AddInspirationModal';
@@ -29,6 +29,9 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [activeTab, setActiveTab] = useState('Drawings');
   const [isEditingSiteMap, setIsEditingSiteMap] = useState();
   const [isBulkPresetModalOpen, setIsBulkPresetModalOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  const menuRef = useRef(null);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -75,7 +78,19 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     }
   }, [projectId]);
 
+  // click outside handler
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (menuRef.current && !menuRef.current.contains(event.target)) {
+      setShowMenu(false);
+    }
+  };
 
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, []);
 
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
@@ -216,31 +231,54 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         </div>
 
         {!selectedSiteMap && (
-          <div className="flex items-center gap-3">
-            {/* Bulk Preset Button */}
-            <button
-              onClick={() => setIsBulkPresetModalOpen(true)}
-              className="theme-bg-primary theme-text-secondary border text-xs md:text-xl border-gray-500 hover:bg-blue-300 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              Bulk Preset
-            </button>
+  <div ref={menuRef} className="relative">
+    {/* Hamburger Menu Button */}
+    <button
+      onClick={() => setShowMenu(!showMenu)}
+      className="p-2 rounded-lg theme-border theme-text-primary theme-bg-secondary border hover:opacity-80 transition-all duration-200"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
 
-            {/* Upload Site Map Button */}
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              disabled={isUploading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm md:text-xl rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 disabled:opacity-50"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Upload Site Map
-            </button>
-          </div>
-        )}
+    {/* Dropdown Menu */}
+    {showMenu && (
+      <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
+        <div className="p-2">
+          {/* Bulk Preset Button */}
+          <button
+            onClick={() => {
+              setIsBulkPresetModalOpen(true);
+              setShowMenu(false);
+            }}
+            className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Bulk Preset
+          </button>
+
+          {/* Upload Site Map Button */}
+          <button
+            onClick={() => {
+              setIsUploadModalOpen(true);
+              setShowMenu(false);
+            }}
+            disabled={isUploading}
+            className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Upload Site Map
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+)}
       </div>
 
       {/* Site Maps Grid */}
@@ -609,7 +647,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
           if (response.ok) {
             const drawingsData = await response.json();
-            console.log('Fetched all drawings data:', drawingsData);
+            // console.log('Fetched all drawings data:', drawingsData);
 
             // Handle different response formats and filter by space_id
             let allDrawings = [];

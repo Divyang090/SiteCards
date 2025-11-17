@@ -439,7 +439,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
               </div>
 
               {/* BUTTONS*/}
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={onClose}

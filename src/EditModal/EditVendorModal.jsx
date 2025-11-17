@@ -60,44 +60,44 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const vendorId = vendor.vendor_id || vendor.id;
-      const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.company_name,
-          company_name: formData.company_name,
-          vendor_email: formData.email,
-          contact_number: formData.phone,
-          trade: formData.tags.join(', '),
-          notes: formData.notes,
-          space_id: spaceId,
-          project_id: projectId
-        }),
-      });
+  try {
+    const vendorId = vendor.vendor_id || vendor.id;
+    const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.name,                    // ✅ Fix: use formData.name
+        company_name: formData.company_name,    // ✅ Keep as is
+        vendor_email: formData.email,           // ✅ Keep as is
+        contact_number: formData.phone,         // ✅ Keep as is
+        trade: formData.tags.join(', '),
+        notes: formData.notes,
+        space_id: spaceId,
+        project_id: projectId
+      }),
+    });
 
-      if (response.ok) {
-        const updatedVendor = await response.json();
-        onUpdate(updatedVendor);
-        showMessage('Vendor updated successfully!', 'success');
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      console.error('Error updating vendor:', error);
-      showFailed('Failed to update vendor: ' + error.message);
-    } finally {
-      setIsSubmitting(false);
+    if (response.ok) {
+      const updatedVendor = await response.json();
+      onUpdate(updatedVendor);
+      showMessage('Vendor updated successfully!', 'success');
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
     }
-  };
+  } catch (error) {
+    console.error('Error updating vendor:', error);
+    showFailed('Failed to update vendor: ' + error.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   if (!vendor) return null;
 

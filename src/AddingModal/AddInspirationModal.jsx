@@ -3,10 +3,10 @@ import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider from "../Alerts/StatusMessage";
 import { useStatusMessage } from "../Alerts/StatusMessage";
 
-const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
-  const { showMessage, showConfirmation } = useStatusMessage();
+const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
+  const { showMessage } = useStatusMessage();
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     file: null,
     description: '',
     pinterestUrl: '',
@@ -36,13 +36,26 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // console.log('🔍 Form data before submit:', formData);
+    // console.log('🔍 Title value:', formData.title);
+
+    if (importOption === 'upload' && !formData.file) {
+      showMessage('Please select an image to upload', 'failed');
+      return;
+    }
+
+    if (importOption === 'pinterest' && !formData.pinterestUrl) {
+      showMessage('Please enter a Pinterest URL', 'failed');
+      return;
+    }
+
     setIsUploading(true);
 
     try {
       const uploadData = new FormData();
-      uploadData.append('drawing_name', formData.name);
       uploadData.append('space_id', spaceId);
-      uploadData.append('project_id', projectId);
+      uploadData.append('title', formData.title || 'Untitled Inspiration');
 
       if (importOption === 'upload') {
         uploadData.append('uploads', formData.file);
@@ -57,16 +70,16 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
         uploadData.append('tags', formData.tags.join(','));
       }
 
-      const response = await fetch(`${BASE_URL}/drawings/post`, {
+      const response = await fetch(`${BASE_URL}/inspiration/post`, {
         method: 'POST',
         body: uploadData,
       });
 
       if (response.ok) {
-        const newDrawing = await response.json();
-        console.log('New drawing created:', newDrawing);
-        onAdd(newDrawing);
-        showMessage('Image added successfully!', 'success');
+        const newInspiration = await response.json();
+        console.log('New Inspiration created:', newInspiration);
+        onAdd(newInspiration);
+        showMessage('Imspiration added successfully!', 'success');
         onClose();
       } else {
         const errorText = await response.text();
@@ -102,7 +115,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
       <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
         onClick={onClose}
       >
-        <div className="border border-dashed  theme-bg-secondary rounded-lg max-w-md w-full p-6"
+        <div className="shadow-2xl theme-bg-secondary rounded-lg max-w-md w-full p-6"
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="text-xl font-bold mb-2">Add Inspiration Images</h2>
@@ -145,7 +158,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="border border-dashed theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-sm font-bold mb-2">Add Inspiration Images</h2>
@@ -217,8 +230,8 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
               </label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Modern Kitchen Design"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -311,4 +324,4 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   );
 };
 
-export default AddDrawingModal;
+export default AddInspirationModal;

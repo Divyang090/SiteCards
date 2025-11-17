@@ -13,7 +13,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [tasks, setTasks] = useState([]);
   const [taskLoading, setTaskLoading] = useState(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState(()=>{
+    const savedTab = localStorage.getItem(`project-${id}-activeTab`);
+    return savedTab || 'tasks';
+  });
   const [siteMapsCount, setSiteMapsCount] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const [formData, setFormData] = useState({
@@ -38,6 +41,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     }));
   };
 
+    useEffect(() => {
+    localStorage.setItem(`project-${id}-activeTab`, activeTab);
+  }, [activeTab, id]);
+
   // Get project data
   useEffect(() => {
     const loadProject = async () => {
@@ -46,8 +53,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
         console.log('Loading project with ID:', id);
         //remove after testing
-        console.log('propProjects:', propProjects);
-        console.log('localStorage projects:', JSON.parse(localStorage.getItem('projects') || '[]'));
+        // console.log('propProjects:', propProjects);
+        // console.log('localStorage projects:', JSON.parse(localStorage.getItem('projects') || '[]'));
         if (Array.isArray(propProjects) && propProjects.length > 0) {
           const foundFromProps = propProjects.find(p => (p.id && p.id.toString() === id) || (p.project_id && p.project_id.toString() === id));
           if (foundFromProps) {
@@ -72,7 +79,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         if (response.ok) {
           const projectData = await response.json();
           const transformedProject = transformProjectData(projectData);
-          console.log('Found project via API:', transformedProject);
+          // console.log('Found project via API:', transformedProject);
           setProject(transformedProject);
         } else {
           const projectsResponse = await fetch(`${BASE_URL}/projects/projects`);
@@ -129,7 +136,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         const response = await fetch(`${BASE_URL}/tasks/tasks`);
         if (response.ok) {
           const tasksData = await response.json();
-          console.log('Fetched ALL tasks from API:', tasksData);
+          // console.log('Fetched ALL tasks from API:', tasksData);
 
           // Handle different response formats
           let tasksArray = tasksData;
@@ -144,7 +151,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             String(task.project_id) === String(id)
           );
 
-          console.log(`Filtered tasks for project ${id}:`, filteredTasks);
+          // console.log(`Filtered tasks for project ${id}:`, filteredTasks);
 
           // Transform ONLY the filtered tasks
           const transformedTasks = filteredTasks.map(task => ({
@@ -385,8 +392,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
   // Skeleton Loader Component
   const SkeletonLoader = () => (
-    <div className="min-h-screen theme-bg-primary theme-text-primary">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="min-h-screen theme-bg-primary bg-[url('bgimage.png')] theme-text-primary">
+      <div className="mx-auto px-6 py-8">
         {/* Back Button Skeleton */}
         <div className="w-24 h-4 theme-bg-primary rounded mb-6 animate-pulse"></div>
 
@@ -445,7 +452,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
   return (
     <div className="min-h-screen theme-bg-primary theme-text-primary text-size">
-      <div className="max-w-6xl mx-auto px-2 py-2 md:px-6 md:py-8 ">
+      <div className="mx-auto px-2 py-2 md:px-6 md:py-8 ">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-400 mb-6">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

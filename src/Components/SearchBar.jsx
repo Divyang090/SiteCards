@@ -8,7 +8,7 @@ const SearchBar = ({ onSearch, onFilter, currentFilter, onClose }) => {
 
   const statusFilters = [
     { value: 'all', label: 'All Projects', color: 'gray' },
-    { value: 'planning', label: 'Planning', color: 'yellow' },
+    { value: 'Planning', label: 'Planning', color: 'yellow' },
     { value: 'In Progress', label: 'In Progress', color: 'blue' },
     { value: 'review', label: 'Review', color: 'purple' },
     { value: 'completed', label: 'Completed', color: 'green' }

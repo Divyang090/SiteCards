@@ -1,7 +1,51 @@
-// ThemeContext.js
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useContext, createContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
+
+export const ThemeProvider = ({ children }) => {
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return false;
+  });
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    // Set initial theme on mount
+    const saved = localStorage.getItem('theme');
+    const initialTheme = saved === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', initialTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+
+    // Update data-theme attribute immediately for CSS variables
+    const newIsDark = !isDark;
+    const newTheme = !isDark ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Set timeout to actually toggle the state after a brief delay
+    // This ensures CSS variables update before the animation
+    setTimeout(() => {
+      setIsDark(!isDark);
+      setIsAnimating(false);
+    }, 300); // Halfway through the expansion
+  };
+
+  return (
+    <ThemeContext.Provider value={{
+      isDark,
+      toggleTheme,
+      isAnimating
+    }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -9,36 +53,4 @@ export const useTheme = () => {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-};
-
-export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) {
-      return saved === 'dark';
-    }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
-  useEffect(() => {
-    // Save to localStorage
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
-    // Apply data-theme attribute to html element instead of setting CSS variables directly
-    const html = document.documentElement;
-    html.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    
-    // Optional: Debug log
-    console.log('🎨 Theme applied:', isDark ? 'dark' : 'light');
-    
-  }, [isDark]);
-
-  const toggleTheme = () => setIsDark(!isDark);
-  const setTheme = (theme) => setIsDark(theme === 'dark');
-
-  return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
 };

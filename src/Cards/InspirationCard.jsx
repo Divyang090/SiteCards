@@ -1,6 +1,20 @@
 import React from 'react';
+import { BASE_URL } from '../Configuration/Config';
 
 const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
+  // console.log('🔍 FULL InspirationCard props:', { item, onEdit, onDelete, onClick });
+  // console.log('🔍 Item title value:', item?.title);
+  // console.log('🔍 Item type:', typeof item);
+  // console.log('🔍 Is item null/undefined?', item === null || item === undefined);
+  // console.log('🔍 Image debug:', {
+  //   files: item.files,
+  //   file_path: item.files?.[0]?.file_path,
+  //   full_url: item.files?.[0]?.file_path ? `${BASE_URL}/${item.files[0].file_path}` : null,
+  //   file_url: item.file_url,
+  //   url: item.url,
+  //   image_url: item.image_url
+  // });
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -19,7 +33,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
   };
 
   return (
-    <div 
+    <div
       className="rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group cursor-pointer bg-white"
       onClick={() => onClick && onClick(item)}
     >
@@ -28,7 +42,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
         {item.tags && item.tags.length > 0 && (
           <div className="absolute top-2 left-2 z-10 flex flex-wrap gap-1 max-w-[70%]">
             {item.tags.slice(0, 3).map((tag, index) => (
-              <span 
+              <span
                 key={index}
                 className="bg-gray-500 bg-opacity-70 text-white px-2 py-1 rounded-2xl text-xs font-medium backdrop-blur-sm"
               >
@@ -42,15 +56,15 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
             )}
           </div>
         )}
-        
+
         {/* Image with zoom effect */}
         <div className="relative w-full h-full overflow-hidden">
           <img
-            src={item.file_url || item.url || item.image_url}
+            src={`${BASE_URL.replace('/api', '')}/${item.files?.[0]?.file_path}`}
             alt={item.title || item.name}
             className="w-full h-full object-cover transition-transform duration-300 md:group-hover:scale-110"
           />
-          
+
           {/* Hover Overlay with Title & Description */}
           <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-end">
             <div className="w-full p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
@@ -67,7 +81,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
             </div>
           </div>
         </div>
-        
+
         {/* Hover Actions*/}
         <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity duration-200 flex gap-1 z-20">
           <button
@@ -85,7 +99,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete && onDelete(item.inspiration_id || item.id);
+              onDelete && onDelete(item.inspiration_id || item.isnpiration_id || item.id);
             }}
             className="bg-red-600 text-white p-1.5 rounded hover:bg-red-700 transition-colors duration-200"
             title="Delete"
@@ -96,10 +110,10 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
           </button>
         </div>
       </div>
-      
-      <div className="p-2">
-        {/* Footer if needed */}
-      </div>
+
+      {/* <div className="p-2"> */}
+      {/* Footer if needed */}
+      {/* </div> */}
     </div>
   );
 };
