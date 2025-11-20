@@ -7,6 +7,15 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const { showMessage } = useStatusMessage();
 
+  const categories = [
+    'Custom',
+    'Floor Plan',
+    'Electrical',
+    'Plumbing',
+    'Structural',
+    'Landscape'
+  ];
+
   const presets = [
     {
       id: 'residential',
@@ -38,6 +47,12 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
     }
   ];
 
+  // Function to get a random category
+  const getRandomCategory = () => {
+    const randomIndex = Math.floor(Math.random() * categories.length);
+    return categories[randomIndex];
+  };
+
   const handleApplyPreset = async () => {
     if (!selectedPreset) return;
     
@@ -45,8 +60,10 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
     try {
       const createdSiteMaps = [];
       
-      // Create site maps for each space
+      // Create site maps for each space with random categories
       for (const spaceName of selectedPreset.spaces) {
+        const randomCategory = getRandomCategory();
+        
         const response = await fetch(`${BASE_URL}/spaces/spaces`, {
           method: 'POST',
           headers: {
@@ -54,7 +71,7 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
           },
           body: JSON.stringify({
             title: spaceName,
-            category:'',
+            category: randomCategory,
           }),
         });
 

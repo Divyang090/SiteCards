@@ -32,7 +32,7 @@ const DrawingClickModal = ({ drawing, onClose }) => {
       <div className="theme-bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden"
       onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex justify-between items-center p-6">
+        <div className="flex justify-between items-center p-3">
           <h2 className="md:text-2xl text-xl font-bold">{drawing.drawing_name || drawing.name}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,8 +65,7 @@ const DrawingClickModal = ({ drawing, onClose }) => {
           {/* Description */}
           {drawing.description && (
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-2">Description</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{drawing.description}</p>
+              <p className="flex theme-text-secondary text-lg whitespace-pre-wrap">{drawing.description}</p>
             </div>
           )}
 

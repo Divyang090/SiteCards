@@ -30,6 +30,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isEditingSiteMap, setIsEditingSiteMap] = useState();
   const [isBulkPresetModalOpen, setIsBulkPresetModalOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [loading, setLoading] = useState();
 
   const menuRef = useRef(null);
 
@@ -80,17 +81,17 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
 
   // click outside handler
   useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setShowMenu(false);
-    }
-  };
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
 
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, []);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSiteMapClick = (siteMap) => {
     setSelectedSiteMap(siteMap);
@@ -105,6 +106,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
 
   const handleSiteMapSubmit = async (formData) => {
     setIsUploading(true);
+    setLoading(true);
     try {
       console.log('Starting upload with form data:', formData);
 
@@ -155,6 +157,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
+      setLoading(false);
     }
   };
 
@@ -231,54 +234,54 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
         </div>
 
         {!selectedSiteMap && (
-  <div ref={menuRef} className="relative">
-    {/* Hamburger Menu Button */}
-    <button
-      onClick={() => setShowMenu(!showMenu)}
-      className="p-2 rounded-lg theme-border theme-text-primary theme-bg-secondary border hover:opacity-80 transition-all duration-200"
-    >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    </button>
+          <div ref={menuRef} className="relative">
+            {/* Hamburger Menu Button */}
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-lg theme-border theme-text-primary theme-bg-secondary border hover:opacity-80 transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-    {/* Dropdown Menu */}
-    {showMenu && (
-      <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
-        <div className="p-2">
-          {/* Bulk Preset Button */}
-          <button
-            onClick={() => {
-              setIsBulkPresetModalOpen(true);
-              setShowMenu(false);
-            }}
-            className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-            Bulk Preset
-          </button>
+            {/* Dropdown Menu */}
+            {showMenu && (
+              <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
+                <div className="p-2">
+                  {/* Bulk Preset Button */}
+                  <button
+                    onClick={() => {
+                      setIsBulkPresetModalOpen(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Bulk Preset
+                  </button>
 
-          {/* Upload Site Map Button */}
-          <button
-            onClick={() => {
-              setIsUploadModalOpen(true);
-              setShowMenu(false);
-            }}
-            disabled={isUploading}
-            className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200 disabled:opacity-50"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Upload Site Map
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-)}
+                  {/* Upload Site Map Button */}
+                  <button
+                    onClick={() => {
+                      setIsUploadModalOpen(true);
+                      setShowMenu(false);
+                    }}
+                    disabled={isUploading}
+                    className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200 disabled:opacity-50"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Upload Site Map
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Site Maps Grid */}
@@ -440,6 +443,22 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     console.log('Edit vendor:', vendor);
     setEditingVendor(vendor)
   };
+
+  const handleUpdateVendor = (updatedVendor) => {
+    console.log('🔄 PARENT: handleUpdateVendor called with:', updatedVendor);
+    console.log('🔄 PARENT: Current vendors before update:', vendors);
+
+    setVendors(prevVendors => {
+      const newVendors = prevVendors.map(vendor =>
+        vendor.id === updatedVendor.id ? updatedVendor : vendor
+      );
+      console.log('🔄 PARENT: Vendors after update:', newVendors);
+      return newVendors;
+    });
+
+    setEditingVendor(null);
+    console.log('✅ PARENT: Modal closed and state updated');
+  };
   //Delete Vendor
   const handleDeleteVendor = async (vendorId) => {
     const vendor = vendors.find(v => v.id === vendorId);
@@ -452,7 +471,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${vendorname}"? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
+          const response = await fetch(`${BASE_URL}/vendors/del_vendors/${vendorId}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -490,7 +509,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${inspirationName}"? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/inspiration/${inspirationId}`, {
+          const response = await fetch(`${BASE_URL}/inspiration/del_inspirations/${inspirationId}`, {
             method: 'DELETE',
           });
 
@@ -513,18 +532,36 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   // Fetch vendors data
   useEffect(() => {
-    const fetchVendors = async () => {
+    // console.log('🔄 useEffect triggered - Debug Info:');
+    // console.log('  📍 activeTab:', activeTab);
+    // console.log('  📍 spaceId:', spaceId);
+    // console.log('  📍 spaceId type:', typeof spaceId);
+    // console.log('  📍 spaceId is undefined:', spaceId === undefined);
+    // console.log('  📍 spaceId is null:', spaceId === null);
+    // console.log('  📍 spaceId is empty string:', spaceId === '');
+    // console.log('  📍 Should fetch vendors:', activeTab === 'Vendors' && spaceId);
+
+    const fetchVendors = async (spaceId) => {
+      console.log('🚀 fetchVendors called with spaceId:', spaceId);
+
       if (activeTab === 'Vendors') {
+        // Check if spaceId is valid before making API call
+        if (!spaceId) {
+          console.error('❌ BLOCKED: spaceId is invalid');
+          setVendors([]);
+          setLoading(prev => ({ ...prev, vendors: false }));
+          return;
+        }
+
         setLoading(prev => ({ ...prev, vendors: true }));
         try {
-          console.log('🔄 FETCHING ALL VENDORS');
+          const apiUrl = `${BASE_URL}/vendors/vendors/space/${spaceId}`;
+          console.log('🌐 Fetching vendors from:', apiUrl);
 
-          const response = await fetch(`${BASE_URL}/vendors/vendors`);
-          console.log('📡 Vendors API response status:', response.status);
+          const response = await fetch(apiUrl);
 
           if (response && response.ok) {
             const responseData = await response.json();
-            console.log('📦 RAW vendors response from backend:', responseData);
 
             // Handle different response formats
             let allVendors = [];
@@ -538,22 +575,22 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             } else if (responseData && typeof responseData === 'object') {
               allVendors = Object.values(responseData);
             } else {
-              console.log('❌ Unknown response format:', responseData);
               allVendors = [];
             }
 
-            console.log('📋 All vendors to display:', allVendors);
+            console.log('📋 Vendors found:', allVendors.length);
 
+            // ✅ UPDATED: Remove category and use tags instead
             const mappedVendors = allVendors.map(vendor => ({
               id: vendor.vendor_id || vendor.id,
+              vendor_id: vendor.vendor_id || vendor.id,
               name: vendor.company_name || 'Unnamed Vendor',
-              category: vendor.trade || 'General',
               contact: vendor.vendor_email || 'No contact',
               phone: vendor.contact_number || 'No phone',
-              space_id: vendor.space_id
+              space_id: vendor.space_id,
+              tags: vendor.tags || []
             }));
 
-            console.log('🎯 Final vendors to display:', mappedVendors);
             setVendors(mappedVendors);
           } else {
             console.error('❌ Vendors API failed with status:', response.status);
@@ -568,8 +605,18 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       }
     };
 
-    fetchVendors();
+    console.log('🔧 Calling fetchVendors function...');
+    fetchVendors(spaceId);
   }, [activeTab, spaceId]);
+
+  // Add this additional useEffect to track when spaceId becomes available
+  useEffect(() => {
+    console.log('🔍 SpaceId Monitor - Current spaceId:', spaceId);
+    console.log('🔍 SpaceId Monitor - spaceId available:', !!spaceId);
+  }, [spaceId]);
+
+  // Add this to see component props/state
+  console.log('📝 Component render - spaceId:', spaceId, 'activeTab:', activeTab);
 
   // Fetch tasks data
   useEffect(() => {
@@ -751,7 +798,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     });
   };
 
-  // Toggle task completion
+  // Toggle task completion REMOVE CORS HANDLING
   const handleToggleTask = async (taskId) => {
     console.log('Toggle task clicked for ID:', taskId);
 
@@ -773,7 +820,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
       // Try API call with CORS handling
       try {
-        const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+        const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -791,28 +838,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       }
     } catch (error) {
       console.error('Error updating task:', error);
-    }
-  };
-  //1/11 Vendor Edit
-  // Update Vendor Function
-  const handleUpdateVendor = async (vendorId, updates) => {
-    try {
-      const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates)
-      });
-
-      if (response.ok) {
-        // Update local state
-        setVendors(prev => prev.map(vendor =>
-          vendor.id === vendorId ? { ...vendor, ...updates } : vendor
-        ));
-      }
-    } catch (error) {
-      console.error('Error updating vendor:', error);
     }
   };
 
@@ -910,7 +935,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium theme-text-secondary mb-2">No drawings yet</h3>
-                <p className="text-gray-500 text-sm">Add your first drawing to get started</p>
+                <button
+                  onClick={setIsAddDrawingOpen}
+                  className='text-blue-600 hover:text-blue-700 text-sm mb-4'>
+                  + Add your first Drawing to get started
+                </button>
               </div>
             )}
           </div>
@@ -951,7 +980,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium theme-text-secondary mb-2">No vendors yet</h3>
-                <p className="text-gray-500 text-sm">Add your first vendor to get started</p>
+                <button className='text-blue-600 hover:text-blue-700 text-md'
+                  onClick={setIsAddVendorOpen}
+                >
+                  + Add your first vendor to get started
+                </button>
               </div>
             )}
           </div>
@@ -994,7 +1027,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium theme-text-secondary mb-2">No inspiration yet</h3>
-                <p className="text-gray-500 text-sm">Add your first inspiration image to get started</p>
+                <button className='text-blue-600 hover:text-blue-700 text-md'
+                  onClick={setIsAddInspirationOpen}
+                >
+                  + Add your first inspiration image to get started
+                </button>
               </div>
             )}
           </div>
@@ -1112,13 +1149,20 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
           <EditDrawingModal
             drawing={editingDrawing}
-            spaceId={editingDrawing.space_id}  // This should be "8744585a..."
+            spaceId={editingDrawing?.space_id}  // Added optional chaining
             projectId={siteMap?.project_id}
             onClose={() => setEditingDrawing(null)}
             onUpdate={(updatedDrawing) => {
-              setDrawings(prev => prev.map(d =>
-                d.drawing_id === updatedDrawing.drawing_id ? updatedDrawing : d
-              ));
+              console.log('🔄 Parent: Received updated drawing:', updatedDrawing);
+              console.log('🔄 Parent: Current drawings before update:', drawings);
+
+              setDrawings(prev => {
+                const updated = prev.map(d =>
+                  d.drawing_id === updatedDrawing.drawing_id ? updatedDrawing : d
+                );
+                console.log('🔄 Parent: Drawings after update:', updated);
+                return updated;
+              });
               setEditingDrawing(null);
             }}
           />
@@ -1132,12 +1176,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           spaceId={siteMap?.space_id || siteMap?.id}
           projectId={siteMap?.project_id}
           onClose={() => setEditingVendor(null)}
-          onUpdate={(updatedVendor) => {
-            setVendors(prev => prev.map(v =>
-              v.vendor_id === updatedVendor.vendor_id ? updatedVendor : v
-            ));
-            setEditingVendor(null)
-          }}
+          onUpdate={handleUpdateVendor}
         />
       )}
 

@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useAuth } from './AuthContext';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 const AuthModal = () => {
   const { showAuthModal, closeAuthModal, login } = useAuth();
   const [currentView, setCurrentView] = useState('login');
+  const [loginStep, setLoginStep] = useState('credentials');
+  const [pendingLoginData, setPendingLoginData] = useState(null);
+  const [otp, setOtp] = useState('');
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [ForgotPasswordEmail, setForgotPasswordEmail] = useState();
 
-  console.log('AuthModal rendered, showAuthModal:', showAuthModal);
   const API_BASE = `${BASE_URL}/user`;
   const LOGIN_API = `${API_BASE}/login`;
   const REGISTER_API = `${API_BASE}/register`;
-  const FORGOT_PASSWORD_API = `${API_BASE}/forgot-password`;
+  const VERIFY_OTP = `${API_BASE}/verify_login_otp`;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,12 +26,180 @@ const AuthModal = () => {
     return emailRegex.test(email);
   };
 
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!showAuthModal) {
+      setCurrentView('login');
+      setLoginStep('credentials');
+      setPendingLoginData(null);
+      setOtp('');
+      setError('');
+      setSuccess('');
+      setLoading(false);
+    }
+  }, [showAuthModal]);
+
+  //reset otp flow when modal closes or view changes
+  useEffect(() => {
+    if (!showAuthModal || currentView !== 'login') {
+      setLoginStep('credentials');
+      setPendingLoginData(null);
+      setOtp('');
+    }
+  }, [showAuthModal, currentView]);
+
   const isStrongPassword = (password) => {
     return password.length >= 6;
   };
 
+  //Forgot Password Handler
+  const handleForgotPassword = () => {
+    // Get email from the login form
+    const emailInput = document.querySelector('input[name="email"]');
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    setForgotPasswordEmail(email);
+    setShowForgotPasswordModal(true);
+  };
+
+  // Close forgot password modal
+  const handleCloseForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false);
+  };
+
   const handleLoginSuccess = (userData) => {
     login(userData); // This updates global state
+  };
+
+  // ==================== STEP 1: VERIFY CREDENTIALS & SEND OTP ====================
+  const handleVerifyCredentials = async (e) => {
+    e.preventDefault();
+
+    const form = e.target;
+    const email = form.email.value.trim();
+    const password = form.password.value.trim();
+
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch(LOGIN_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_email: email,
+          user_password: password
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const data = await response.json();
+
+      // Store user data for later login, but don't login yet
+      setPendingLoginData({
+        name: data.user_name || 'user',
+        email: email,
+        tokens: {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token
+        }
+      });
+
+      // Move to OTP verification step
+      setLoginStep('otp');
+      setSuccess('OTP has been sent to your email. Please enter it below.');
+
+    } catch (err) {
+      console.error('Login error:', err);
+      if (err.message.includes('Failed to fetch')) {
+        setError('Cannot connect to server. Please check if backend is running on port 5000.');
+      } else {
+        setError(err.message || 'Login failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== STEP 2: VERIFY OTP ====================
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+
+    if (!otp || otp.length < 4) {
+      setError('Please enter a valid OTP');
+      return;
+    }
+
+    if (!pendingLoginData) {
+      setError('Session expired. Please try logging in again.');
+      setLoginStep('credentials');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(VERIFY_OTP, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_email: pendingLoginData.email,
+          otp_code: otp
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'OTP verification failed');
+      }
+
+      const data = await response.json();
+
+      // Only now do we actually log the user in
+      login(pendingLoginData, {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token
+      });
+      setSuccess('Login successful!');
+      setTimeout(() => {
+        closeAuthModal();
+      }, 1500);
+
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setError(err.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== GO BACK TO CREDENTIALS STEP ====================
+  const handleBackToCredentials = () => {
+    setLoginStep('credentials');
+    setPendingLoginData(null);
+    setOtp('');
+    setError('');
+    setSuccess('');
   };
 
   // ==================== LOGIN FUNCTION ====================
@@ -74,18 +247,12 @@ const AuthModal = () => {
 
       const data = await response.json();
 
-      // ✅ DEBUG: Check what's in the response
-      console.log('🔍 Login API response data:', data);
-      console.log('🔍 All keys in response:', Object.keys(data));
-
-      // Check if user data is nested
-      if (data.user) {
-        console.log('🔍 User object keys:', Object.keys(data.user));
-      }
-
       login({
         name: data.user_name || 'user',
         email: data.user_email
+      }, {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken
       })
 
       setSuccess('Login successful!');
@@ -188,64 +355,15 @@ const AuthModal = () => {
     }
   };
 
-  // ==================== FORGOT PASSWORD FUNCTION ====================
-  const handleForgotPassword = async () => {
-    // Get email from the login form directly
-    const emailInput = document.querySelector('input[name="email"]');
-    const email = emailInput ? emailInput.value.trim() : '';
-
-    if (!email) {
-      setError('Please enter your email address first');
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await fetch(FORGOT_PASSWORD_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        //Use backend field name
-        body: JSON.stringify({
-          user_email: email
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send reset email');
-      }
-
-      const data = await response.json();
-      setSuccess('Password reset instructions have been sent to your email!');
-
-    } catch (err) {
-      console.error('Forgot password error:', err);
-      if (err.message.includes('Failed to fetch')) {
-        setError('Cannot connect to server. Please check if backend is running on port 5000.');
-      } else {
-        setError(err.message || 'Failed to send reset email. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {
     if (!showAuthModal) {
       setError('');
       setSuccess('');
       setLoading(false);
+      setLoginStep('credentials');
+      setPendingLoginData(null);
+      setOtp('');
     }
   }, [showAuthModal]);
 
@@ -256,7 +374,7 @@ const AuthModal = () => {
     <div className="fixed inset-0 z-50 theme-black flex items-center justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0  bg-opacity-50 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-opacity-50 backdrop-blur-[1px]"
         onClick={closeAuthModal}
       ></div>
 
@@ -265,7 +383,9 @@ const AuthModal = () => {
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">
-            {currentView === 'login' ? 'Login to Your Account' : 'Create Your Account'}
+            {loginStep === 'credentials'
+              ? 'Login to Your Account'
+              : 'Verify OTP'}
           </h2>
           <button
             onClick={closeAuthModal}
@@ -290,33 +410,35 @@ const AuthModal = () => {
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-100">
-          <button
-            onClick={() => setCurrentView('login')}
-            disabled={loading}
-            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'login'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setCurrentView('register')}
-            disabled={loading}
-            className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'register'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Register
-          </button>
-        </div>
+        {/* Tabs - Only show when in credentials step */}
+        {loginStep === 'credentials' && (
+          <div className="flex border-b border-gray-100">
+            <button
+              onClick={() => setCurrentView('login')}
+              disabled={loading}
+              className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'login'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setCurrentView('register')}
+              disabled={loading}
+              className={`flex-1 py-3 text-sm font-medium transition-colors duration-200 ${currentView === 'register'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              Register
+            </button>
+          </div>
+        )}
 
-        {/* Login Form */}
-        {currentView === 'login' && (
-          <form onSubmit={handleLoginSubmit} className="p-6">
+        {/* Login Form - Credentials Step */}
+        {currentView === 'login' && loginStep === 'credentials' && (
+          <form onSubmit={handleVerifyCredentials} className="p-6">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
@@ -366,7 +488,7 @@ const AuthModal = () => {
               </div>
             </div>
 
-            {/* Login Button */}
+            {/* Verify Credentials Button */}
             <button
               type="submit"
               disabled={loading}
@@ -378,10 +500,10 @@ const AuthModal = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Signing In...
+                  Verifying...
                 </>
               ) : (
-                'Sign In'
+                'Send OTP'
               )}
             </button>
 
@@ -401,6 +523,69 @@ const AuthModal = () => {
             </div>
           </form>
         )}
+
+        {/* OTP Verification Step */}
+        {currentView === 'login' && loginStep === 'otp' && (
+          <form onSubmit={handleVerifyOtp} className="p-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1">
+                  Enter OTP *
+                </label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  required
+                  disabled={loading}
+                  maxLength={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-center text-lg font-mono"
+                  placeholder="Enter 6-digit OTP"
+                />
+                <p className="text-xs text-gray-500 mt-1 text-center">
+                  Please check your email for the OTP
+                </p>
+              </div>
+            </div>
+
+            {/* Verify OTP Button */}
+            <button
+              type="submit"
+              disabled={loading || otp.length < 4}
+              className="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verifying OTP...
+                </>
+              ) : (
+                'Verify OTP & Login'
+              )}
+            </button>
+
+            {/* Back to credentials */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={handleBackToCredentials}
+                disabled={loading}
+                className="text-blue-600 hover:text-blue-800 font-medium text-sm focus:outline-none disabled:opacity-50"
+              >
+                ← Back to login
+              </button>
+            </div>
+          </form>
+        )}
+
+        <ForgotPasswordModal 
+        isOpen={showForgotPasswordModal}
+        onClose={handleCloseForgotPasswordModal}
+        initialEmail={ForgotPasswordEmail}
+        />
 
         {/* Register Form */}
         {currentView === 'register' && (

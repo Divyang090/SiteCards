@@ -60,7 +60,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
         {/* Image with zoom effect */}
         <div className="relative w-full h-full overflow-hidden">
           <img
-            src={`${BASE_URL.replace('/api', '')}/${item.files?.[0]?.file_path}`}
+            src={`${BASE_URL}/${item.files?.[0]?.file_path}`}
             alt={item.title || item.name}
             className="w-full h-full object-cover transition-transform duration-300 md:group-hover:scale-110"
           />
@@ -111,7 +111,7 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
         </div>
       </div>
 
-      {/* <div className="p-2"> */}
+      {/* <div className="p-2">
       {/* Footer if needed */}
       {/* </div> */}
     </div>

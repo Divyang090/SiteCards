@@ -19,11 +19,11 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous messages
     setError('');
     setSuccess('');
-    
+
     // Basic validation
     if (!formData.title.trim() || !formData.assignee.trim() || !formData.dueDate) {
       setError('Project Title, Client Name, and Due Date are required');
@@ -61,14 +61,14 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
       }
 
       const newProject = await response.json();
-      
+
       // ==================== DEBUG BACKEND RESPONSE ====================
       console.log('🔍 FULL BACKEND RESPONSE:', newProject);
       console.log('🔍 All fields from backend:');
       Object.keys(newProject).forEach(key => {
         console.log(`  ${key}:`, newProject[key]);
       });
-      
+
       // ==================== TRANSFORM WITH PROPER DATE HANDLING ====================
       const transformedProject = {
         id: newProject.id || newProject.project_id,
@@ -76,9 +76,9 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         assignee: newProject.client_name || newProject.client || newProject.assignee || newProject.assigned_to || formData.assignee,
         status: newProject.status || formData.status,
         // FIXED: Proper date handling - use backend response first
-        docDate: newProject.due_date ? new Date(newProject.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 
-                 newProject.end_date ? new Date(newProject.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
-                 formData.dueDate ? new Date(formData.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
+        docDate: newProject.due_date ? new Date(newProject.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
+          newProject.end_date ? new Date(newProject.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
+            formData.dueDate ? new Date(formData.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
         isOverdue: newProject.is_overdue || newProject.overdue || false,
         cardsCount: newProject.cards_count || newProject.cardsCount || 0,
         location: newProject.location || formData.location,
@@ -88,10 +88,10 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
       console.log('TRANSFORMED PROJECT:', transformedProject);
       console.log('DATE DEBUG - Final docDate:', transformedProject.docDate);
-      
+
       // ==================== SUCCESS ====================
       setSuccess('Project created successfully!');
-      
+
       // Wait a moment to show success message, then update parent
       setTimeout(() => {
         onSave(transformedProject);
@@ -101,16 +101,16 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
     } catch (err) {
       console.error('Error creating project:', err);
-      
+
       // User-friendly error messages
       let userMessage = err.message;
-      
+
       if (err.message.includes('Failed to fetch')) {
         userMessage = 'Cannot connect to server. Please check if backend is running.';
       } else if (err.message.includes('NetworkError')) {
         userMessage = 'Network error. Please check your internet connection.';
       }
-      
+
       setError(userMessage);
     } finally {
       setLoading(false);
@@ -124,7 +124,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear messages when user starts typing
     if (error || success) {
       setError('');
@@ -160,11 +160,11 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 z-50 theme-black flex items-center justify-center">
       {/* Overlay */}
-      <div 
+      <div
         className="absolute inset-0  bg-opacity-80 backdrop-blur-[1px]"
         onClick={handleOverlayClick}
       ></div>
-      
+
       {/* Modal content */}
       <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
@@ -172,7 +172,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
           <h2 className="text-xl font-semibold theme-text-primary">
             {loading ? 'Creating Project...' : 'Create New Project'}
           </h2>
-          <button 
+          <button
             onClick={() => {
               resetForm();
               onClose();
@@ -235,41 +235,43 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
               />
             </div>
 
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50"
-                placeholder="Enter location"
-              />
-            </div>
+            {/* Grid Section for location and status */}
+            <div className='grid grid-cols-2 gap-4'>
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50"
+                  placeholder="Enter location"
+                />
+              </div>
 
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium theme-text-primary mb-1">
-                Status *
-              </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                disabled={loading}
-                className="w-full px-3 py-2 theme-bg-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50"
-              >
-                <option value="open">Planning</option>
-                <option value="in-progress">In Progress</option>
-                <option value="review">Review</option>
-                <option value="completed">Completed</option>
-              </select>
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium theme-text-primary mb-1">
+                  Status *
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  disabled={loading}
+                  className="w-full px-3 py-2 theme-bg-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50"
+                >
+                  <option value="open">Planning</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="review">Review</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
             </div>
-
             {/* Due Date */}
             <div>
               <label className="block text-sm font-medium theme-text-primary mb-1">

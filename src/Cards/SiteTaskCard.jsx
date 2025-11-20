@@ -11,17 +11,15 @@ const SiteTaskCard = ({ task, onToggle, onEdit, onDelete }) => {
   };
 
   return (
-    <div className={`overflow-x-auto whitespace-nowrap scrollbar-hidden border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${
-      task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
-    }`}>
+    <div className={`overflow-x-auto whitespace-nowrap scrollbar-hidden border rounded-lg p-4 hover:shadow-md transition-all duration-200 flex items-start gap-3 group ${task.status === 'completed' ? 'theme-bg-secondary opacity-50' : ''
+      }`}>
       {/* Check button */}
       <button
         onClick={() => onToggle && onToggle(task.id)}
-        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200 mt-1 ${
-          task.status === 'completed'
+        className={`w-5 h-5 md:w-6 md:h-6 rounded border-2 flex items-center justify-center transition-colors duration-200 mt-1 ${task.status === 'completed'
             ? 'bg-green-500 border-green-500 text-white'
             : 'border-gray-300 hover:border-green-500'
-        }`}
+          }`}
       >
         {task.status === 'completed' && (
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,18 +29,16 @@ const SiteTaskCard = ({ task, onToggle, onEdit, onDelete }) => {
       </button>
 
       <div className="flex-1">
-        <h3 className={`font-semibold theme-text-primary text-lg mb-1 ${
-          task.status === 'completed' ? 'line-through text-gray-500' : ''
-        }`}>
+        <h3 className={`font-semibold theme-text-primary text-lg mb-1 ${task.status === 'completed' ? 'line-through text-gray-500' : ''
+          }`}>
           {task.title}
         </h3>
         {task.description && (
           <p className="text-sm text-gray-500 mb-2">{task.description}</p>
         )}
         <div className="flex justify-between items-center text-xs text-gray-500">
-          <span className={`px-2 py-1 rounded-full ${
-            task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-          }`}>
+          <span className={`px-2 py-1 rounded-full ${task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
             {task.status}
           </span>
           <span>Due: {formatDate(task.due_date)}</span>

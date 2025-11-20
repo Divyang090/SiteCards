@@ -10,12 +10,12 @@ const CreateTaskModal = ({
   isInline = false,
   onCancel
 }) => {
-  const {showMessage, showConfirmation} = useStatusMessage();
+  const { showMessage, showFailed, showConfirmation } = useStatusMessage();
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
     task_type: 'Simple Task',
-    assignee: 'Unassigned',
+    assigned_to: 'Unassigned',
     files: [],
     date: '',
     location: ''
@@ -27,6 +27,34 @@ const CreateTaskModal = ({
 
   const taskTypeDropdownRef = useRef(null);
   const assigneeDropdownRef = useRef(null);
+
+  // Add this useEffect for debugging
+  useEffect(() => {
+    console.log('Current task data:', taskData);
+  }, [taskData]);
+
+  // Add this validation function
+  const validateForm = () => {
+    if (!taskData.title.trim()) {
+      showMessage('Task title is required', 'error');
+      return false;
+    }
+
+    // Validate conditional fields
+    if (taskData.task_type === 'Site Visits' || taskData.task_type === 'Meeting') {
+      if (!taskData.date) {
+        showMessage('Date is required for this task type', 'error');
+        return false;
+      }
+    }
+
+    if (taskData.task_type === 'Meeting' && !taskData.location.trim()) {
+      showMessage('Location is required for meetings', 'error');
+      return false;
+    }
+
+    return true;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -60,48 +88,65 @@ const CreateTaskModal = ({
     'TechCorp Inc.',
     'John Doe',
     'Jane Smith',
-    'Mike Wilson'
+    'Mike Wilson',
+    'Coci'
   ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('DEBUG - projectId:', projectId);
-    if (!taskData.title.trim()) return;
+    console.log('DEBUG - Current taskData:', taskData);
+
+    if (!taskData.title.trim()) {
+      showMessage('Task title is required', 'error');
+      return;
+    }
 
     setUploading(true);
     try {
-      const requestData = {
-        task_name: taskData.title,
-        description: taskData.description,
-        task_type: taskData.task_type,
-        project_id: String(projectId),
-        status: 'pending',
-        date: taskData.date || 'null',
-        location: taskData.location || 'null'
-      };
+      const formData = new FormData();
 
-      if (!projectId) {
-        throw new Error('Project ID is required for task creation');
+      formData.append('task_name', taskData.title.trim());
+      formData.append('description', taskData.description || '');
+      formData.append('task_type', taskData.task_type.toLowerCase());
+      formData.append('project_id', String(projectId));
+
+      if (taskData.date) {
+        // For MySQL DATETIME format: YYYY-MM-DD HH:MM:SS
+        const dateObj = new Date(taskData.date);
+        const mysqlDateTime = dateObj.toISOString().slice(0, 19).replace('T', ' ');
+        formData.append('date', mysqlDateTime);
+        console.log('DEBUG - Date being sent (MySQL DATETIME):', mysqlDateTime);
       }
 
-      if (taskData.assignee === 'TechCorp Inc.' || taskData.assignee === 'The Martinez Family') {
-        requestData.assigned_vendor = taskData.assignee;
-      } else if (taskData.assignee !== 'Unassigned') {
-        requestData.assigned_team = taskData.assignee;
+      if (taskData.location && taskData.location.trim()) {
+        formData.append('location', taskData.location.trim());
+        console.log('DEBUG - Location being sent:', taskData.location.trim());
       }
 
-      console.log('Sending request data:', requestData);
+      if (taskData.assigned_to && taskData.assigned_to !== 'Unassigned') {
+        formData.append('assigned_to', taskData.assigned_to);
+      }
 
-      const taskResponse = await fetch(`${BASE_URL}/tasks/tasks?project_id`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestData),
+      taskData.files.forEach(file => {
+        formData.append('files', file);
       });
 
-      console.log('Task response status:', taskResponse.status);
+      console.log('DEBUG - FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+
+      const taskResponse = await fetch(`${BASE_URL}/tasks/tasks`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('DEBUG - Response status:', taskResponse.status);
 
       if (!taskResponse.ok) {
         const errorData = await taskResponse.json();
@@ -110,34 +155,18 @@ const CreateTaskModal = ({
       }
 
       const taskResult = await taskResponse.json();
-      console.log('Task created successfully:', taskResult);
+      console.log('DEBUG - Task created successfully:', taskResult);
 
-      if (taskData.files.length > 0) {
-        console.log('Uploading files:', taskData.files);
+      // Check if location was saved
+      console.log('DEBUG - Location in response:', taskResult.location);
+      console.log('DEBUG - All response keys:', Object.keys(taskResult));
 
-        for (const file of taskData.files) {
-          const fileFormData = new FormData();
-          fileFormData.append('file', file);
-          fileFormData.append('task_id', taskResult.id || taskResult.task_id);
-
-          const fileResponse = await fetch(`${BASE_URL}/tasks/upload`, {
-            method: 'POST',
-            body: fileFormData,
-          });
-
-          if (!fileResponse.ok) {
-            console.warn('Failed to upload file:', file.name);
-          } else {
-            console.log('File uploaded successfully:', file.name);
-          }
-        }
-      }
-
+      // Reset form
       setTaskData({
         title: '',
         description: '',
         task_type: 'Simple Task',
-        assignee: 'Unassigned',
+        assigned_to: 'Unassigned',
         files: [],
         date: '',
         location: ''
@@ -151,7 +180,7 @@ const CreateTaskModal = ({
 
     } catch (error) {
       console.error('Error creating task:', error);
-      showMessage(`Failed to create task: ${error.message}`,'success');
+      showFailed(`Failed to create task: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -174,10 +203,10 @@ const CreateTaskModal = ({
     setShowTaskTypeDropdown(false);
   };
 
-  const handleAssigneeSelect = (assignee) => {
+  const handleAssigneeSelect = (assigned_to) => {
     setTaskData({
       ...taskData,
-      assignee: assignee
+      assigned_to: assigned_to
     });
     setShowAssigneeDropdown(false);
   };
@@ -196,13 +225,13 @@ const CreateTaskModal = ({
     const selectedFiles = Array.from(e.target.files);
 
     if (taskData.files.length + selectedFiles.length > 5) {
-      showMessage('Maximum 5 files allowed','error');
+      showMessage('Maximum 5 files allowed', 'error');
       return;
     }
 
     const oversizedFiles = selectedFiles.filter(file => file.size > 25 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      showMessage('Some files exceed 25MB limit. Please select smaller files.','error');
+      showMessage('Some files exceed 25MB limit. Please select smaller files.', 'error');
       return;
     }
 
@@ -225,7 +254,7 @@ const CreateTaskModal = ({
       title: '',
       description: '',
       task_type: 'Simple Task',
-      assignee: 'Unassigned',
+      assigned_to: 'Unassigned',
       files: [],
       date: '',
       location: ''
@@ -296,7 +325,7 @@ const CreateTaskModal = ({
 const TextInput = ({ label, name, value, onChange, required, placeholder, isInline, autoFocus }) => (
   <div>
     <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'theme-text-primary'} mb-${isInline ? '1' : '2'}`}>
-      {label} {required && <span className="text-red-500">*</span>}
+      {label} {required && <span className="text-red-500"></span>}
     </label>
     <input
       type="text"
@@ -397,8 +426,8 @@ const FileUpload = ({ files, onFileChange, onRemoveFile, isInline }) => (
       {files.length > 0 && (
         <div className="mt-3 space-y-2">
           {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-              <span className="truncate flex-1">{file.name}</span>
+            <div key={index} className="flex items-center justify-between text-xs theme-bg-primary p-2 rounded">
+              <span className="truncate flex-1 theme-text-secondary">{file.name}</span>
               <span className="text-gray-500 ml-2">
                 ({(file.size / (1024 * 1024)).toFixed(2)} MB)
               </span>
@@ -444,10 +473,9 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
-            Date <span className="text-red-500">*</span>
           </label>
           <input
-            type="date"
+            type="datetime-local"
             name="date"
             value={taskData.date}
             onChange={handleChange}
@@ -466,10 +494,9 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
-            Date <span className="text-red-500">*</span>
           </label>
           <input
-            type="date"
+            type="datetime-local"
             name="date"
             value={taskData.date}
             onChange={handleChange}
@@ -479,7 +506,6 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
         </div>
         <div>
           <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
-            Location <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -535,9 +561,10 @@ const TaskForm = (props) => {
               isInline={false}
             />
 
+            {/* FIXED: Use assigned_to instead of assignee */}
             <DropdownField
               label="Assigned to"
-              value={taskData.assignee}
+              value={taskData.assigned_to} // CHANGED HERE
               options={props.assigneeOptions}
               isOpen={showAssigneeDropdown}
               dropdownRef={props.assigneeDropdownRef}
@@ -554,7 +581,6 @@ const TaskForm = (props) => {
               placeholder="Enter task description"
               isInline={false}
             />
-            {/* Conditional fields for task_type dropdown */}
             <ConditionalFields
               taskType={taskData.task_type}
               taskData={taskData}
@@ -572,11 +598,9 @@ const TaskForm = (props) => {
         ) : (
           // Inline layout
           <>
-            {/* Row 1: Title (2/4), Task Type (1/4), Assignee (1/4) */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
               <div className="md:col-span-2">
                 <TextInput
-                  label="Task title"
                   name="title"
                   value={taskData.title}
                   onChange={props.handleChange}
@@ -589,7 +613,6 @@ const TaskForm = (props) => {
 
               <div className="md:col-span-1">
                 <DropdownField
-                  label="Task Type"
                   value={taskData.task_type}
                   options={props.taskTypeOptions}
                   isOpen={showTaskTypeDropdown}
@@ -601,9 +624,9 @@ const TaskForm = (props) => {
               </div>
 
               <div className="md:col-span-1">
+                {/* FIXED: Use assigned_to instead of assignee */}
                 <DropdownField
-                  label="Assigned to"
-                  value={taskData.assignee}
+                  value={taskData.assigned_to} // CHANGED HERE
                   options={props.assigneeOptions}
                   isOpen={showAssigneeDropdown}
                   dropdownRef={props.assigneeDropdownRef}
@@ -614,7 +637,7 @@ const TaskForm = (props) => {
               </div>
             </div>
 
-            {/* Conditional Fields Row - Use the component instead of manual fields */}
+            {/* Conditional Fields Row */}
             <ConditionalFields
               taskType={taskData.task_type}
               taskData={taskData}
@@ -625,7 +648,6 @@ const TaskForm = (props) => {
             {/* Description Row */}
             <div>
               <TextArea
-                label="Description"
                 name="description"
                 value={taskData.description}
                 onChange={props.handleChange}

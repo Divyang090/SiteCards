@@ -5,18 +5,22 @@ import SiteMapsSection from '../Components/SiteMapsSection';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import EditTaskModal from '../EditModal/EditTaskModal';
+import TaskFileModal from '../Components/TaskFileModal';
 
 const ProjectDetails = ({ projects: propProjects = [] }) => {
-  const { id } = useParams();
+  const { id, projectId, spaceId } = useParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [taskLoading, setTaskLoading] = useState(true);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [activeTab, setActiveTab] = useState(()=>{
+  const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem(`project-${id}-activeTab`);
     return savedTab || 'tasks';
   });
+  const [selectedTaskFiles, setSelectedTaskFiles] = useState([]);
+  const [isFilesModalOpen, setIsFilesModalOpen] = useState(false);
+  const [selectedTaskTitle, setSelectedTaskTitle] = useState('');
   const [siteMapsCount, setSiteMapsCount] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const [formData, setFormData] = useState({
@@ -41,7 +45,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     }));
   };
 
-    useEffect(() => {
+  useEffect(() => {
     localStorage.setItem(`project-${id}-activeTab`, activeTab);
   }, [activeTab, id]);
 
@@ -136,7 +140,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         const response = await fetch(`${BASE_URL}/tasks/tasks`);
         if (response.ok) {
           const tasksData = await response.json();
-          // console.log('Fetched ALL tasks from API:', tasksData);
+          console.log('Fetched ALL tasks from API:', tasksData);
 
           // Handle different response formats
           let tasksArray = tasksData;
@@ -151,22 +155,43 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             String(task.project_id) === String(id)
           );
 
-          // console.log(`Filtered tasks for project ${id}:`, filteredTasks);
+          console.log(`Filtered tasks for project ${id}:`, filteredTasks);
 
-          // Transform ONLY the filtered tasks
-          const transformedTasks = filteredTasks.map(task => ({
-            id: task.id || task.task_id,
-            title: task.task_name || task.title,
-            description: task.description,
-            location: task.location || 'Location undefined',
-            visit_date: task.Date || 'No Date',
-            taskType: task.task_type || 'Simple Task',
-            assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
-            status: task.status || 'pending',
-            completed: task.status === 'completed',
-            // createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-            files: task.files || []
-          }));
+          // Transform ONLY the filtered tasks - FIXED MAPPING
+          const transformedTasks = filteredTasks.map(task => {
+            // Format date from "Mon, 24 Dec 2012 00:00:00 GMT" to readable format
+            let formattedDate = '';
+            if (task.date) {
+              try {
+                const dateObj = new Date(task.date);
+                formattedDate = dateObj.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              } catch (e) {
+                console.error('Error formatting date:', e);
+                formattedDate = task.date;
+              }
+            }
+
+            return {
+              id: task.id || task.task_id,
+              title: task.task_name || task.title,
+              description: task.description,
+              location: task.location,
+              visit_date: formattedDate,
+              Date: formattedDate,
+              taskType: task.task_type || 'Simple Task',
+              assignee: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
+              assigned_to: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
+              status: task.status || 'pending',
+              completed: task.status === 'completed',
+              files: task.files || []
+            };
+          });
 
           setTasks(transformedTasks);
         } else {
@@ -265,14 +290,34 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     try {
       console.log('Task creation callback received:', newTaskData, 'for project:', projectId);
       if (String(projectId) === String(id)) {
+        // Format date for display
+        let formattedDate = '';
+        if (newTaskData.date) {
+          try {
+            const dateObj = new Date(newTaskData.date);
+            formattedDate = dateObj.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+          } catch (e) {
+            console.error('Error formatting date:', e);
+            formattedDate = newTaskData.date;
+          }
+        }
+
         const transformedTask = {
           id: newTaskData.id || newTaskData.task_id,
           title: newTaskData.task_name || newTaskData.title,
           description: newTaskData.description,
           taskType: newTaskData.task_type || 'Simple Task',
-          assignee: newTaskData.assigned_vendor || newTaskData.assigned_team || newTaskData.assigned_to || newTaskData.assignee || 'Unassigned',
+          assignee: newTaskData.assigned_to || newTaskData.assigned_vendor || newTaskData.assigned_team || 'Unassigned', // FIXED
+          assigned_to: newTaskData.assigned_to || newTaskData.assigned_vendor || newTaskData.assigned_team || 'Unassigned', // Add this
           status: newTaskData.status || 'pending',
           completed: (newTaskData.status || 'pending') === 'completed',
+          location: newTaskData.location, // Add location
+          visit_date: formattedDate, // Add formatted date
+          Date: formattedDate, // Add Date field
           createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
           files: newTaskData.files || []
         };
@@ -280,13 +325,12 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         setTasks(prev => [transformedTask, ...prev]);
       }
 
+      // Refresh tasks from API to ensure consistency
       setTaskLoading(true);
-
       const response = await fetch(`${BASE_URL}/tasks/tasks`);
       if (response.ok) {
         const tasksData = await response.json();
 
-        // Handle different response formats
         let tasksArray = tasksData;
         if (tasksData && Array.isArray(tasksData.data)) {
           tasksArray = tasksData.data;
@@ -294,22 +338,41 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           tasksArray = tasksData.tasks;
         }
 
-        // Filter by project_id
         const filteredTasks = tasksArray.filter(task =>
           String(task.project_id) === String(id)
         );
 
-        const transformedTasks = filteredTasks.map(task => ({
-          id: task.id || task.task_id,
-          title: task.task_name || task.title,
-          description: task.description,
-          taskType: task.task_type || 'Simple Task',
-          assignee: task.assigned_team || task.assigned_vendor || 'Unassigned',
-          status: task.status || 'pending',
-          completed: task.status === 'completed',
-          createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-          files: task.files || []
-        }));
+        const transformedTasks = filteredTasks.map(task => {
+          let formattedDate = '';
+          if (task.date) {
+            try {
+              const dateObj = new Date(task.date);
+              formattedDate = dateObj.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+              });
+            } catch (e) {
+              formattedDate = task.date;
+            }
+          }
+
+          return {
+            id: task.id || task.task_id,
+            title: task.task_name || task.title,
+            description: task.description,
+            taskType: task.task_type || 'Simple Task',
+            assignee: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
+            assigned_to: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
+            status: task.status || 'pending',
+            completed: task.status === 'completed',
+            location: task.location,
+            visit_date: formattedDate,
+            Date: formattedDate,
+            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+            files: task.files || []
+          };
+        });
 
         setTasks(transformedTasks);
       }
@@ -321,36 +384,35 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   // UPDATE TASK STATUS USING API
-  const handleToggleTask = async (taskId) => {
+  const handleToggleStatus = async (taskId, currentStatus) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+
+      const formData = new FormData();
+      formData.append('status', newStatus);
 
       const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: newStatus
-        }),
+        body: formData,
       });
 
-      if (response.ok) {
-        // Update local state
-        setTasks(tasks.map(task =>
-          task.id === taskId ? {
-            ...task,
-            status: newStatus,
-            completed: newStatus === 'completed'
-          } : task
-        ));
-      } else {
-        throw new Error('Failed to update task');
+      if (!response.ok) {
+        throw new Error('Failed to update task status');
       }
+
+      const updatedTask = await response.json();
+
+      // Update the task in your state
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId ? { ...task, status: newStatus } : task
+        )
+      );
+
+      showMessage(`Task marked as ${newStatus}`, 'success');
     } catch (error) {
-      console.error('Error updating task:', error);
-      showMessage('Failed to update task status', 'error');
+      console.error('Error updating task status:', error);
+      showFailed('Failed to update task status');
     }
   };
 
@@ -378,6 +440,19 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       }
     );
   }
+
+  //TaskFileModal Handlers
+  const handleOpenFilesModal = (taskFiles, taskTitle = '') => {
+    setSelectedTaskFiles(taskFiles || []);
+    setSelectedTaskTitle(taskTitle);
+    setIsFilesModalOpen(true);
+  };
+
+  const handleCloseFilesModal = () => {
+    setIsFilesModalOpen(false);
+    setSelectedTaskFiles([]);
+    setSelectedTaskTitle('');
+  };
 
   // Sort tasks
   const sortedTasks = [...tasks].sort((a, b) => {
@@ -538,7 +613,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             )}
 
             {/* Tasks List with Scroll */}
-            <div className={`space-y-3 ${sortedTasks.length > 3 ? 'max-h-96 overflow-y-auto scrollbar-hidden' : ''}`}>
+            <div className={`space-y-3 ${sortedTasks.length > 3 ? 'h-screen overflow-y-auto scrollbar-hidden' : ''}`}>
               {sortedTasks.length > 0 ? (
                 sortedTasks.map((task) => (
                   editingTask?.id === task.id ? (
@@ -546,11 +621,11 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       key={task.id}
                       task={editingTask}
                       projectId={id}
-                      isInline={true} // CHANGED: Added isInline prop for inline styling
-                      onClose={() => setEditingTask(null)} // CHANGED: Simplified close handler
+                      isInline={true}
+                      onClose={() => setEditingTask(null)}
                       onUpdate={(updatedTask) => {
                         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-                        setEditingTask(null); // CHANGED: Clear editing state after update
+                        setEditingTask(null);
                       }}
                     />
                   ) : (
@@ -585,21 +660,32 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                           className="flex-1 min-w-0 cursor-pointer"
                           onClick={() => handleToggleDescription(task.id)}
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center">
                             <span className={`block font-medium theme-text-secondary transition-all duration-200 ${task.completed ? 'text-gray-400 line-through' : 'theme-text-primary'
                               }`}>
                               {task.title}
                             </span>
                             <div className="flex items-center gap-2 ml-4">
                               <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
-                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.assignee}</span>
                             </div>
                           </div>
 
-                          {(task.location || task.Date) && (
+                          {(task.assigned_to || task.location || task.Date) && (
                             <div className='flex items-center gap-3 mt-1'>
+
+                              {/* task assigned to on task card */}
+                              {task.assigned_to && task.assigned_to !== 'Unassigned' && (
+                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'theme-text-secondary'} `}>
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  </svg>
+                                  {task.assigned_to}
+                                </span>
+                              )}
+
+                              {/* task location on task card */}
                               {task.location && (
-                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'tet-gray-500'}`}>
+                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'theme-text-secondary'}`}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -607,8 +693,10 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                                   {task.location}
                                 </span>
                               )}
-                              {task.Date && (
-                                <span className={`text-xs flex items-center gap-1 ${task.completed} ? 'text-gray-400':'text-gray-500'`}>
+
+                              {/* task date on task card  */}
+                              {task.visit_date && (
+                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400':'theme-text-secondary'}`}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
@@ -625,19 +713,21 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                             </p>
                           )}
 
-                          {/* Files section - UNCHANGED */}
+                          {/* Files section */}
                           {task.files && task.files.length > 0 && (
-                            <div className="flex gap-1 mt-2">
-                              {task.files.map((file, index) => (
-                                <span
-                                  key={index}
-                                  className={`text-xs px-2 py-1 rounded ${task.completed ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600'
-                                    }`}
-                                >
-                                  📎 {typeof file === 'string' ? file : file.name}
-                                </span>
-                              ))}
-                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenFilesModal(task.files, task.title);
+                              }}
+                              className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500 transition-colors duration-200`}
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                              </svg>
+                              {task.files.length}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -709,6 +799,14 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             siteMaps={(displayProject.siteMaps) || []}
           />
         )}
+
+        {/* Files Modal */}
+        <TaskFileModal
+          isOpen={isFilesModalOpen}
+          onClose={handleCloseFilesModal}
+          files={selectedTaskFiles}
+          taskTitle={selectedTaskTitle}
+        />
       </div>
     </div>
   );

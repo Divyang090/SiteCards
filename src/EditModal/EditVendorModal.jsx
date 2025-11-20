@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 
-const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
+const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdate }) => {
   const { showMessage, showFailed } = useStatusMessage();
   const [formData, setFormData] = useState({
     name: '',
@@ -21,16 +21,42 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
     'interior-design', 'plumbing', 'electrical', 'carpentry'
   ];
 
+
   useEffect(() => {
     if (vendor) {
-      setFormData({
-        name: vendor.name || vendor.contact_person || '',
-        company_name: vendor.company_name || '',
-        phone: vendor.contact_number || vendor.phone || '',
-        email: vendor.vendor_email || vendor.email || '',
-        tags: vendor.trade ? vendor.trade.split(', ').map(tag => tag.trim()) : [],
+      console.log('🔍 EDIT MODAL - FULL VENDOR OBJECT:', vendor);
+      console.log('🔍 EDIT MODAL - Vendor ID:', vendor.id);
+      console.log('🔍 EDIT MODAL - All vendor keys:', Object.keys(vendor));
+
+      const newFormData = {
+        name: vendor.name || '',
+        company_name: vendor.company_name || vendor.name || '',
+        phone: vendor.phone || '',
+        email: vendor.email || vendor.contact || '',
+        tags: vendor.tags || [],
         notes: vendor.notes || ''
-      });
+      };
+
+      console.log('🔍 EDIT MODAL - New form data:', newFormData);
+      setFormData(newFormData);
+    }
+  }, [vendor]);
+
+  useEffect(() => {
+    if (vendor) {
+      console.log('🔍 FULL VENDOR OBJECT:', vendor);
+
+      const newFormData = {
+        name: vendor.name || '',
+        company_name: vendor.company_name || vendor.name || '',
+        phone: vendor.phone || '',
+        email: vendor.email || vendor.contact || '',
+        tags: vendor.tags || [],
+        notes: vendor.notes || ''
+      };
+
+      console.log('🔍 New form data:', newFormData);
+      setFormData(newFormData);
     }
   }, [vendor]);
 
@@ -60,52 +86,92 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onUpdate }) => {
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    const vendorId = vendor.vendor_id || vendor.id;
-    const response = await fetch(`${BASE_URL}/vendors/${vendorId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: formData.name,                    // ✅ Fix: use formData.name
-        company_name: formData.company_name,    // ✅ Keep as is
-        vendor_email: formData.email,           // ✅ Keep as is
-        contact_number: formData.phone,         // ✅ Keep as is
-        trade: formData.tags.join(', '),
-        notes: formData.notes,
+    try {
+      const vendorId = vendor.vendor_id || vendor.id;
+
+      console.log('🔍 DEBUG VENDOR ID ANALYSIS:');
+      console.log('vendor.vendor_id:', vendor.vendor_id);
+      console.log('vendor.id:', vendor.id);
+      console.log('Final vendorId being used:', vendorId);
+      console.log('Full vendor object:', vendor);
+
+      const requestData = {
+        contact_person: formData.name,        // ✅ Correct field name
+        company_name: formData.company_name,  // ✅ Use actual company_name from form
+        vendor_email: formData.email,
+        contact_number: formData.phone,
+        tags: formData.tags,                  // ✅ Add tags array
+        // notes: formData.notes,
         space_id: spaceId,
-        project_id: projectId
-      }),
-    });
+        // project_id: projectId
+      };
 
-    if (response.ok) {
-      const updatedVendor = await response.json();
-      onUpdate(updatedVendor);
-      showMessage('Vendor updated successfully!', 'success');
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
+      console.log('2. Request data to backend:', requestData);
+
+      const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log('3. Response status:', response.status);
+
+      if (response.ok) {
+        let responseBody;
+        try {
+          responseBody = await response.json();
+          console.log('4. RAW API RESPONSE:', responseBody);
+        } catch (parseError) {
+          console.error('5. Failed to parse JSON response:', parseError);
+          const textResponse = await response.text();
+          console.log('5. Text response:', textResponse);
+          responseBody = textResponse;
+        }
+
+        // ✅ UPDATED TRANSFORMATION - REMOVE CATEGORY, ADD TAGS
+        const transformedVendor = {
+          id: vendorId,
+          name: formData.company_name,
+          contact: formData.email,
+          phone: formData.phone,
+          space_id: spaceId,
+          tags: formData.tags  // ✅ Add tags instead of category
+        };
+
+        console.log('6. Final transformed vendor:', transformedVendor);
+
+        onUpdate(transformedVendor);
+        showMessage('Vendor updated successfully!', 'success');
+      } else {
+        const errorText = await response.text();
+        console.error('7. Error response:', errorText);
+        throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error('8. Catch block error:', error);
+      showFailed('Failed to update vendor: ' + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error('Error updating vendor:', error);
-    showFailed('Failed to update vendor: ' + error.message);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   if (!vendor) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]">
-      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
+      onClick={onClose}
+    >
+      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-bold mb-4">Edit Vendor</h2>
-        
+
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Name Field */}

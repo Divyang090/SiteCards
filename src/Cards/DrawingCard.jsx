@@ -4,8 +4,6 @@ import StatusMessageProvider from '../Alerts/StatusMessage';
 import { BASE_URL } from '../Configuration/Config';
 import DrawingClickModal from '../Components/DrawingClickModal';
 
-//Check Backend for files preview
-
 const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
   const actualFile = file.files?.[0] || file;
   const { showConfirmation } = useStatusMessage();
@@ -57,18 +55,29 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
     return 'other';
   };
 
-  // Fix the file URL - convert to proper URL and fix backslashes
   const getFileUrl = (fileObj) => {
     const actualFile = fileObj.files?.[0] || fileObj;
-    const fileId = actualFile.file_id;
-    const drawingId = fileObj.drawing_id;
+    let filePath = actualFile.file_path || actualFile.file_url || '';
+    filePath = filePath.replace(/\\/g, '/');
 
-    // Use the API endpoint to get the file
-    if (fileId && drawingId) {
-      return `${BASE_URL}/drawings/get?file_id=${fileId}&drawing_id=${drawingId}`;
+    if (filePath && !filePath.startsWith('http')) {
+      return `${BASE_URL}/${filePath}`;
     }
+    return filePath;
+  };
 
-    return '#';
+  const handleDownload = (fileObj) => {
+    const actualFile = fileObj.files?.[0] || fileObj;
+    const fileUrl = getFileUrl(fileObj);
+    const fileName = fileObj.drawing_name || fileObj.name || actualFile.filename || 'download';
+
+    // Create a temporary anchor element to trigger download
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getFileIcon = (fileType) => {
@@ -108,7 +117,6 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
           <img
             src={getFileUrl(file)}
             alt={file.drawing_name || file.name}
-            onClick={() => window.open(getFileUrl(file), 'blank')}
             className="w-full h-full object-cover cursor-pointer"
             onError={(e) => {
               // console.log('Image Failed to load', getFileUrl(file), 'blank')
@@ -136,6 +144,19 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
               2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
+          {/* Add this button to the hover actions */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload(file);
+            }}
+            className="bg-green-600 text-white p-1.5 rounded hover:bg-green-700 transition-colors duration-200"
+            title="Download"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -152,7 +173,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
       </div>
 
       {/* File Info */}
-      <div className="p-4">
+      <div className="md:p-4 p-2">
         <h3 className="font-semibold theme-text-primary text-lg mb-1 truncate">
           {file.drawing_name || file.name || file.filename}
         </h3>
@@ -164,7 +185,6 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
             <line x1="3" y1="10" x2="21" y2="10" />
           </svg>
           <span className='mr-2'>{formatDate(file.uploaded_at)}</span>
-          <p>Description</p>
           {file.description && (
             <>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">

@@ -15,8 +15,9 @@ import { BASE_URL } from './Configuration/Config';
 import InspirationClickModal from './Components/InspirationClickModal';
 import { AuthProvider } from './Components/AuthContext';
 import { useAuth } from './Components/AuthContext';
+import ForgotPasswordModal from './Components/ForgotPasswordModal';
 
-const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, loading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
+const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, projectsloading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -59,7 +60,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
     onFilter(filterValue);
   };
 
-  if (loading) {
+  if (projectsloading) {
     return (
       <>
         <Header
@@ -144,90 +145,118 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
 
 // Main App Content with Status Messages MAIN CONTENT
 const AppContent = () => {
-  const { user, openAuthModal } = useAuth();
+  const { user, openAuthModal, authFetch, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [projectsloading, setProjectsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
-
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const { showMessage } = useStatusMessage();
 
   const activeProjectsCount = projects.filter(project =>
     project.status !== 'completed').length;
 
-  // Fetch projects from API
+
+  // Check for reset password token on app load
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        console.log('Fetching projects from API...');
+    const checkForToken = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
 
-        const response = await fetch(`${BASE_URL}/projects/projects`);
+      console.log('🔍 App.jsx - Checking URL for reset token:', token);
 
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-          throw new Error(`Failed to load projects: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        console.log('API Response received:', result);
-        console.log('Type of result:', typeof result);
-        console.log('Is array?:', Array.isArray(result));
-
-        // Handle different API response structures
-        let projectsArray = [];
-
-        if (Array.isArray(result)) {
-          projectsArray = result;
-        } else if (result && Array.isArray(result.data)) {
-          projectsArray = result.data;
-        } else if (result && Array.isArray(result.projects)) {
-          projectsArray = result.projects;
-        } else if (result && typeof result === 'object') {
-          console.log('Object keys:', Object.keys(result));
-          if (result.id || result.project_id) {
-            projectsArray = [result];
-          }
-        }
-
-        if (!Array.isArray(projectsArray)) {
-          throw new Error('Invalid response format: projects data is not an array');
-        }
-
-        // Transform backend data to match frontend structure
-        const transformedProjects = projectsArray.map(project => ({
-          id: project.id || project.project_id,
-          title: project.project_name || project.title,
-          assignee: project.client_name || project.assignee || '',
-          status: project.status || 'open',
-          docDate: project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) :
-            project.due_date ? new Date(project.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date',
-          isOverdue: project.is_overdue || false,
-          cardsCount: project.cards_count || 0,
-          location: project.location || 'No location',
-          updated: project.updated_at ? new Date(project.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-          description: project.project_description || project.description
-        }));
-
-        setProjects(transformedProjects);
-
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-        setError(err.message);
-        setProjects([]);
-      } finally {
-        setLoading(false);
+      if (token) {
+        console.log('✅ App.jsx - Token found, opening modal');
+        setShowForgotPasswordModal(true);
       }
     };
 
-    fetchProjects();
+    // Check immediately
+    checkForToken();
+
+    // Also check when popstate events occur (back/forward navigation)
+    window.addEventListener('popstate', checkForToken);
+
+    return () => {
+      window.removeEventListener('popstate', checkForToken);
+    };
   }, []);
+
+  // Fetch projects from API
+  useEffect(() => {
+    if (user && !authLoading) {
+      const fetchProjects = async () => {
+        try {
+          setProjectsLoading(true);
+          setError('');
+          console.log('Fetching projects from API...');
+
+          const response = await fetch(`${BASE_URL}/projects/projects`);
+
+          console.log('Response status:', response.status);
+
+          if (!response.ok) {
+            throw new Error(`Failed to load projects: ${response.status} ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          console.log('API Response received:', result);
+          console.log('Type of result:', typeof result);
+          console.log('Is array?:', Array.isArray(result));
+
+          // Handle different API response structures
+          let projectsArray = [];
+
+          if (Array.isArray(result)) {
+            projectsArray = result;
+          } else if (result && Array.isArray(result.data)) {
+            projectsArray = result.data;
+          } else if (result && Array.isArray(result.projects)) {
+            projectsArray = result.projects;
+          } else if (result && typeof result === 'object') {
+            console.log('Object keys:', Object.keys(result));
+            if (result.id || result.project_id) {
+              projectsArray = [result];
+            }
+          }
+
+          if (!Array.isArray(projectsArray)) {
+            throw new Error('Invalid response format: projects data is not an array');
+          }
+
+          // Transform backend data to match frontend structure
+          const transformedProjects = projectsArray.map(project => ({
+            id: project.id || project.project_id,
+            title: project.project_name || project.title,
+            assignee: project.client_name || project.assignee || '',
+            status: project.status || 'open',
+            docDate: project.end_date ? new Date(project.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) :
+              project.due_date ? new Date(project.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No date',
+            isOverdue: project.is_overdue || false,
+            cardsCount: project.cards_count || 0,
+            location: project.location || 'No location',
+            updated: project.updated_at ? new Date(project.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+            description: project.project_description || project.description
+          }));
+
+          setProjects(transformedProjects);
+
+        } catch (err) {
+          console.error('Error fetching projects:', err);
+          setError(err.message);
+          setProjects([]);
+        } finally {
+          setProjectsLoading(false);
+        }
+      };
+
+      fetchProjects();
+    }
+  }, [user, authLoading]);
 
   // DeleteProject from the menu
   const handleDeleteProject = async (projectId) => {
@@ -415,97 +444,107 @@ const AppContent = () => {
 
   const sortedAndFilteredProjects = getFilteredAndSortedProjects();
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary ">
-        <div className="flex md:justify-between justify-center items-center p-6">
-          <Link to="/" className=" md:text-2xl text-6xl font-bold theme-text-primary">
-            SiteCards
-          </Link>
-          <button
-            onClick={openAuthModal}
-            className="px-4 py-2  theme-border theme-text-primary hidden sm:inline-block theme-bg-secondary border rounded-lg"
-          >
-            Login
-          </button>
-        </div>
-
-        {/* Optional: Add a landing page content here */}
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold theme-text-primary mb-4">
-              Welcome to SiteCards
-            </h1>
-            <p className="theme-text-secondary mb-6">
-              Please login or register to access your projects
-            </p>
-            <button
-              onClick={openAuthModal}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Get Started
-            </button>
-          </div>
-        </div>
-
-        {/* AuthModal for login/register */}
-        <AuthModal />
-      </div>
-    );
-  }
-
-  if (user) {
-    return (
-      <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary text-size">
-        <div className="mx-auto md:px-4 md:py-8 px-2 py-4">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <HomeWithDelete
-                  projects={sortedAndFilteredProjects}
-                  onAddProject={handleOpenModal}
-                  onSearch={handleSearch}
-                  onFilter={handleStatusFilter}
-                  searchTerm={searchTerm}
-                  loading={loading}
-                  error={error}
-                  activeProjectsCount={activeProjectsCount}
-                  onDeleteProject={handleDeleteProject}
-                  onEditProject={handleEditProject}
-                />
-              }
-            />
-
-            <Route
-              path="/project/:id"
-              element={<ProjectDetails projects={projects} />}
-            />
-            <Route path="/templates" element={<Templates />} />
-          </Routes>
-
-          <NewProjectModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            onSave={handleSaveProject}
-          />
-
-          <EditProjectModal
-            isOpen={isEditModalOpen}
-            onClose={handleCloseEditModal}
-            project={editingProject}
-            onSave={handleUpdateProject}
-          />
-          <AuthModal />
-        </div>
-      </div>
-    );
-  }
   return (
-    <div>
-      <Header />
+    <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary text-size">
+      <div className="mx-auto md:px-4 md:py-8 px-2 py-4">
+        {/* AUTH LOADING STATE */}
+        {authLoading && (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="theme-text-primary">Checking authentication...</p>
+            </div>
+          </div>
+        )}
+
+        {/* NOT LOGGED IN STATE */}
+        {!user && !authLoading && (
+          <>
+            <div className="flex bg-[url('bgimage.png')] md:justify-between justify-center items-center p-6">
+              <Link to="/" className=" md:text-2xl text-6xl font-bold theme-text-primary">
+                SiteCards
+              </Link>
+              <button
+                onClick={openAuthModal}
+                className="px-4 py-2  theme-border theme-text-primary hidden sm:inline-block theme-bg-secondary border rounded-lg"
+              >
+                Login
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <h1 className="text-3xl font-bold theme-text-primary mb-4">
+                  Welcome to SiteCards
+                </h1>
+                <p className="theme-text-secondary mb-6">
+                  Please login or register to access your projects
+                </p>
+                <button
+                  onClick={openAuthModal}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Get Started
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* LOGGED IN STATE */}
+        {user && !authLoading && (
+          <>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <HomeWithDelete
+                    projects={sortedAndFilteredProjects}
+                    onAddProject={handleOpenModal}
+                    onSearch={handleSearch}
+                    onFilter={handleStatusFilter}
+                    searchTerm={searchTerm}
+                    projectsloading={projectsloading}
+                    error={error}
+                    activeProjectsCount={activeProjectsCount}
+                    onDeleteProject={handleDeleteProject}
+                    onEditProject={handleEditProject}
+                  />
+                }
+              />
+
+              <Route
+                path="/project/:id"
+                element={<ProjectDetails projects={projects} />}
+              />
+              <Route path="/templates" element={<Templates />} />
+            </Routes>
+
+            <NewProjectModal
+              isOpen={isModalOpen}
+              onClose={handleCloseModal}
+              onSave={handleSaveProject}
+            />
+
+            <EditProjectModal
+              isOpen={isEditModalOpen}
+              onClose={handleCloseEditModal}
+              project={editingProject}
+              onSave={handleUpdateProject}
+            />
+          </>
+        )}
+
+        {/* ✅ MODALS - ALWAYS RENDERED (regardless of auth state) */}
+        <AuthModal />
+        <ForgotPasswordModal
+          isOpen={showForgotPasswordModal}
+          onClose={() => setShowForgotPasswordModal(false)}
+          initialEmail=""
+        />
+      </div>
     </div>
-  )
+  );
 };
 
 // Main App Component

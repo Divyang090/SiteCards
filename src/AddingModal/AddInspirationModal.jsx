@@ -34,64 +34,66 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // console.log('🔍 Form data before submit:', formData);
-    // console.log('🔍 Title value:', formData.title);
+  if (importOption === 'upload' && !formData.file) {
+    showMessage('Please select an image to upload', 'failed');
+    return;
+  }
 
-    if (importOption === 'upload' && !formData.file) {
-      showMessage('Please select an image to upload', 'failed');
-      return;
+  if (importOption === 'pinterest' && !formData.pinterestUrl) {
+    showMessage('Please enter a Pinterest URL', 'failed');
+    return;
+  }
+
+  setIsUploading(true);
+
+  try {
+    const uploadData = new FormData();
+    uploadData.append('space_id', spaceId);
+    uploadData.append('title', formData.title || 'Untitled Inspiration');
+
+    if (importOption === 'upload') {
+      uploadData.append('uploads', formData.file);
+    } else if (importOption === 'pinterest') {
+      uploadData.append('url', formData.pinterestUrl); // Changed from 'pinterest_url' to 'url'
     }
 
-    if (importOption === 'pinterest' && !formData.pinterestUrl) {
-      showMessage('Please enter a Pinterest URL', 'failed');
-      return;
+    if (formData.description) {
+      uploadData.append('description', formData.description);
+    }
+    if (formData.tags.length > 0) {
+      uploadData.append('tags', formData.tags.join(','));
     }
 
-    setIsUploading(true);
+    const response = await fetch(`${BASE_URL}/inspiration/post`, {
+      method: 'POST',
+      body: uploadData,
+    });
 
-    try {
-      const uploadData = new FormData();
-      uploadData.append('space_id', spaceId);
-      uploadData.append('title', formData.title || 'Untitled Inspiration');
+    if (response.ok) {
+      const newInspiration = await response.json();
 
-      if (importOption === 'upload') {
-        uploadData.append('uploads', formData.file);
-      } else if (importOption === 'pinterest') {
-        uploadData.append('pinterest_url', formData.pinterestUrl);
+      if (importOption === 'pinterest'){
+        newInspiration.pinterestUrl = formData.pinterestUrl;
       }
 
-      if (formData.description) {
-        uploadData.append('description', formData.description);
-      }
-      if (formData.tags.length > 0) {
-        uploadData.append('tags', formData.tags.join(','));
-      }
-
-      const response = await fetch(`${BASE_URL}/inspiration/post`, {
-        method: 'POST',
-        body: uploadData,
-      });
-
-      if (response.ok) {
-        const newInspiration = await response.json();
-        console.log('New Inspiration created:', newInspiration);
-        onAdd(newInspiration);
-        showMessage('Imspiration added successfully!', 'success');
-        onClose();
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to add drawing: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      console.error('Error adding drawing:', error);
-      showMessage('Failed to add image: ' + error.message, 'failed');
-    } finally {
-      setIsUploading(false);
+      console.log('New Inspiration created:', newInspiration);
+      onAdd(newInspiration);
+      showMessage('Inspiration added successfully!', 'success');
+      onClose();
+    } else {
+      const errorText = await response.text();
+      throw new Error(`Failed to add inspiration: ${response.status} - ${errorText}`);
     }
-  };
+  } catch (error) {
+    console.error('Error adding inspiration:', error);
+    showMessage('Failed to add image: ' + error.message, 'failed');
+  } finally {
+    setIsUploading(false);
+  }
+};
 
   const handleAddCustomTag = () => {
     if (customTag.trim() && !formData.tags.includes(customTag.trim())) {

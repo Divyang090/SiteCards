@@ -8,7 +8,7 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
     title: '',
     description: '',
     task_type: 'Simple Task',
-    assignee: 'Unassigned',
+    assigned_to: 'Unassigned',
     files: [],
     date: '',
     location: '',
@@ -28,7 +28,7 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
         title: task.title || task.task_name || '',
         description: task.description || '',
         task_type: task.task_type || 'Simple Task',
-        assignee: task.assignee || task.assigned_team || task.assigned_vendor || 'Unassigned',
+        assigned_to: task.assignee || task.assigned_team || task.assigned_vendor || 'Unassigned',
         files: task.files || [],
         date: task.date || task.due_date || '',
         location: task.location || '',
@@ -69,7 +69,8 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
     'TechCorp Inc.',
     'John Doe',
     'Jane Smith',
-    'Mike Wilson'
+    'Mike Wilson',
+    'Coci'
   ];
 
   const handleFileChange = (e) => {
@@ -122,8 +123,8 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
         {files.length > 0 && (
           <div className="mt-3 space-y-2">
             {files.map((file, index) => (
-              <div key={index} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
-                <span className="truncate flex-1">{file.name}</span>
+              <div key={index} className="flex items-center justify-between text-xs theme-bg-primary p-2 rounded-xl">
+                <span className="truncate flex-1 theme-text-secondary">{file.name}</span>
                 <span className="text-gray-500 ml-2">
                   ({(file.size / (1024 * 1024)).toFixed(2)} MB)
                 </span>
@@ -142,51 +143,97 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
     </div>
   );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      const taskId = task.id || task.task_id;
-      const requestData = {
-        task_name: formData.title,
-        description: formData.description,
-        task_type: formData.task_type,
-        project_id: String(projectId),
-        status: formData.status,
-        date: formData.date || 'null',
-        location: formData.location || 'null'
-      };
+  try {
+    const taskId = task.id || task.task_id;
 
-      if (formData.assignee === 'TechCorp Inc.' || formData.assignee === 'The Martinez Family') {
-        requestData.assigned_vendor = formData.assignee;
-      } else if (formData.assignee !== 'Unassigned') {
-        requestData.assigned_team = formData.assignee;
-      }
-
-      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (response.ok) {
-        const updatedTask = await response.json();
-        onUpdate(updatedTask);
-        showMessage('Task updated successfully!', 'success');
-      } else {
-        const errorText = await response.text();
-        throw new Error(`Failed to update task: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-      showFailed('Failed to update task: ' + error.message);
-    } finally {
+    // Basic validation
+    if (!formData.title.trim()) {
+      showMessage('Task title is required', 'error');
       setIsLoading(false);
+      return;
     }
-  };
+
+    const submitFormData = new FormData();
+
+    // Append all fields as form data
+    submitFormData.append('task_name', formData.title.trim());
+    submitFormData.append('description', formData.description || '');
+    submitFormData.append('task_type', formData.task_type.toLowerCase());
+    submitFormData.append('project_id', String(projectId));
+    submitFormData.append('status', formData.status);
+
+    // Append conditional fields if they exist
+    if (formData.date) {
+      submitFormData.append('date', formData.date);
+    }
+
+    if (formData.location && formData.location.trim()) {
+      submitFormData.append('location', formData.location.trim());
+    }
+
+    // Handle assignment
+    if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
+      submitFormData.append('assigned_to', formData.assigned_to);
+    }
+
+    // Handle files - separate new files from existing files
+    const newFiles = [];
+    const existingFiles = [];
+
+    formData.files.forEach(file => {
+      if (file instanceof File) {
+        // This is a new file uploaded by user
+        newFiles.push(file);
+        submitFormData.append('files', file);
+      } else {
+        // This is an existing file from backend (object with file info)
+        existingFiles.push(file);
+      }
+    });
+
+    // If you need to track existing files for the backend, you might need to send them too
+    // This depends on your backend API requirements
+    submitFormData.append('existing_files', JSON.stringify(existingFiles));
+
+    // Debug: Log FormData contents
+    console.log('DEBUG - Edit FormData contents:');
+    for (let [key, value] of submitFormData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
+      } else {
+        console.log(`${key}:`, value);
+      }
+    }
+
+    const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+      method: 'PUT',
+      body: submitFormData,
+    });
+
+    console.log('DEBUG - Edit response status:', response.status);
+
+    if (response.ok) {
+      const updatedTask = await response.json();
+      console.log('DEBUG - Task updated successfully:', updatedTask);
+      onUpdate(updatedTask);
+      showMessage('Task updated successfully!', 'success');
+      onClose();
+    } else {
+      const errorText = await response.text();
+      console.error('DEBUG - Edit error response:', errorText);
+      throw new Error(`Failed to update task: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error updating task:', error);
+    showFailed('Failed to update task: ' + error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleChange = (e) => {
     setFormData({
@@ -205,10 +252,10 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
     setShowTaskTypeDropdown(false);
   };
 
-  const handleAssigneeSelect = (assignee) => {
+  const handleAssigneeSelect = (assigned_to) => {
     setFormData({
       ...formData,
-      assignee: assignee
+      assigned_to: assigned_to
     });
     setShowAssigneeDropdown(false);
   };
@@ -234,7 +281,6 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
             <div className="md:col-span-2">
               <TextInput
-                label="Task title"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
@@ -247,7 +293,6 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 
             <div className="md:col-span-1">
               <DropdownField
-                label="Task Type"
                 value={formData.task_type}
                 options={taskTypeOptions}
                 isOpen={showTaskTypeDropdown}
@@ -260,8 +305,7 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 
             <div className="md:col-span-1">
               <DropdownField
-                label="Assigned to"
-                value={formData.assignee}
+                value={formData.assigned_to}
                 options={assigneeOptions}
                 isOpen={showAssigneeDropdown}
                 dropdownRef={assigneeDropdownRef}
@@ -281,7 +325,6 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 
           <div>
             <TextArea
-              label="Description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -299,13 +342,13 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
             />
 
             <div className="mt-9">
-            <ActionButtons
-              isLoading={isLoading}
-              onCancel={onClose}
-              taskTitle={formData.title}
-              isInline={true}
-              isEdit={true}
-            />
+              <ActionButtons
+                isLoading={isLoading}
+                onCancel={onClose}
+                taskTitle={formData.title}
+                isInline={true}
+                isEdit={true}
+              />
             </div>
           </div>
         </form>
@@ -330,7 +373,7 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 const TextInput = ({ label, name, value, onChange, required, placeholder, isInline, autoFocus }) => (
   <div>
     <label className={`block text-sm font-medium theme-text-secondary mb-1`}>
-      {label} {required && <span className="text-red-500">*</span>}
+      {label} {required && <span className="text-red-500"></span>}
     </label>
     <input
       type="text"
@@ -393,7 +436,7 @@ const TextArea = ({ label, name, value, onChange, placeholder, isInline }) => (
       value={value}
       onChange={onChange}
       rows={3}
-      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
+      className="w-full h-9 mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
       placeholder={placeholder}
     />
   </div>
@@ -420,17 +463,30 @@ const ActionButtons = ({ isLoading, onCancel, taskTitle, isInline, isEdit }) => 
 );
 
 const ConditionalFields = ({ taskType, formData, handleChange, isInline }) => {
+  // Convert date to datetime-local format if needed
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+
+    // If it's already in datetime-local format, return as is
+    if (dateString.includes('T')) {
+      return dateString;
+    }
+
+    // Otherwise convert from backend format
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return ''; // Invalid date
+
+    return date.toISOString().slice(0, 16);
+  };
+
   if (taskType === 'Site Visits') {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 mt-3 gap-3">
         <div>
-          <label className="block text-sm font-medium theme-text-secondary mb-1">
-            Date <span className="text-red-500">*</span>
-          </label>
           <input
-            type="date"
+            type="datetime-local"
             name="date"
-            value={formData.date}
+            value={formatDateForInput(formData.date)}
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
@@ -443,28 +499,22 @@ const ConditionalFields = ({ taskType, formData, handleChange, isInline }) => {
 
   if (taskType === 'Meeting') {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
         <div>
-          <label className="block text-sm font-medium theme-text-secondary mb-1">
-            Date <span className="text-red-500">*</span>
-          </label>
           <input
-            type="date"
+            type="datetime-local"
             name="date"
-            value={formData.date}
+            value={formatDateForInput(formData.date)}
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium theme-text-secondary mb-1">
-            Location <span className="text-red-500">*</span>
-          </label>
           <input
             type="text"
             name="location"
-            value={formData.location}
+            value={formData.location || ''}
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"

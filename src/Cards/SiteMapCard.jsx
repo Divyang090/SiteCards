@@ -101,12 +101,12 @@ const SiteMapCard = ({ siteMap, onDelete, onClick, onEdit }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold theme-text-primary text-lg mb-1 truncate">
+      <div className="md:p-4 p-2">
+        <h3 className="font-semibold theme-text-primary md:text-lg mb-1 truncate">
           {siteMap.space_name || siteMap.name || siteMap.title || 'Untitled Site Map'}
         </h3>
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs theme-text-secondary theme-bg-primary px-2 py-1 rounded">
+          <span className="text-xs theme-text-secondary theme-bg-primary px-2 rounded">
             {siteMap.category || 'Uncategorized'}
           </span>
         </div>

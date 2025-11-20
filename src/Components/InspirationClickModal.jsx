@@ -1,23 +1,36 @@
 import React from 'react';
-import { BASE_URL } from '../Configuration/Config'; // Adjust path as needed
+import { BASE_URL } from '../Configuration/Config';
 
 const InspirationClickModal = ({ inspiration, onClose }) => {
     if (!inspiration) return null;
 
-    const getFileUrl = (item) => {
-        // For device uploads
-        if (item.file_url || item.file_path) {
-            let filePath = item.file_url || item.file_path || '';
-            filePath = filePath.replace(/\\/g, '/');
-
-            if (filePath && !filePath.startsWith('http')) {
-                return `${BASE_URL}/${filePath}`;
-            }
-            return filePath;
-        }
-        // For Pinterest - return the original URL
-        return item.url || item.pinterest_url || item.image_url;
-    };
+const getFileUrl = (item) => {
+    console.log('🔍 Inspiration item:', item);
+    console.log('🔍 Files array:', item.files);
+    
+    // For uploaded files - use the files array from backend response
+    if (item.files && item.files.length > 0 && item.files[0].file_path) {
+        let filePath = item.files[0].file_path;
+        console.log('🔍 File path:', filePath);
+        
+        // Remove /api from BASE_URL for file paths
+        const fileBaseUrl = BASE_URL;
+        
+        // Construct full URL
+        const fullUrl = `${fileBaseUrl}/${filePath}`;
+        console.log('🔍 Full image URL:', fullUrl);
+        return fullUrl;
+    }
+    
+    // For Pinterest URLs
+    if (item.pinterest_url || item.url) {
+        console.log('🔍 Pinterest URL:', item.pinterest_url || item.url);
+        return item.pinterest_url || item.url;
+    }
+    
+    console.log('🔍 No valid image source found');
+    return '';
+};
 
     const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
