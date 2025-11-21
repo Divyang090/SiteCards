@@ -86,80 +86,82 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
 
-    try {
-      const vendorId = vendor.vendor_id || vendor.id;
+  try {
+    const vendorId = vendor.vendor_id || vendor.id;
 
-      console.log('🔍 DEBUG VENDOR ID ANALYSIS:');
-      console.log('vendor.vendor_id:', vendor.vendor_id);
-      console.log('vendor.id:', vendor.id);
-      console.log('Final vendorId being used:', vendorId);
-      console.log('Full vendor object:', vendor);
+    console.log("🔍 DEBUG VENDOR ID ANALYSIS:");
+    console.log("vendor.vendor_id:", vendor.vendor_id);
+    console.log("vendor.id:", vendor.id);
+    console.log("Final vendorId being used:", vendorId);
+    console.log("Full vendor object:", vendor);
 
-      const requestData = {
-        contact_person: formData.name,        // ✅ Correct field name
-        company_name: formData.company_name,  // ✅ Use actual company_name from form
-        vendor_email: formData.email,
-        contact_number: formData.phone,
-        tags: formData.tags,                  // ✅ Add tags array
-        // notes: formData.notes,
-        space_id: spaceId,
-        // project_id: projectId
+    // ⛔ Backend expects tags as a STRING, not ARRAY
+    const formattedTags =
+      Array.isArray(formData.tags) ? formData.tags.join(", ") : formData.tags;
+
+    const requestData = {
+      contact_person: formData.name,
+      company_name: formData.company_name,
+      vendor_email: formData.email,
+      contact_number: formData.phone,
+      tags: formattedTags,   // ✅ FIXED — convert array to string
+    };
+
+    console.log("2. Request data to backend:", requestData);
+
+    const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    console.log("3. Response status:", response.status);
+
+    if (response.ok) {
+      let responseBody;
+
+      try {
+        responseBody = await response.json();
+        console.log("4. RAW API RESPONSE:", responseBody);
+      } catch (parseError) {
+        console.error("5. Failed to parse JSON response:", parseError);
+        const textResponse = await response.text();
+        console.log("5. Text response:", textResponse);
+        responseBody = textResponse;
+      }
+
+      // Transform vendor for frontend state
+      const transformedVendor = {
+        id: vendorId,
+        name: formData.company_name,
+        contact: formData.email,
+        phone: formData.phone,
+        tags: formData.tags, // Keep original array for UI
       };
 
-      console.log('2. Request data to backend:', requestData);
+      console.log("6. Final transformed vendor:", transformedVendor);
 
-      const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      console.log('3. Response status:', response.status);
-
-      if (response.ok) {
-        let responseBody;
-        try {
-          responseBody = await response.json();
-          console.log('4. RAW API RESPONSE:', responseBody);
-        } catch (parseError) {
-          console.error('5. Failed to parse JSON response:', parseError);
-          const textResponse = await response.text();
-          console.log('5. Text response:', textResponse);
-          responseBody = textResponse;
-        }
-
-        // ✅ UPDATED TRANSFORMATION - REMOVE CATEGORY, ADD TAGS
-        const transformedVendor = {
-          id: vendorId,
-          name: formData.company_name,
-          contact: formData.email,
-          phone: formData.phone,
-          space_id: spaceId,
-          tags: formData.tags  // ✅ Add tags instead of category
-        };
-
-        console.log('6. Final transformed vendor:', transformedVendor);
-
-        onUpdate(transformedVendor);
-        showMessage('Vendor updated successfully!', 'success');
-      } else {
-        const errorText = await response.text();
-        console.error('7. Error response:', errorText);
-        throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
-      }
-    } catch (error) {
-      console.error('8. Catch block error:', error);
-      showFailed('Failed to update vendor: ' + error.message);
-    } finally {
-      setIsSubmitting(false);
+      onUpdate(transformedVendor);
+      showMessage("Vendor updated successfully!", "success");
+    } else {
+      const errorText = await response.text();
+      console.error("7. Error response:", errorText);
+      throw new Error(`Failed to update vendor: ${response.status} - ${errorText}`);
     }
-  };
+  } catch (error) {
+    console.error("8. Catch block error:", error);
+    showFailed("Failed to update vendor: " + error.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   if (!vendor) return null;
 

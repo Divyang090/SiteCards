@@ -503,7 +503,7 @@ const AuthModal = () => {
                   Verifying...
                 </>
               ) : (
-                'Send OTP'
+                'Generate OTP'
               )}
             </button>
 

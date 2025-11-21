@@ -162,13 +162,14 @@ const handleSubmit = async (e) => {
     // Append all fields as form data
     submitFormData.append('task_name', formData.title.trim());
     submitFormData.append('description', formData.description || '');
-    submitFormData.append('task_type', formData.task_type.toLowerCase());
-    submitFormData.append('project_id', String(projectId));
-    submitFormData.append('status', formData.status);
+    submitFormData.append('task_type', formData.task_type);
+    submitFormData.append('task_id', String(taskId));
+    submitFormData.append('project_id',String(projectId));
+    // submitFormData.append('status', formData.status);
 
     // Append conditional fields if they exist
     if (formData.date) {
-      submitFormData.append('date', formData.date);
+      submitFormData.append('due_date', formData.date);
     }
 
     if (formData.location && formData.location.trim()) {
@@ -176,6 +177,7 @@ const handleSubmit = async (e) => {
     }
 
     // Handle assignment
+    //uncomment
     if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
       submitFormData.append('assigned_to', formData.assigned_to);
     }
@@ -188,7 +190,7 @@ const handleSubmit = async (e) => {
       if (file instanceof File) {
         // This is a new file uploaded by user
         newFiles.push(file);
-        submitFormData.append('files', file);
+        submitFormData.append('uploads', file);
       } else {
         // This is an existing file from backend (object with file info)
         existingFiles.push(file);
@@ -197,7 +199,7 @@ const handleSubmit = async (e) => {
 
     // If you need to track existing files for the backend, you might need to send them too
     // This depends on your backend API requirements
-    submitFormData.append('existing_files', JSON.stringify(existingFiles));
+    // submitFormData.append('existing_files', JSON.stringify(existingFiles));
 
     // Debug: Log FormData contents
     console.log('DEBUG - Edit FormData contents:');
@@ -211,6 +213,9 @@ const handleSubmit = async (e) => {
 
     const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
       method: 'PUT',
+      // headers: {
+      //   'Content-Type': 'multipart'
+      // },
       body: submitFormData,
     });
 

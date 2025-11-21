@@ -108,7 +108,7 @@ const CreateTaskModal = ({
 
       formData.append('task_name', taskData.title.trim());
       formData.append('description', taskData.description || '');
-      formData.append('task_type', taskData.task_type.toLowerCase());
+      formData.append('task_type', taskData.task_type);
       formData.append('project_id', String(projectId));
 
       if (taskData.date) {

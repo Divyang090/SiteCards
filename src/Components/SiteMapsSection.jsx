@@ -444,6 +444,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     setEditingVendor(vendor)
   };
 
+  //update vendor not working
   const handleUpdateVendor = (updatedVendor) => {
     console.log('🔄 PARENT: handleUpdateVendor called with:', updatedVendor);
     console.log('🔄 PARENT: Current vendors before update:', vendors);
@@ -616,7 +617,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   }, [spaceId]);
 
   // Add this to see component props/state
-  console.log('📝 Component render - spaceId:', spaceId, 'activeTab:', activeTab);
+  // console.log('📝 Component render - spaceId:', spaceId, 'activeTab:', activeTab);
 
   // Fetch tasks data
   useEffect(() => {
@@ -624,7 +625,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       if (activeTab === 'Tasks') {
         setLoading(prev => ({ ...prev, tasks: true }));
         try {
-          console.log('Fetching tasks for site map:', siteMap);
+          // console.log('Fetching tasks for site map:', siteMap);
 
           // Try different possible ID properties
           const spaceId = siteMap.id || siteMap.space_id;
@@ -1046,7 +1047,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         )}
 
         {/* Check Tasks All */}
-
+        {/* Change Tasks */}
         {/* Tasks Tab*/}
         {activeTab === 'Tasks' && (
           <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
@@ -1121,7 +1122,8 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           }}
         />
       )}
-
+         
+      {/* task Change */}
       {/* Add Task Modal */}
       {isAddTaskOpen && (
         <AddTaskModal

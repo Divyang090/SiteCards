@@ -73,58 +73,58 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       email: 'winds@hotmail.com'
     },
     {
-      id:5,
+      id: 5,
       name: 'Reserve Construction',
       description: 'Construction of Dams',
-      tags: ['Dams', 'Reservoirs','Bridges','Hanging Bridges'],
+      tags: ['Dams', 'Reservoirs', 'Bridges', 'Hanging Bridges'],
       company: 'Reserv Construction',
       phone: '+91 55584 55947',
       email: 'reserv@reservconstructions.ac.in'
     }
   ];
-// Autofill data from default vendors
-const handleVendorSelect = async (vendor) => {
-  const vendorData = {
-    contact_person: vendor.name,
-    company_name: vendor.company,
-    vendor_email: vendor.email,
-    contact_number: vendor.phone,
-    tags: vendor.tags,
-    notes: `Selected from vendor list: ${vendor.description}`,
-    space_id: spaceId,
-    project_id: projectId
-  };
+  // Autofill data from default vendors
+  const handleVendorSelect = async (vendor) => {
+    const vendorData = {
+      contact_person: vendor.name,
+      company_name: vendor.company,
+      vendor_email: vendor.email,
+      contact_number: vendor.phone,
+      tags: vendor.tags,
+      notes: `Selected from vendor list: ${vendor.description}`,
+      space_id: spaceId,
+      project_id: projectId
+    };
 
-  try {
-    setIsSubmitting(true);
-    const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(vendorData),
-    });
+    try {
+      setIsSubmitting(true);
+      const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vendorData),
+      });
 
-    if (response.ok) {
-      const newVendor = await response.json();
-      const transformedVendor = {
-        id: newVendor.vendor_id,
-        name: newVendor.company_name,
-        contact: newVendor.vendor_email,
-        phone: newVendor.contact_number,
-        space_id: newVendor.space_id || spaceId,
-        tags: newVendor.tags // ✅ Add tags to transformed vendor
-      };
+      if (response.ok) {
+        const newVendor = await response.json();
+        const transformedVendor = {
+          id: newVendor.vendor_id,
+          name: newVendor.company_name,
+          contact: newVendor.vendor_email,
+          phone: newVendor.contact_number,
+          space_id: newVendor.space_id || spaceId,
+          tags: newVendor.tags // ✅ Add tags to transformed vendor
+        };
 
-      onAdd(transformedVendor);
-      showMessage(`${vendor.name} added successfully!`, 'success');
-      onClose();
+        onAdd(transformedVendor);
+        showMessage(`${vendor.name} added successfully!`, 'success');
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error adding vendor:', error);
+      showMessage('Failed to add vendor: ' + error.message, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error('Error adding vendor:', error);
-    showMessage('Failed to add vendor: ' + error.message, 'error');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   //TAGS
   const handleAddCustomTag = () => {
@@ -189,68 +189,68 @@ const handleVendorSelect = async (vendor) => {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
-  try {
-    console.log('=== VENDOR SUBMISSION DATA ===');
-    console.log('Form data:', formData);
-    console.log('spaceId:', spaceId);
-    console.log('projectId:', projectId);
+    try {
+      console.log('=== VENDOR SUBMISSION DATA ===');
+      console.log('Form data:', formData);
+      console.log('spaceId:', spaceId);
+      console.log('projectId:', projectId);
 
-    const requestData = {
-      contact_person: formData.name,
-      company_name: formData.company_name,
-      vendor_email: formData.email,
-      contact_number: formData.phone,
-      trade: formData.tags.join(', '),
-      tags: formData.tags.join(','),
-      notes: formData.notes,
-      space_id: spaceId,
-      project_id: projectId
-    };
-
-    console.log('Request data to be sent:', requestData);
-
-    const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    });
-
-    console.log('Response status:', response.status);
-
-    if (response.ok) {
-      const newVendor = await response.json();
-      console.log('New vendor created successfully:', newVendor);
-
-      //Transform backend response to match frontend structure
-      const transformedVendor = {
-        id: newVendor.vendor_id,
-        name: newVendor.company_name,
-        category: newVendor.trade,
-        contact: newVendor.vendor_email,
-        phone: newVendor.contact_number,
-        space_id: newVendor.space_id || spaceId
+      const requestData = {
+        contact_person: formData.name,
+        company_name: formData.company_name,
+        vendor_email: formData.email,
+        contact_number: formData.phone,
+        trade: formData.tags.join(', '),
+        tags: formData.tags.join(','),
+        notes: formData.notes,
+        space_id: spaceId,
+        project_id: projectId
       };
 
-      onAdd(transformedVendor);
-      showMessage('Vendor added successfully!', 'success');
-    } else {
-      const errorText = await response.text();
-      console.error('Server error response:', errorText);
-      throw new Error(`Failed to add vendor: ${response.status} - ${errorText}`);
+      console.log('Request data to be sent:', requestData);
+
+      const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.ok) {
+        const newVendor = await response.json();
+        console.log('New vendor created successfully:', newVendor);
+
+        //Transform backend response to match frontend structure
+        const transformedVendor = {
+          id: newVendor.vendor_id,
+          name: newVendor.company_name,
+          category: newVendor.trade,
+          contact: newVendor.vendor_email,
+          phone: newVendor.contact_number,
+          space_id: newVendor.space_id || spaceId
+        };
+
+        onAdd(transformedVendor);
+        showMessage('Vendor added successfully!', 'success');
+      } else {
+        const errorText = await response.text();
+        console.error('Server error response:', errorText);
+        throw new Error(`Failed to add vendor: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error adding vendor:', error);
+      showMessage('Failed to add vendor: ' + error.message, 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (error) {
-    console.error('Error adding vendor:', error);
-    showMessage('Failed to add vendor: ' + error.message, 'error');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"

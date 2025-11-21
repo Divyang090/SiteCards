@@ -526,7 +526,8 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const displayProject = project;
 
   return (
-    <div className="min-h-screen theme-bg-primary theme-text-primary text-size">
+    // <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary theme-text-primary text-size">
+    <div className="min-h-screen bg-[url('/bgimage.png')] bg-cover bg-center theme-bg-primary theme-text-primary text-size">
       <div className="mx-auto px-2 py-2 md:px-6 md:py-8 ">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-400 mb-6">
