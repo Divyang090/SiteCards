@@ -40,91 +40,133 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       id: 1,
       name: 'ABC Construction',
       description: 'General building contractor',
-      tags: ['contractor', 'construction'],
+      tags: 'contractor,construction', // ✅ String format with no spaces
       company: 'ABC Builders Ltd.',
       phone: '+91 98765 43210',
-      email: 'contact@abcconstruction.com'
+      email: 'contact@aabcconstruction.com'
     },
     {
       id: 2,
       name: 'XYZ Electrical',
       description: 'Electrical works specialist',
-      tags: ['electrical', 'lighting'],
+      tags: 'electrical,lighting', // ✅ String format with no spaces
       company: 'XYZ Electric',
       phone: '+91 98765 43211',
-      email: 'info@xyzelectrical.com'
+      email: 'info@xayzelectrical.com'
     },
     {
       id: 3,
       name: 'Premium Paints',
       description: 'Painting and coating services',
-      tags: ['paint', 'interior'],
+      tags: 'paint,interior', // ✅ String format with no spaces
       company: 'Premium Paints Co.',
       phone: '+91 98765 43212',
-      email: 'sales@premiumpaints.com'
+      email: 'sales@paremiumpaints.com'
     },
     {
       id: 4,
       name: 'Winds',
       description: 'Turbines and Energy',
-      tags: ['Turbines', 'Mills', 'Wheels'],
+      tags: 'Turbines,Mills,Wheels', // ✅ String format with no spaces
       company: 'Winders',
       phone: '+91 65545 78945',
-      email: 'winds@hotmail.com'
+      email: 'winds@hoatmail.com'
     },
     {
       id: 5,
       name: 'Reserve Construction',
       description: 'Construction of Dams',
-      tags: ['Dams', 'Reservoirs', 'Bridges', 'Hanging Bridges'],
+      tags: 'Dams,Reservoirs,Bridges,Hanging Bridges', // ✅ String format with no spaces
       company: 'Reserv Construction',
       phone: '+91 55584 55947',
-      email: 'reserv@reservconstructions.ac.in'
+      email: 'reserv@reaservconstructions.ac.in'
     }
   ];
+
   // Autofill data from default vendors
   const handleVendorSelect = async (vendor) => {
+    console.log('=== VENDOR SELECT DEBUG START ===');
+    console.log('Original vendor object:', vendor);
+
+    // Validate required fields
+    if (!vendor.email) {
+      showMessage('Vendor email is required', 'error');
+      return;
+    }
+
+    if (!vendor.company) {
+      showMessage('Vendor company is required', 'error');
+      return;
+    }
+
+    // If tags is already a string, use it as-is. If it's an array, convert with no spaces.
+    const tagsString = Array.isArray(vendor.tags)
+      ? vendor.tags.join(',') // ✅ No spaces between commas
+      : (vendor.tags || '');
+
     const vendorData = {
-      contact_person: vendor.name,
-      company_name: vendor.company,
+      contact_person: vendor.name || '',
+      company_name: vendor.company || '',
       vendor_email: vendor.email,
-      contact_number: vendor.phone,
-      tags: vendor.tags,
-      notes: `Selected from vendor list: ${vendor.description}`,
-      space_id: spaceId,
-      project_id: projectId
+      contact_number: vendor.phone || '',
+      tags: tagsString, // ✅ Will be in format "contractor,construction" with no spaces
+      trade: ""
     };
+
+    console.log('Processed vendor data:', vendorData);
+    console.log('spaceId:', spaceId);
+    console.log('URL:', `${BASE_URL}/vendors/vendors/post/space/${spaceId}`);
+    console.log('=== VENDOR SELECT DEBUG END ===');
 
     try {
       setIsSubmitting(true);
+
       const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(vendorData),
       });
 
+      console.log('DEBUG - Response status:', response.status);
+      console.log('DEBUG - Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
         const newVendor = await response.json();
+        console.log('DEBUG - Success response:', newVendor);
+
         const transformedVendor = {
           id: newVendor.vendor_id,
-          name: newVendor.company_name,
-          contact: newVendor.vendor_email,
-          phone: newVendor.contact_number,
-          space_id: newVendor.space_id || spaceId,
-          tags: newVendor.tags // ✅ Add tags to transformed vendor
+          name: vendor.company,
+          contact: vendor.email,
+          phone: vendor.phone,
+          tags: tagsString
         };
 
         onAdd(transformedVendor);
         showMessage(`${vendor.name} added successfully!`, 'success');
         onClose();
+      } else {
+        const errorText = await response.text();
+        console.error('DEBUG - Full error response:', errorText);
+
+        // Try to parse the error for more details
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('DEBUG - Parsed error JSON:', errorJson);
+          showMessage(`Failed to add vendor: ${errorJson.error || errorJson.message || 'Unknown error'}`, 'error');
+        } catch {
+          console.error('DEBUG - Raw error text:', errorText);
+          showMessage('Failed to add vendor: ' + errorText, 'error');
+        }
       }
     } catch (error) {
-      console.error('Error adding vendor:', error);
+      console.error('Network error adding vendor:', error);
       showMessage('Failed to add vendor: ' + error.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   //TAGS
   const handleAddCustomTag = () => {
@@ -194,24 +236,25 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
     setIsSubmitting(true);
 
     try {
-      console.log('=== VENDOR SUBMISSION DATA ===');
+
+      console.log('=== MANUAL SUBMIT DEBUG ===');
       console.log('Form data:', formData);
-      console.log('spaceId:', spaceId);
-      console.log('projectId:', projectId);
 
       const requestData = {
         contact_person: formData.name,
         company_name: formData.company_name,
         vendor_email: formData.email,
         contact_number: formData.phone,
-        trade: formData.tags.join(', '),
+        // trade: formData.tags.join(', '),
         tags: formData.tags.join(','),
         notes: formData.notes,
         space_id: spaceId,
         project_id: projectId
       };
 
-      console.log('Request data to be sent:', requestData);
+      console.log('Manual request data:', requestData);
+      console.log('Manual spaceId:', spaceId);
+      console.log('=== MANUAL SUBMIT DEBUG END ===');
 
       const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
         method: 'POST',
@@ -468,12 +511,12 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
                   <div className="font-medium theme-text-primary">{vendor.name}</div>
                   <div className='text-xs theme-text-secondary mt-0.5'>{vendor.description}</div>
                   <div className='flex flex-wrap gap-1 mt-1.5'>
-                    {vendor.tags.map(tag => (
+                    {vendor.tags.split(',').map(tag => (
                       <span
                         key={tag}
                         className='inline-flex items-center px-2 py-0.5 rounded-full text-xs theme-bg-blue theme-text-blue border border-blue-200'
                       >
-                        {tag}
+                        {tag.trim()} {/* Added trim() to remove any accidental spaces */}
                       </span>
                     ))}
                   </div>

@@ -44,7 +44,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     const fetchSiteMaps = async () => {
       try {
         console.log('Fetching ALL site maps');
-        const response = await fetch(`${BASE_URL}/spaces/get/spaces`);
+        const response = await fetch(`${BASE_URL}/spaces/get/project/${projectId}`);
         console.log('Fetch response status:', response.status);
 
         if (response.ok) {
@@ -689,7 +689,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, drawings: true }));
         try {
           console.log('Fetching all drawings...');
-          const response = await fetch(`${BASE_URL}/drawings/get`);
+          const response = await fetch(`${BASE_URL}/drawings/get/space/${spaceId}`);
 
           console.log('Drawings fetch response status:', response.status);
 
@@ -747,7 +747,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, inspiration: true }));
         try {
           console.log('Fetching inspiration for space:', spaceId);
-          const response = await fetch(`${BASE_URL}/inspiration/get`);
+          const response = await fetch(`${BASE_URL}/inspiration/get/space/${spaceId}`);
 
           console.log('Inspiration fetch response status:', response.status);
 

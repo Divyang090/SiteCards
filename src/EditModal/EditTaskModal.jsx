@@ -163,13 +163,13 @@ const handleSubmit = async (e) => {
     submitFormData.append('task_name', formData.title.trim());
     submitFormData.append('description', formData.description || '');
     submitFormData.append('task_type', formData.task_type);
-    submitFormData.append('task_id', String(taskId));
-    submitFormData.append('project_id',String(projectId));
+    // submitFormData.append('task_id', String(taskId));
+    // submitFormData.append('project_id',String(projectId));
     // submitFormData.append('status', formData.status);
 
     // Append conditional fields if they exist
     if (formData.date) {
-      submitFormData.append('due_date', formData.date);
+      submitFormData.append('date', formData.date);
     }
 
     if (formData.location && formData.location.trim()) {
@@ -177,10 +177,10 @@ const handleSubmit = async (e) => {
     }
 
     // Handle assignment
-    //uncomment
-    if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
-      submitFormData.append('assigned_to', formData.assigned_to);
-    }
+    // //uncomment
+    // if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
+    //   submitFormData.append('assigned_to', formData.assigned_to);
+    // }
 
     // Handle files - separate new files from existing files
     const newFiles = [];
@@ -213,9 +213,6 @@ const handleSubmit = async (e) => {
 
     const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
       method: 'PUT',
-      // headers: {
-      //   'Content-Type': 'multipart'
-      // },
       body: submitFormData,
     });
 

@@ -137,67 +137,67 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
       try {
         setTaskLoading(true);
-        const response = await fetch(`${BASE_URL}/tasks/tasks`);
-        if (response.ok) {
-          const tasksData = await response.json();
-          console.log('Fetched ALL tasks from API:', tasksData);
 
-          // Handle different response formats
-          let tasksArray = tasksData;
-          if (tasksData && Array.isArray(tasksData.data)) {
-            tasksArray = tasksData.data;
-          } else if (tasksData && Array.isArray(tasksData.tasks)) {
-            tasksArray = tasksData.tasks;
+        // Fetch tasks directly filtered from backend
+        const response = await fetch(`${BASE_URL}/tasks/tasks/project/${id}`);
+
+        if (!response.ok) {
+          console.log(`No tasks found for project ${id}`);
+          setTasks([]);
+          return;
+        }
+
+        const tasksData = await response.json();
+        console.log(`Fetched tasks for project ${id} FROM BACKEND:`, tasksData);
+
+        // Normalize backend format
+        const tasksArray =
+          Array.isArray(tasksData?.data) ? tasksData.data :
+            Array.isArray(tasksData?.tasks) ? tasksData.tasks :
+              Array.isArray(tasksData) ? tasksData : [];
+
+        // Transform tasks
+        const transformed = tasksArray.map(task => {
+          let formattedDate = '';
+          if (task.date) {
+            try {
+              formattedDate = new Date(task.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            } catch {
+              formattedDate = task.date;
+            }
           }
 
-          // Filter tasks by project_id
-          const filteredTasks = tasksArray.filter(task =>
-            String(task.project_id) === String(id)
-          );
+          return {
+            id: task.id || task.task_id,
+            title: task.task_name || task.title,
+            description: task.description,
+            location: task.location,
+            visit_date: formattedDate,
+            Date: formattedDate,
+            taskType: task.task_type || 'Simple Task',
+            assignee:
+              task.assigned_to ||
+              task.assigned_team ||
+              task.assigned_vendor ||
+              'Unassigned',
+            assigned_to:
+              task.assigned_to ||
+              task.assigned_team ||
+              task.assigned_vendor ||
+              'Unassigned',
+            status: task.status || 'pending',
+            completed: task.status === 'completed',
+            files: task.files || []
+          };
+        });
 
-          console.log(`Filtered tasks for project ${id}:`, filteredTasks);
-
-          // Transform ONLY the filtered tasks - FIXED MAPPING
-          const transformedTasks = filteredTasks.map(task => {
-            // Format date from "Mon, 24 Dec 2012 00:00:00 GMT" to readable format
-            let formattedDate = '';
-            if (task.date) {
-              try {
-                const dateObj = new Date(task.date);
-                formattedDate = dateObj.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                });
-              } catch (e) {
-                console.error('Error formatting date:', e);
-                formattedDate = task.date;
-              }
-            }
-
-            return {
-              id: task.id || task.task_id,
-              title: task.task_name || task.title,
-              description: task.description,
-              location: task.location,
-              visit_date: formattedDate,
-              Date: formattedDate,
-              taskType: task.task_type || 'Simple Task',
-              assignee: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
-              assigned_to: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
-              status: task.status || 'pending',
-              completed: task.status === 'completed',
-              files: task.files || []
-            };
-          });
-
-          setTasks(transformedTasks);
-        } else {
-          console.log('No tasks found in API');
-          setTasks([]);
-        }
+        setTasks(transformed);
       } catch (error) {
         console.error('Error fetching tasks:', error);
         setTasks([]);
@@ -206,10 +206,9 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       }
     };
 
-    if (id) {
-      fetchTasks();
-    }
+    fetchTasks();
   }, [id]);
+
 
   //Edit tasks Project details
   const handleEditTask = (taskId) => {
@@ -397,12 +396,13 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update task status');
+        const err = await response.text();
+        throw new Error(err);
       }
 
       const updatedTask = await response.json();
 
-      // Update the task in your state
+      // Update UI
       setTasks(prevTasks =>
         prevTasks.map(task =>
           task.id === taskId ? { ...task, status: newStatus } : task
@@ -410,11 +410,13 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       );
 
       showMessage(`Task marked as ${newStatus}`, 'success');
+
     } catch (error) {
       console.error('Error updating task status:', error);
-      showFailed('Failed to update task status');
+      showMessage('Failed to update task status', 'error');
     }
   };
+
 
   // DELETE TASK USING API
   const handleDeleteTask = async (taskId) => {
@@ -526,7 +528,6 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const displayProject = project;
 
   return (
-    // <div className="min-h-screen bg-[url('bgimage.png')] theme-bg-primary theme-text-primary text-size">
     <div className="min-h-screen bg-[url('/bgimage.png')] bg-cover bg-center theme-bg-primary theme-text-primary text-size">
       <div className="mx-auto px-2 py-2 md:px-6 md:py-8 ">
         {/* Back Button */}
@@ -638,7 +639,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       <div className="flex items-center gap-3 flex-1">
                         {/* Checkbox*/}
                         <button
-                          onClick={() => handleToggleTask(task.id)}
+                          onClick={() => handleToggleStatus(task.id)}
                           className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${task.completed
                             ? 'bg-green-500 border-green-500 text-white shadow-sm'
                             : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
@@ -697,7 +698,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
                               {/* task date on task card  */}
                               {task.visit_date && (
-                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400':'theme-text-secondary'}`}>
+                                <span className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'theme-text-secondary'}`}>
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
