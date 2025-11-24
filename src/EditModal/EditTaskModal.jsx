@@ -4,6 +4,7 @@ import { useStatusMessage } from '../Alerts/StatusMessage';
 
 const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline = false }) => {
   const { showMessage, showFailed } = useStatusMessage();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [formData, setFormData] = useState({
     title: '',
     description: '',

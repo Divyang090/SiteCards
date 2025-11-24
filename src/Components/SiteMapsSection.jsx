@@ -3,7 +3,6 @@ import SiteMapUploadModal from '../AddingModal/SiteMapUploadModal';
 import AddVendorModal from '../AddingModal/AddVendorModal';
 import AddInspirationModal from '../AddingModal/AddInspirationModal';
 import AddDrawingModal from '../AddingModal/AddDrawingModal';
-import AddTaskModal from '../AddingModal/AddTaskModal';
 import SiteMapCard from '../Cards/SiteMapCard';
 import EmptySiteMapsState from './EmptySiteMapsState';
 import DrawingCard from '../Cards/DrawingCard';
@@ -11,7 +10,6 @@ import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider, { useStatusMessage } from '../Alerts/StatusMessage';
 import EditDrawingModal from '../EditModal/EditDrawingModal';
 import EditInspirationModal from '../EditModal/EditInspirationModal';
-import EditTaskModal from '../EditModal/EditTaskModal';
 import EditVendorModal from '../EditModal/EditVendorModal';
 import DrawingClickModal from './DrawingClickModal';
 import InspirationCard from '../Cards/InspirationCard';
@@ -19,7 +17,8 @@ import VendorCard from '../Cards/VendorCard';
 import SiteTaskCard from '../Cards/SiteTaskCard';
 import InspirationClickModal from './InspirationClickModal';
 import BulkPresetModal from '../AddingModal/BulkPresetModal';
-
+import EditSiteTask from '../EditModal/EditSiteTask';
+import CreateSiteTask from '../AddingModal/CreateSiteTask';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -31,6 +30,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isBulkPresetModalOpen, setIsBulkPresetModalOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState();
+  const [refershTrigger, setRefreshTrigger] = useState(0);
 
   const menuRef = useRef(null);
 
@@ -42,6 +42,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   // SiteMaps Fetch API
   useEffect(() => {
     const fetchSiteMaps = async () => {
+      console.log("=============RECEIVED FROM API:==========", siteMapsList);
       try {
         console.log('Fetching ALL site maps');
         const response = await fetch(`${BASE_URL}/spaces/get/project/${projectId}`);
@@ -357,6 +358,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [editingTask, setEditingTask] = useState();
   const [selectedDrawing, setSelectedDrawing] = useState(null);
   const [selectedInspiration, setSelectedInspiration] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -379,10 +381,16 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const handleCloseDrawingClickModal = () => {
     setSelectedDrawing(null);
   }
+
+  //CRITICAL
   // Task handlers
-  const handleEditTask = (task) => {
-    console.log('Edit task:', task);
-    setEditingTask(task);
+  const handleEditTask = (taskId) => {
+    const taskToEdit = tasks.find(task =>
+      task.id === taskId || task.task_id === taskId
+    );
+    if (taskToEdit) {
+      setEditingTask(taskToEdit);
+    }
   };
 
   const handleDeleteTask = async (taskId) => {
@@ -394,7 +402,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${taskName}"? This action cannot be undone.`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/tasks/${taskId}`, {
+          const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
             method: 'DELETE',
           });
 
@@ -412,6 +420,8 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       }
     );
   };
+
+  //CRITICAL
 
   // Drawing handlers
   const handleEditDrawing = (drawing) => {
@@ -443,6 +453,11 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     console.log('Edit vendor:', vendor);
     setEditingVendor(vendor)
   };
+
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
 
   //update vendor not working
   const handleUpdateVendor = (updatedVendor) => {
@@ -616,72 +631,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     console.log('🔍 SpaceId Monitor - spaceId available:', !!spaceId);
   }, [spaceId]);
 
-  // Add this to see component props/state
-  // console.log('📝 Component render - spaceId:', spaceId, 'activeTab:', activeTab);
-
-  // Fetch tasks data
-  useEffect(() => {
-    const fetchTasks = async () => {
-      if (activeTab === 'Tasks') {
-        setLoading(prev => ({ ...prev, tasks: true }));
-        try {
-          // console.log('Fetching tasks for site map:', siteMap);
-
-          // Try different possible ID properties
-          const spaceId = siteMap.id || siteMap.space_id;
-          const projectId = siteMap.project_id;
-
-          console.log('Using spaceId:', spaceId, 'projectId:', projectId);
-
-          let response;
-          if (spaceId) {
-            response = await fetch(`${BASE_URL}/tasks/tasks?project_id=${siteMap.id || siteMap.space_id}`);
-          } else if (projectId) {
-            response = await fetch(`${BASE_URL}/tasks?space_id=${projectId}`);
-          } else {
-            throw new Error('No valid IDs found for API call');
-          }
-
-          if (response && response.ok) {
-            const tasksData = await response.json();
-            // console.log('Fetched tasks data:', tasksData);
-
-            // Handle different response formats
-            let tasksArray = [];
-            if (Array.isArray(tasksData)) {
-              tasksArray = tasksData;
-            } else if (tasksData && Array.isArray(tasksData.data)) {
-              tasksArray = tasksData.data;
-            } else if (tasksData && Array.isArray(tasksData.tasks)) {
-              tasksArray = tasksData.tasks;
-            }
-
-            // Transform tasks to ensure they have required fields
-            const transformedTasks = tasksArray.map(task => ({
-              id: task.id || task.task_id,
-              title: task.title || task.task_name || 'Untitled Task',
-              description: task.description || '',
-              status: task.status || 'pending',
-              due_date: task.due_date || task.dueDate || task.created_at
-            }));
-
-            setTasks(transformedTasks);
-          } else {
-            console.log('Tasks API failed, using sample data');
-            setTasks(getSampleTasks());
-          }
-        } catch (error) {
-          console.error('Error fetching tasks:', error);
-          setTasks(getSampleTasks());
-        } finally {
-          setLoading(prev => ({ ...prev, tasks: false }));
-        }
-      }
-    };
-
-    fetchTasks();
-  }, [activeTab, siteMap.id, siteMap.space_id, siteMap.project_id]);
-
   // Fetch drawing
   useEffect(() => {
     const fetchDrawings = async () => {
@@ -799,50 +748,107 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     });
   };
 
-  // Toggle task completion REMOVE CORS HANDLING
-  const handleToggleTask = async (taskId) => {
-    console.log('Toggle task clicked for ID:', taskId);
+  //CRITICAL
+  // Fetch tasks using spaceId
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (activeTab === 'Tasks' && spaceId) {
+        setLoading(prev => ({ ...prev, tasks: true }));
+        try {
+          console.log('Fetching tasks for space:', spaceId);
+          const response = await fetch(`${BASE_URL}/tasks/tasks/space/${spaceId}`);
 
+          console.log('Tasks fetch response status:', response.status);
+
+          if (response.ok) {
+            const tasksData = await response.json();
+            console.log('Fetched tasks data:', tasksData);
+
+            // Handle different response formats
+            let tasksArray = [];
+            if (Array.isArray(tasksData)) {
+              tasksArray = tasksData;
+            } else if (tasksData && Array.isArray(tasksData.data)) {
+              tasksArray = tasksData.data;
+            } else if (tasksData && Array.isArray(tasksData.tasks)) {
+              tasksArray = tasksData.tasks;
+            } else {
+              console.log('Unexpected tasks response format:', tasksData);
+              tasksArray = [];
+            }
+
+            // Transform tasks to ensure consistent format
+            const transformedTasks = tasksArray.map(task => ({
+              id: task.id || task.task_id,
+              task_id: task.task_id || task.id,
+              title: task.title || task.task_name || 'Untitled Task',
+              task_name: task.task_name || task.title || 'Untitled Task',
+              description: task.description || '',
+              status: task.status || 'pending',
+              due_date: task.due_date || task.dueDate,
+              assigned_to: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
+              location: task.location || '',
+              task_type: task.task_type || 'General'
+            }));
+
+            setTasks(transformedTasks);
+          } else {
+            console.log('Tasks fetch failed with status:', response.status);
+            setTasks([]);
+          }
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+          setTasks([]);
+        } finally {
+          setLoading(prev => ({ ...prev, tasks: false }));
+        }
+      }
+    };
+
+    if (activeTab === 'Tasks') {
+      fetchTasks();
+    }
+  }, [activeTab, spaceId]);
+
+
+  const handleToggleTask = async (taskId) => {
     try {
       const task = tasks.find(t => t.id === taskId);
       if (!task) {
-        console.error('Task not found:', taskId);
+        console.error("Task not found:", taskId);
         return;
       }
 
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const newStatus = task.status === "completed" ? "pending" : "completed";
 
-      // Update local state immediately
+      // Update local state instantly
       setTasks(prevTasks =>
         prevTasks.map(t =>
           t.id === taskId ? { ...t, status: newStatus } : t
         )
       );
 
-      // Try API call with CORS handling
-      try {
-        const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ status: newStatus }),
-        });
+      // Prepare formData (required by backend)
+      const formData = new FormData();
+      formData.append("status", newStatus);
 
-        if (response.ok) {
-          console.log('Task status updated successfully in API');
-        } else {
-          console.error('API update failed with status:', response.status);
-        }
-      } catch (apiError) {
-        console.log('API call failed due to CORS, but UI updated:', apiError);
+      // Send request
+      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+        method: "PUT",
+        body: formData, // ❗ formData, NOT JSON
+      });
+
+      if (!response.ok) {
+        console.error("API update failed with status:", response.status);
       }
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error("Error updating task:", error);
     }
   };
 
-  const sortedTask = [...tasks].sort((a, b) => {
+
+
+  const sortedTasks = [...tasks].sort((a, b) => {
     if (a.status === 'completed' && b.status !== 'completed') return 1;
     if (a.status !== 'completed' && b.status === 'completed') return -1;
     return 0;
@@ -891,6 +897,8 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       <div className="flex justify-end mt-4">
         <button
           onClick={() => {
+            console.log('🔄 Add button clicked for tab:', activeTab);
+
             if (activeTab === 'Drawings') setIsAddDrawingOpen(true);
             if (activeTab === 'Vendors') setIsAddVendorOpen(true);
             if (activeTab === 'Inspiration') setIsAddInspirationOpen(true);
@@ -901,7 +909,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add {activeTab.slice()}
+          Add {activeTab === 'Tasks' ? 'Task' : activeTab.slice(0, -1)}
         </button>
       </div>
 
@@ -1038,6 +1046,77 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           </div>
         )}
 
+        {/* Tasks Tab*/}
+        {activeTab === 'Tasks' && (
+          <div className='overflow-y-auto scrollbar-hidden'>
+            {loading.tasks ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-500 mt-2">Loading tasks...</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* MOVE CREATE TASK FORM HERE - AT THE TOP */}
+                {isAddTaskOpen && (
+                  <CreateSiteTask
+                    isOpen={isAddTaskOpen}
+                    spaceId={siteMap.id || siteMap.space_id}
+                    projectId={siteMap.project_id}
+                    isInline={true}
+                    onClose={() => setIsAddTaskOpen(false)}
+                    onCancel={() => setIsAddTaskOpen(false)}
+                    onCreate={(newTask) => {
+                      console.log('New task created:', newTask);
+                      setTasks(prev => [...prev, newTask]);
+                      setIsAddTaskOpen(false);
+                    }}
+                  />
+                )}
+
+                {/* THEN RENDER THE TASKS LIST */}
+                {tasks.length > 0 ? (
+                  sortedTasks.map((task) => (
+                    <div key={task.id}>
+                      {editingTask && editingTask.id === task.id ? (
+                        <EditSiteTask
+                          task={editingTask}
+                          spaceId={siteMap?.space_id || siteMap?.id}
+                          projectId={siteMap?.project_id}
+                          isInline={true}
+                          onClose={() => setEditingTask(null)}
+                          onUpdate={(updatedTask) => {
+                            setTasks(prev => prev.map(t =>
+                              t.id === updatedTask.id || t.task_id === updatedTask.task_id ? updatedTask : t
+                            ));
+                            setEditingTask(null);
+                          }}
+                        />
+                      ) : (
+                        <SiteTaskCard
+                          task={task}
+                          onToggle={() => handleToggleTask(task.id)}
+                          onEdit={handleEditTask}
+                          onDelete={handleDeleteTask}
+                        />
+                      )}
+                    </div>
+                  ))
+                ) : !isAddTaskOpen ? ( // Only show empty state if NOT adding a task
+                  <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-gray-400 mb-3">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">No tasks yet</h3>
+                    <p className="text-gray-500 text-sm">Add your first task to get started</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Inspiration Click */}
         {selectedInspiration && (
           <InspirationClickModal
@@ -1046,41 +1125,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           />
         )}
 
-        {/* Check Tasks All */}
-        {/* Change Tasks */}
-        {/* Tasks Tab*/}
-        {activeTab === 'Tasks' && (
-          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
-            {loading.tasks ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-500 mt-2">Loading tasks...</p>
-              </div>
-            ) : tasks.length > 0 ? (
-              <div className="space-y-3">
-                {sortedTask.map((task) => (
-                  <SiteTaskCard
-                    key={task.id}
-                    task={task}
-                    onToggle={handleToggleTask}
-                    onEdit={handleEditTask}
-                    onDelete={handleDeleteTask}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="text-gray-400 mb-3">
-                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">No tasks yet</h3>
-                <p className="text-gray-500 text-sm">Add your first task to get started</p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Add Drawing Modal */}
@@ -1119,20 +1163,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
             setInspiration(prev => [...prev, newInspiration]);
             setRefreshInspiration(prev => prev + 1);
             setIsAddInspirationOpen(false);
-          }}
-        />
-      )}
-         
-      {/* task Change */}
-      {/* Add Task Modal */}
-      {isAddTaskOpen && (
-        <AddTaskModal
-          spaceId={siteMap.id || siteMap.space_id}
-          projectId={siteMap.project_id}
-          onClose={() => setIsAddTaskOpen(false)}
-          onAdd={(newTask) => {
-            setTasks(prev => [...prev, newTask]);
-            setIsAddTaskOpen(false);
           }}
         />
       )}
@@ -1198,21 +1228,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         />
       )}
 
-      {/* edit tasks in space */}
-      {/* Edit Tasks */}
-      {editingTask && (
-        <editingtaskModal
-          task={editingTask}
-          spaceId={siteMap?.space_id || spaace.id}
-          projectId={siteMap?.project_id}
-          onClose={() => setEditingTask(null)}
-          onUpdate={(updatedTask) => {
-            setTasks(prev => prev.map(t => t.task_id === updatedTask.task_id ? updatedTask : t));
-            setEditingTask(null)
-          }}
-          setEditingTask
-        />
-      )}
     </div>
   );
 };

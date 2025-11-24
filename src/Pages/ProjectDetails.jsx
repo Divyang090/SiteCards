@@ -37,6 +37,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
 
   const { showMessage, showConfirmation } = useStatusMessage();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleToggleDescription = (taskId) => {
     setExpandedDescriptions(prev => ({
@@ -203,11 +204,11 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         setTasks([]);
       } finally {
         setTaskLoading(false);
+
       }
     };
-
     fetchTasks();
-  }, [id]);
+  }, [id, refreshTrigger]);
 
 
   //Edit tasks Project details
@@ -383,10 +384,51 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   // UPDATE TASK STATUS USING API
-  const handleToggleStatus = async (taskId, currentStatus) => {
-    try {
-      const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+const handleToggleStatus = async (taskId) => {
+  // 1. Instantly update UI
+  setTasks(prevTasks =>
+    prevTasks.map(task =>
+      task.id === taskId
+        ? {
+            ...task,
+            status: task.status === "pending" ? "completed" : "pending",
+            completed: task.status === "pending",
+          }
+        : task
+    )
+  );
 
+  try {
+    // 2. Send update to backend (no waiting for correct response)
+    await updateTaskStatus(
+      taskId,
+      tasks.find(t => t.id === taskId)?.status === "pending"
+        ? "completed"
+        : "pending"
+    );
+  } catch (err) {
+    console.error("Failed to update task status:", err);
+
+    // 3. Revert UI if backend fails
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              status: task.status === "completed" ? "pending" : "completed",
+              completed: task.status === "completed" ? false : true,
+            }
+          : task
+      )
+    );
+  }
+};
+
+
+
+  // Separate API call function
+  const updateTaskStatus = async (taskId, newStatus) => {
+    try {
       const formData = new FormData();
       formData.append('status', newStatus);
 
@@ -400,19 +442,15 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         throw new Error(err);
       }
 
-      const updatedTask = await response.json();
-
-      // Update UI
+      // showMessage(`Task marked as ${newStatus}`, 'success');
+    } catch (error) {
+      console.error('API Error:', error);
+      // Revert optimistic update
       setTasks(prevTasks =>
         prevTasks.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
+          task.id === taskId ? { ...task, status: task.status === 'pending' ? 'completed' : 'pending' } : task
         )
       );
-
-      showMessage(`Task marked as ${newStatus}`, 'success');
-
-    } catch (error) {
-      console.error('Error updating task status:', error);
       showMessage('Failed to update task status', 'error');
     }
   };
@@ -528,7 +566,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const displayProject = project;
 
   return (
-    <div className="min-h-screen bg-[url('/bgimage.png')] bg-cover bg-center theme-bg-primary theme-text-primary text-size">
+    <div className="min-h-screen bg-cover bg-center theme-bg-primary theme-text-primary text-size">
       <div className="mx-auto px-2 py-2 md:px-6 md:py-8 ">
         {/* Back Button */}
         <Link to="/" className="inline-flex items-center text-gray-500 hover:text-gray-400 mb-6">
@@ -625,10 +663,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                       projectId={id}
                       isInline={true}
                       onClose={() => setEditingTask(null)}
-                      onUpdate={(updatedTask) => {
-                        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-                        setEditingTask(null);
-                      }}
+                      onUpdate={() => setRefreshTrigger(prev => prev + 1)}
                     />
                   ) : (
                     <div
