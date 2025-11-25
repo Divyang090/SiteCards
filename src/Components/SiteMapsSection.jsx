@@ -19,6 +19,7 @@ import InspirationClickModal from './InspirationClickModal';
 import BulkPresetModal from '../AddingModal/BulkPresetModal';
 import EditSiteTask from '../EditModal/EditSiteTask';
 import CreateSiteTask from '../AddingModal/CreateSiteTask';
+import PinterestBoardModal from './PinterestBoardModal';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -78,7 +79,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
     if (projectId) {
       fetchSiteMaps();
     }
-  }, [projectId]);
+  }, [projectId, refershTrigger]);
 
   // click outside handler
   useEffect(() => {
@@ -323,6 +324,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
           onClose={() => setIsBulkPresetModalOpen(false)}
           onSiteMapsCreated={handleSiteMapsCreated}
           projectId={projectId}
+          setRefreshTrigger={setRefreshTrigger}
         />
       )}
 
@@ -359,6 +361,9 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [selectedDrawing, setSelectedDrawing] = useState(null);
   const [selectedInspiration, setSelectedInspiration] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedBoard, setSelectedBoard] = useState(null);
+  const [boardPosts, setBoardPosts] = useState([]);
+  const [loadingBoard, setLoadingBoard] = useState(false);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -366,7 +371,16 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   // Click handler for inspiration cards
   const handleInspirationClick = (item) => {
-    setSelectedInspiration(item);
+    const isBoard = item.pinterestUrl?.includes('/board/') ||
+      item.isBoard ||
+      item.type === 'pinterest_board';
+
+    if (isBoard) {
+      setSelectedBoard(item);
+      fetchBoardPosts(item);
+    } else {
+      setSelectedInspiration(item); // Your existing single image modal
+    }
   };
 
   const handleCloseInspirationModal = () => {
@@ -514,6 +528,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     console.log('Edit inspiration:', inspiration);
     setEditingInspiration(inspiration)
   };
+
   //deleteinspiration
   const handleDeleteInspiration = async (inspirationId, inspiration) => {
     console.log('Inspiration object:', inspiration);
@@ -738,6 +753,45 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       fetchInspiration();
     }
   }, [activeTab, spaceId, refreshInspiration]);
+
+
+  //fetching posts from pinterest board
+  const fetchBoardPosts = async (boardItem) => {
+    setLoadingBoard(true);
+    try {
+      // Extract board ID from URL
+      const boardId = extractBoardIdFromUrl(boardItem.pinterestUrl);
+
+      console.log('Fetching posts for board:', boardId);
+
+      // Call your Pinterest API to get all posts
+      const response = await fetch(`${BASE_URL}/pinterest/boards/${boardId}/posts`);
+
+      if (response.ok) {
+        const postsData = await response.json();
+        console.log('Fetched board posts:', postsData);
+        setBoardPosts(postsData);
+      } else {
+        console.error('Failed to fetch board posts');
+        setBoardPosts([]);
+      }
+    } catch (error) {
+      console.error('Error fetching board posts:', error);
+      setBoardPosts([]);
+    } finally {
+      setLoadingBoard(false);
+    }
+  };
+
+  // Helper function to extract board ID
+  const extractBoardIdFromUrl = (url) => {
+    if (!url) return null;
+
+    // Pattern: pinterest.com/username/board-name/
+    const match = url.match(/pinterest\.com\/([^/]+\/[^/]+)/);
+    return match ? match[1] : url; // Fallback to full URL if pattern doesn't match
+  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
@@ -1044,6 +1098,34 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
               </div>
             )}
           </div>
+        )}
+
+        {/* Single Image Modal */}
+        {selectedInspiration && (
+          <InspirationClickModal
+            inspiration={selectedInspiration}
+            onClose={handleCloseInspirationModal}
+          />
+        )}
+
+        {/* Pinterest Board Modal */}
+        {selectedBoard && (
+          <PinterestBoardModal
+            board={selectedBoard}
+            posts={boardPosts}
+            loading={loadingBoard}
+            onClose={() => setSelectedBoard(null)}
+            onImageClick={(post) => {
+              // Convert board post to inspiration format for your existing modal
+              const inspirationPost = {
+                ...post,
+                title: post.description || 'Pinterest Pin',
+                pinterest_url: post.pinUrl || post.url
+              };
+              setSelectedInspiration(inspirationPost);
+              setSelectedBoard(null); // Close board modal
+            }}
+          />
         )}
 
         {/* Tasks Tab*/}

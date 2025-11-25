@@ -57,7 +57,7 @@ const handleSubmit = async (e) => {
     if (importOption === 'upload') {
       uploadData.append('uploads', formData.file);
     } else if (importOption === 'pinterest') {
-      uploadData.append('url', formData.pinterestUrl); // Changed from 'pinterest_url' to 'url'
+      uploadData.append('url', formData.pinterestUrl);
     }
 
     if (formData.description) {

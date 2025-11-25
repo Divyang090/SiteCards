@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import { BASE_URL } from '../Configuration/Config';
+import { useParams } from 'react-router-dom';
 
-const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
+const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRefreshTrigger }) => {
   const [presets, setPresets] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -48,23 +49,36 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
     if (!selectedPreset) return;
 
     setIsApplying(true);
+
     try {
+
       const res = await fetch(
-        `${BASE_URL}/spaces/get/preset/${selectedPreset.preset_id}`
+        `${BASE_URL}/spaces/projects/${projectId}/apply-preset`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preset_id: selectedPreset.preset_id })
+        }
       );
 
       const data = await res.json();
 
-      if (data.spaces) {
-        onSiteMapsCreated(data.spaces);
-        showMessage(`${data.total_spaces} spaces loaded!`, "success");
+      if (res.ok) {
+        showMessage("Preset applied successfully!", "success");
+        setRefreshTrigger(prev => prev + 1);
+
+        if (data.spaces) {
+          onSiteMapsCreated(data.spaces);
+        }
+
         onClose();
       } else {
-        showMessage("No spaces found for this preset", "warning");
+        showMessage(data.message || "Failed to apply preset", "error");
       }
+
     } catch (err) {
       console.error("Error applying preset:", err);
-      showMessage("Failed to load preset spaces", "error");
+      showMessage("Failed to apply preset", "error");
     } finally {
       setIsApplying(false);
     }
@@ -92,8 +106,8 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated }) => {
               <div key={preset.preset_id} className="mb-6 last:mb-0">
                 <div
                   className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${selectedPreset?.preset_id === preset.preset_id
-                      ? "border-green-500"
-                      : "border-gray-200 hover:border-gray-300"
+                    ? "border-green-500"
+                    : "border-gray-200 hover:border-gray-300"
                     }`}
                   onClick={() => setSelectedPreset(preset)}
                 >

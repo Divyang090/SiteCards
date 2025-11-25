@@ -112,8 +112,7 @@ const CreateSiteTask = ({
             formData.append('task_name', taskData.title.trim());
             formData.append('description', taskData.description || '');
             formData.append('task_type', taskData.task_type);
-            // formData.append('project_id', String(projectId));
-            formData.append('space_id', String(spaceId)); // Add this line
+            formData.append('space_id', String(spaceId));
 
             if (taskData.date) {
                 const dateObj = new Date(taskData.date);
@@ -339,16 +338,7 @@ const TextInput = ({ label, name, value, onChange, required, placeholder, isInli
     </div>
 );
 
-const DropdownField = ({
-  label,
-  value,
-  options,
-  isOpen,
-  dropdownRef,
-  onToggle,
-  onSelect,
-  isInline
-}) => (
+const DropdownField = ({ label, value, options, isOpen, dropdownRef, onToggle, onSelect, isInline }) => (
   <div className="relative" ref={dropdownRef}>
     <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
       {label}
