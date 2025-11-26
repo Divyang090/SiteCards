@@ -25,6 +25,13 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     };
   }, [imagePreview]);
 
+  //Detects if it is a board
+  const isPinterestBoardUrl = (url) => {
+    return url.includes('pinterest.com/') &&
+      (url.includes('/board/') ||
+        url.match(/pinterest\.com\/[^/]+\/[^/]+\/?$/));
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -34,6 +41,16 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     }
   };
 
+  // Helper to extract board ID from Pinterest URL
+  const extractBoardIdFromUrl = (url) => {
+    if (!url) return null;
+
+    // Pattern: pinterest.com/username/board-name/
+    const match = url.match(/pinterest\.com\/([^/]+\/[^/]+)/);
+    return match ? match[1] : url; // fallback to full URL if pattern doesn't match
+  };
+
+
 const handleSubmit = async (e) => {
   e.preventDefault();
 
@@ -42,27 +59,30 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  if (importOption === 'pinterest' && !formData.pinterestUrl) {
-    showMessage('Please enter a Pinterest URL', 'failed');
-    return;
-  }
-
   setIsUploading(true);
 
   try {
-    const uploadData = new FormData();
+    const uploadData = new FormData(); // declare first
+
     uploadData.append('space_id', spaceId);
     uploadData.append('title', formData.title || 'Untitled Inspiration');
 
     if (importOption === 'upload') {
       uploadData.append('uploads', formData.file);
     } else if (importOption === 'pinterest') {
+      // Extract board ID
+      const boardId = extractBoardIdFromUrl(formData.pinterestUrl);
+
+      // Append Pinterest data
       uploadData.append('url', formData.pinterestUrl);
+      uploadData.append('board_id', boardId); // send boardId to backend
+      uploadData.append('isBoard', isPinterestBoardUrl(formData.pinterestUrl));
     }
 
     if (formData.description) {
       uploadData.append('description', formData.description);
     }
+
     if (formData.tags.length > 0) {
       uploadData.append('tags', formData.tags.join(','));
     }
@@ -74,12 +94,9 @@ const handleSubmit = async (e) => {
 
     if (response.ok) {
       const newInspiration = await response.json();
-
-      if (importOption === 'pinterest'){
+      if (importOption === 'pinterest') {
         newInspiration.pinterestUrl = formData.pinterestUrl;
       }
-
-      console.log('New Inspiration created:', newInspiration);
       onAdd(newInspiration);
       showMessage('Inspiration added successfully!', 'success');
       onClose();
@@ -94,6 +111,7 @@ const handleSubmit = async (e) => {
     setIsUploading(false);
   }
 };
+
 
   const handleAddCustomTag = () => {
     if (customTag.trim() && !formData.tags.includes(customTag.trim())) {

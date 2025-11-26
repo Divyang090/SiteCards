@@ -364,6 +364,9 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [selectedBoard, setSelectedBoard] = useState(null);
   const [boardPosts, setBoardPosts] = useState([]);
   const [loadingBoard, setLoadingBoard] = useState(false);
+  const [boardError, setBoardError] = useState(null);
+  const [boardPage, setBoardPage] = useState(1);
+  const [hasMoreBoardPosts, setHasMoreBoardPosts] = useState(true);
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -371,17 +374,33 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   // Click handler for inspiration cards
   const handleInspirationClick = (item) => {
-    const isBoard = item.pinterestUrl?.includes('/board/') ||
-      item.isBoard ||
-      item.type === 'pinterest_board';
 
-    if (isBoard) {
+    const determinePinterestType = (item) => {
+      if (!item.pinterestUrl) return 'unknown';
+
+      if (item.pinterestUrl.includes('/board/') || item.type === 'pinterest_board' || item.isBoard) {
+        return 'board';
+      }
+
+      if (item.pinterestUrl.includes('/pin/') || item.type === 'pinterest_pin') {
+        return 'pin';
+      }
+
+      return 'unknown';
+    };
+
+    const type = determinePinterestType(item); // ← Call the helper here
+
+    if (type === 'board') {
       setSelectedBoard(item);
-      fetchBoardPosts(item);
+      fetchBoardPosts(item, true); // reset = true
+    } else if (type === 'pin') {
+      setSelectedInspiration(item);
     } else {
-      setSelectedInspiration(item); // Your existing single image modal
+      console.warn('Unknown Pinterest item type:', item);
     }
   };
+
 
   const handleCloseInspirationModal = () => {
     setSelectedInspiration(null);
@@ -559,6 +578,25 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     );
   };
 
+  const normalizePinterestItem = (item) => {
+    // Detect Pinterest pins
+    if (item.pinterestUrl?.includes('/pin/') || item.type === 'pinterest_pin') {
+      return {
+        id: item.id || item.pin_id,
+        title: item.description || 'Untitled Pin',
+        description: item.description || '',
+        file_url: item.media?.image_cover_url || item.url,
+        tags: item.tags || [],
+        pinterestUrl: item.pinterestUrl,
+        isBoard: false,
+        type: 'pinterest_pin',
+        space_id: item.space_id || spaceId
+      };
+    }
+    return item; // Already your local inspiration object
+  };
+
+
   const spaceId = siteMap.space_id || siteMap.id;
 
   // Fetch vendors data
@@ -731,11 +769,12 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
               inspirationArray = [];
             }
 
-            const filteredInspiration = inspirationArray.filter(inspiration =>
-              inspiration.space_id === spaceId
-            );
+            const filteredInspiration = inspirationArray
+              .filter(inspiration => inspiration.space_id === spaceId)
+              .map(normalizePinterestItem); // normalize Pinterest pins
 
             setInspiration(filteredInspiration);
+
           } else {
             console.log('Inspiration fetch failed with status:', response.status);
             setInspiration([]);
@@ -756,41 +795,78 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
 
   //fetching posts from pinterest board
-  const fetchBoardPosts = async (boardItem) => {
+  const fetchBoardPosts = async (board, reset = false) => {
+    if (!board) return;
+
     setLoadingBoard(true);
+    setBoardError('');
+
+    const boardId = extractBoardIdFromUrl(board.pinterestUrl);
+
     try {
-      // Extract board ID from URL
-      const boardId = extractBoardIdFromUrl(boardItem.pinterestUrl);
+      const page = reset ? 1 : boardPage;
+      const response = await fetch(`${BASE_URL}/pinterest/boards/${boardId}/posts?page=${page}`);
 
-      console.log('Fetching posts for board:', boardId);
+      if (!response.ok) throw new Error(`Failed to fetch board posts: ${response.status}`);
 
-      // Call your Pinterest API to get all posts
-      const response = await fetch(`${BASE_URL}/pinterest/boards/${boardId}/posts`);
+      const postsData = await response.json();
 
-      if (response.ok) {
-        const postsData = await response.json();
-        console.log('Fetched board posts:', postsData);
+      if (reset) {
         setBoardPosts(postsData);
+        setBoardPage(2);
       } else {
-        console.error('Failed to fetch board posts');
-        setBoardPosts([]);
+        setBoardPosts(prev => [...prev, ...postsData]);
+        setBoardPage(prev => prev + 1);
       }
+
+      setHasMoreBoardPosts(postsData.length > 0);
+
     } catch (error) {
       console.error('Error fetching board posts:', error);
-      setBoardPosts([]);
+      setBoardError(error.message || 'Failed to fetch board posts');
     } finally {
       setLoadingBoard(false);
     }
   };
 
+
+
+
   // Helper function to extract board ID
   const extractBoardIdFromUrl = (url) => {
     if (!url) return null;
 
-    // Pattern: pinterest.com/username/board-name/
-    const match = url.match(/pinterest\.com\/([^/]+\/[^/]+)/);
-    return match ? match[1] : url; // Fallback to full URL if pattern doesn't match
+    // Try to match numeric board ID
+    const numericIdMatch = url.match(/boards\/(\d+)/); // e.g., boards/990369842997069337
+    if (numericIdMatch) return numericIdMatch[1];
+
+    // Otherwise, fallback to username/board-name path
+    const pathMatch = url.match(/pinterest\.com\/([^/]+\/[^/]+)/);
+    return pathMatch ? pathMatch[1] : null;
   };
+
+  //Normalize pinterest posts
+  const normalizePinterestPosts = (posts) => {
+    return posts.map(post => {
+      let imageUrl = null;
+
+      if (post.media?.image_cover_url) {
+        imageUrl = post.media.image_cover_url;
+      } else if (post.media?.pin_thumbnail_urls?.length) {
+        imageUrl = post.media.pin_thumbnail_urls[0]; // first thumbnail
+      } else if (post.url) {
+        imageUrl = post.url;
+      }
+
+      return {
+        id: post.id || post.pin_id || post.board_id || Math.random().toString(36).substr(2, 9),
+        imageUrl,
+        description: post.description || post.name || '',
+      };
+    });
+  };
+
+
 
 
   const formatDate = (dateString) => {
@@ -951,7 +1027,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       <div className="flex justify-end mt-4">
         <button
           onClick={() => {
-            console.log('🔄 Add button clicked for tab:', activeTab);
+            // console.log(' Add button clicked for tab:', activeTab);
 
             if (activeTab === 'Drawings') setIsAddDrawingOpen(true);
             if (activeTab === 'Vendors') setIsAddVendorOpen(true);
@@ -963,7 +1039,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          Add {activeTab === 'Tasks' ? 'Task' : activeTab.slice(0, -1)}
+          Add {activeTab === 'Tasks' ? 'Task' : activeTab.slice()}
         </button>
       </div>
 
@@ -1056,19 +1132,14 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         {/* Inspiration Tab*/}
         {activeTab === 'Inspiration' && (
           <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
-            {/* {console.log('=== INSPIRATION TAB DEBUG ===', {
-              activeTab,
-              loading: loading.inspiration,
-              inspirationData: inspiration,
-              inspirationCount: inspiration.length,
-              spaceId: spaceId,
-              hasHandleEdit: !!handleEditInspiration,
-              hasHandleDelete: !!handleDeleteInspiration
-            })} */}
             {loading.inspiration ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-500 mt-2">Loading inspiration...</p>
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg overflow-hidden bg-gray-200 animate-pulse aspect-video"
+                  ></div>
+                ))}
               </div>
             ) : inspiration.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1123,7 +1194,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
                 pinterest_url: post.pinUrl || post.url
               };
               setSelectedInspiration(inspirationPost);
-              setSelectedBoard(null); // Close board modal
+              setSelectedBoard(null);
             }}
           />
         )}

@@ -20,6 +20,7 @@ import ForgotPasswordModal from './Components/ForgotPasswordModal';
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, projectsloading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
   const [statusFilter, setStatusFilter] = useState('all');
+  const { user, openAuthModal, authFetch, loading: authLoading } = useAuth();
 
   const handleDeleteWithMessage = async (projectId) => {
     console.log('Project ID received:', projectId);
@@ -445,7 +446,7 @@ const AppContent = () => {
   const sortedAndFilteredProjects = getFilteredAndSortedProjects();
 
   return (
-<div className="min-h-screen bg-cover bg-center theme-bg-primary text-size">
+    <div className="min-h-screen bg-cover bg-center theme-bg-primary text-size">
       <div className="mx-auto md:px-4 md:py-8 px-2 py-4">
         {/* AUTH LOADING STATE */}
         {authLoading && (

@@ -2,14 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 
-const CreateTaskModal = ({
-  isOpen,
-  onClose,
-  onCreate,
-  projectId,
-  isInline = false,
-  onCancel
-}) => {
+const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = false, onCancel }) => {
   const { showMessage, showFailed, showConfirmation } = useStatusMessage();
   const [taskData, setTaskData] = useState({
     title: '',

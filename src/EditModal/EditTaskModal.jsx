@@ -25,16 +25,17 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 
   useEffect(() => {
     if (task) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         title: task.title || task.task_name || '',
         description: task.description || '',
-        task_type: task.task_type || 'Simple Task',
+        task_type: task.task_type || prev.task_type,
         assigned_to: task.assignee || task.assigned_team || task.assigned_vendor || 'Unassigned',
         files: task.files || [],
         date: task.date || task.due_date || '',
         location: task.location || '',
         status: task.status || 'pending'
-      });
+      }));
     }
   }, [task]);
 
@@ -144,99 +145,99 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
     </div>
   );
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
 
-  try {
-    const taskId = task.id || task.task_id;
+    try {
+      const taskId = task.id || task.task_id;
 
-    // Basic validation
-    if (!formData.title.trim()) {
-      showMessage('Task title is required', 'error');
+      // Basic validation
+      if (!formData.title.trim()) {
+        showMessage('Task title is required', 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      const submitFormData = new FormData();
+
+      // Append all fields as form data
+      submitFormData.append('task_name', formData.title.trim());
+      submitFormData.append('description', formData.description || '');
+      submitFormData.append('task_type', formData.task_type);
+      // submitFormData.append('task_id', String(taskId));
+      // submitFormData.append('project_id',String(projectId));
+      // submitFormData.append('status', formData.status);
+
+      // Append conditional fields if they exist
+      if (formData.date) {
+        submitFormData.append('date', formData.date);
+      }
+
+      if (formData.location && formData.location.trim()) {
+        submitFormData.append('location', formData.location.trim());
+      }
+
+      // Handle assignment
+      // //uncomment
+      // if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
+      //   submitFormData.append('assigned_to', formData.assigned_to);
+      // }
+
+      // Handle files - separate new files from existing files
+      const newFiles = [];
+      const existingFiles = [];
+
+      formData.files.forEach(file => {
+        if (file instanceof File) {
+          // This is a new file uploaded by user
+          newFiles.push(file);
+          submitFormData.append('uploads', file);
+        } else {
+          // This is an existing file from backend (object with file info)
+          existingFiles.push(file);
+        }
+      });
+
+      // If you need to track existing files for the backend, you might need to send them too
+      // This depends on your backend API requirements
+      // submitFormData.append('existing_files', JSON.stringify(existingFiles));
+
+      // Debug: Log FormData contents
+      console.log('DEBUG - Edit FormData contents:');
+      for (let [key, value] of submitFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
+
+      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+        method: 'PUT',
+        body: submitFormData,
+      });
+
+      console.log('DEBUG - Edit response status:', response.status);
+
+      if (response.ok) {
+        const updatedTask = await response.json();
+        console.log('DEBUG - Task updated successfully:', updatedTask);
+        onUpdate(updatedTask);
+        showMessage('Task updated successfully!', 'success');
+        onClose();
+      } else {
+        const errorText = await response.text();
+        console.error('DEBUG - Edit error response:', errorText);
+        throw new Error(`Failed to update task: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+      showFailed('Failed to update task: ' + error.message);
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const submitFormData = new FormData();
-
-    // Append all fields as form data
-    submitFormData.append('task_name', formData.title.trim());
-    submitFormData.append('description', formData.description || '');
-    submitFormData.append('task_type', formData.task_type);
-    // submitFormData.append('task_id', String(taskId));
-    // submitFormData.append('project_id',String(projectId));
-    // submitFormData.append('status', formData.status);
-
-    // Append conditional fields if they exist
-    if (formData.date) {
-      submitFormData.append('date', formData.date);
-    }
-
-    if (formData.location && formData.location.trim()) {
-      submitFormData.append('location', formData.location.trim());
-    }
-
-    // Handle assignment
-    // //uncomment
-    // if (formData.assigned_to && formData.assigned_to !== 'Unassigned') {
-    //   submitFormData.append('assigned_to', formData.assigned_to);
-    // }
-
-    // Handle files - separate new files from existing files
-    const newFiles = [];
-    const existingFiles = [];
-
-    formData.files.forEach(file => {
-      if (file instanceof File) {
-        // This is a new file uploaded by user
-        newFiles.push(file);
-        submitFormData.append('uploads', file);
-      } else {
-        // This is an existing file from backend (object with file info)
-        existingFiles.push(file);
-      }
-    });
-
-    // If you need to track existing files for the backend, you might need to send them too
-    // This depends on your backend API requirements
-    // submitFormData.append('existing_files', JSON.stringify(existingFiles));
-
-    // Debug: Log FormData contents
-    console.log('DEBUG - Edit FormData contents:');
-    for (let [key, value] of submitFormData.entries()) {
-      if (value instanceof File) {
-        console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
-      } else {
-        console.log(`${key}:`, value);
-      }
-    }
-
-    const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
-      method: 'PUT',
-      body: submitFormData,
-    });
-
-    console.log('DEBUG - Edit response status:', response.status);
-
-    if (response.ok) {
-      const updatedTask = await response.json();
-      console.log('DEBUG - Task updated successfully:', updatedTask);
-      onUpdate(updatedTask);
-      showMessage('Task updated successfully!', 'success');
-      onClose();
-    } else {
-      const errorText = await response.text();
-      console.error('DEBUG - Edit error response:', errorText);
-      throw new Error(`Failed to update task: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error updating task:', error);
-    showFailed('Failed to update task: ' + error.message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const handleChange = (e) => {
     setFormData({
