@@ -6,6 +6,7 @@ import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import EditTaskModal from '../EditModal/EditTaskModal';
 import TaskFileModal from '../Components/TaskFileModal';
+import { useAuth } from '../Components/AuthContext';
 
 const ProjectDetails = ({ projects: propProjects = [] }) => {
   const { id, projectId, spaceId } = useParams();
@@ -26,12 +27,14 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    taskType: 'Task',
+    task_type: 'Task',
     assignee: 'Unassigned',
     location: '',
     date: '',
     files: []
   });
+
+  const { authFetch } = useAuth();
 
   const [editingTask, setEditingTask] = useState(null);
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
@@ -79,7 +82,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         }
 
         console.log('Project not in localStorage, trying API...');
-        let response = await fetch(`${BASE_URL}/projects/projects/${id}`);
+        let response = await authFetch(`${BASE_URL}/projects/projects/${id}`);
 
         if (response.ok) {
           const projectData = await response.json();
@@ -87,7 +90,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
           // console.log('Found project via API:', transformedProject);
           setProject(transformedProject);
         } else {
-          const projectsResponse = await fetch(`${BASE_URL}/projects/projects`);
+          const projectsResponse = await authFetch(`${BASE_URL}/projects/projects`);
           if (projectsResponse.ok) {
             const projectsData = await projectsResponse.json();
             const projectsArray = extractProjectsArray(projectsData);
@@ -140,7 +143,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         setTaskLoading(true);
 
         // Fetch tasks directly filtered from backend
-        const response = await fetch(`${BASE_URL}/tasks/tasks/project/${id}`);
+        const response = await authFetch(`${BASE_URL}/tasks/tasks/project/${id}`);
 
         if (!response.ok) {
           console.log(`No tasks found for project ${id}`);
@@ -181,21 +184,27 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             location: task.location,
             visit_date: formattedDate,
             Date: formattedDate,
-            taskType: task.task_type || 'Simple Task',
+
+            task_type: task.task_type || "Simple Task",
+
             assignee:
               task.assigned_to ||
               task.assigned_team ||
               task.assigned_vendor ||
-              'Unassigned',
+              "Unassigned",
+
             assigned_to:
               task.assigned_to ||
               task.assigned_team ||
               task.assigned_vendor ||
-              'Unassigned',
-            status: task.status || 'pending',
-            completed: task.status === 'completed',
+              "Unassigned",
+
+            status: task.status || "pending",
+            completed: task.status === "completed",
+
             files: task.files || []
           };
+
         });
 
         setTasks(transformed);
@@ -217,6 +226,11 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     if (taskToEdit) {
       setEditingTask(taskToEdit);
     }
+  };
+
+  //refresh task after add
+  const refreshTasks = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   // Helper functions
@@ -286,143 +300,105 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
     };
   };
 
-  const handleCreateTask = async (newTaskData, projectId) => {
-    try {
-      console.log('Task creation callback received:', newTaskData, 'for project:', projectId);
-      if (String(projectId) === String(id)) {
-        // Format date for display
-        let formattedDate = '';
-        if (newTaskData.date) {
-          try {
-            const dateObj = new Date(newTaskData.date);
-            formattedDate = dateObj.toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            });
-          } catch (e) {
-            console.error('Error formatting date:', e);
-            formattedDate = newTaskData.date;
-          }
-        }
-
-        const transformedTask = {
-          id: newTaskData.id || newTaskData.task_id,
-          title: newTaskData.task_name || newTaskData.title,
-          description: newTaskData.description,
-          taskType: newTaskData.task_type || 'Simple Task',
-          assignee: newTaskData.assigned_to || newTaskData.assigned_vendor || newTaskData.assigned_team || 'Unassigned', // FIXED
-          assigned_to: newTaskData.assigned_to || newTaskData.assigned_vendor || newTaskData.assigned_team || 'Unassigned', // Add this
-          status: newTaskData.status || 'pending',
-          completed: (newTaskData.status || 'pending') === 'completed',
-          location: newTaskData.location, // Add location
-          visit_date: formattedDate, // Add formatted date
-          Date: formattedDate, // Add Date field
-          createdAt: newTaskData.created_at ? new Date(newTaskData.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-          files: newTaskData.files || []
-        };
-
-        setTasks(prev => [transformedTask, ...prev]);
+  //Create Task
+  const handleCreateTask = (newTaskData, projectId, tempId) => {
+    setTasks(prevTasks => {
+      // If null + tempId => remove task on error
+      if (!newTaskData && tempId) {
+        return prevTasks.filter(t => t.id !== tempId);
       }
 
-      // Refresh tasks from API to ensure consistency
-      setTaskLoading(true);
-      const response = await fetch(`${BASE_URL}/tasks/tasks`);
-      if (response.ok) {
-        const tasksData = await response.json();
+      // If tempId exists, replace temp task with backend task
+      if (tempId) {
+        console.log('🔄 Replacing temp task with backend data:', { tempId, backendData: newTaskData });
 
-        let tasksArray = tasksData;
-        if (tasksData && Array.isArray(tasksData.data)) {
-          tasksArray = tasksData.data;
-        } else if (tasksData && Array.isArray(tasksData.tasks)) {
-          tasksArray = tasksData.tasks;
-        }
-
-        const filteredTasks = tasksArray.filter(task =>
-          String(task.project_id) === String(id)
-        );
-
-        const transformedTasks = filteredTasks.map(task => {
-          let formattedDate = '';
-          if (task.date) {
-            try {
-              const dateObj = new Date(task.date);
-              formattedDate = dateObj.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              });
-            } catch (e) {
-              formattedDate = task.date;
+        return prevTasks.map(t =>
+          t.id === tempId
+            ? {
+              // Use the actual backend response data directly
+              id: newTaskData.task_id, // ✅ This is from backend response
+              title: newTaskData.task_name,
+              task_name: newTaskData.task_name,
+              description: newTaskData.description || '',
+              task_type: newTaskData.task_type,
+              assigned_to: newTaskData.assigned_to || 'Unassigned',
+              status: newTaskData.status || 'pending',
+              location: newTaskData.location || '',
+              files: [], // Reset files since backend handles them separately
+              isTemp: false,
+              project_id: newTaskData.project_id,
+              space_id: newTaskData.space_id
             }
-          }
-
-          return {
-            id: task.id || task.task_id,
-            title: task.task_name || task.title,
-            description: task.description,
-            taskType: task.task_type || 'Simple Task',
-            assignee: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
-            assigned_to: task.assigned_to || task.assigned_team || task.assigned_vendor || 'Unassigned',
-            status: task.status || 'pending',
-            completed: task.status === 'completed',
-            location: task.location,
-            visit_date: formattedDate,
-            Date: formattedDate,
-            createdAt: task.created_at ? new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
-            files: task.files || []
-          };
-        });
-
-        setTasks(transformedTasks);
+            : t
+        );
       }
-    } catch (error) {
-      console.error('Error in task creation callback:', error);
-    } finally {
-      setTaskLoading(false);
+
+      // Normal prepend if no tempId (direct backend task)
+      const formattedTask = {
+        id: newTaskData.task_id,
+        title: newTaskData.task_name,
+        task_name: newTaskData.task_name,
+        description: newTaskData.description || '',
+        task_type: newTaskData.task_type,
+        assigned_to: newTaskData.assigned_to || 'Unassigned',
+        status: newTaskData.status || 'pending',
+        location: newTaskData.location || '',
+        files: [],
+        isTemp: false,
+        project_id: newTaskData.project_id,
+        space_id: newTaskData.space_id
+      };
+
+      return [formattedTask, ...prevTasks];
+    });
+
+    // Show success message only for real backend task
+    if (newTaskData && !tempId) { // Only show success when it's not a temp replacement
+      showMessage('Task created successfully!', 'success');
     }
   };
 
+
   // UPDATE TASK STATUS USING API
-const handleToggleStatus = async (taskId) => {
-  // 1. Instantly update UI
-  setTasks(prevTasks =>
-    prevTasks.map(task =>
-      task.id === taskId
-        ? {
-            ...task,
-            status: task.status === "pending" ? "completed" : "pending",
-            completed: task.status === "pending",
-          }
-        : task
-    )
-  );
-
-  try {
-    // 2. Send update to backend (no waiting for correct response)
-    await updateTaskStatus(
-      taskId,
-      tasks.find(t => t.id === taskId)?.status === "pending"
-        ? "completed"
-        : "pending"
-    );
-  } catch (err) {
-    console.error("Failed to update task status:", err);
-
-    // 3. Revert UI if backend fails
+  const handleToggleStatus = async (taskId) => {
+    // 1. Instantly update UI
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
           ? {
+            ...task,
+            status: task.status === "pending" ? "completed" : "pending",
+            completed: task.status === "pending",
+          }
+          : task
+      )
+    );
+
+    try {
+      // 2. Send update to backend (no waiting for correct response)
+      await updateTaskStatus(
+        taskId,
+        tasks.find(t => t.id === taskId)?.status === "pending"
+          ? "completed"
+          : "pending"
+      );
+    } catch (err) {
+      console.error("Failed to update task status:", err);
+
+      // 3. Revert UI if backend fails
+      setTasks(prevTasks =>
+        prevTasks.map(task =>
+          task.id === taskId
+            ? {
               ...task,
               status: task.status === "completed" ? "pending" : "completed",
               completed: task.status === "completed" ? false : true,
             }
-          : task
-      )
-    );
-  }
-};
+            : task
+        )
+      );
+    }
+  };
 
 
 
@@ -432,7 +408,7 @@ const handleToggleStatus = async (taskId) => {
       const formData = new FormData();
       formData.append('status', newStatus);
 
-      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+      const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: 'PUT',
         body: formData,
       });
@@ -463,7 +439,7 @@ const handleToggleStatus = async (taskId) => {
       `Are ypu sure ypu want to delete this task? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+          const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
             method: 'DELETE',
           });
 
@@ -507,7 +483,7 @@ const handleToggleStatus = async (taskId) => {
 
   // Skeleton Loader Component
   const SkeletonLoader = () => (
-    <div className="min-h-screen theme-bg-primary bg-[url('bgimage.png')] theme-text-primary">
+    <div className="min-h-screen theme-bg-primary theme-text-primary">
       <div className="mx-auto px-6 py-8">
         {/* Back Button Skeleton */}
         <div className="w-24 h-4 theme-bg-primary rounded mb-6 animate-pulse"></div>
@@ -648,6 +624,7 @@ const handleToggleStatus = async (taskId) => {
                 isInline={true}
                 projectId={id}
                 onCreate={handleCreateTask}
+                onTaskCreated={refreshTasks}
                 onCancel={() => setIsCreatingTask(false)}
               />
             )}
@@ -703,11 +680,11 @@ const handleToggleStatus = async (taskId) => {
                               {task.title}
                             </span>
                             <div className="flex items-center gap-2 ml-4">
-                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.taskType}</span>
+                              <span className="theme-bg-secondary px-2 py-1 rounded text-xs">{task.task_type}</span>
                             </div>
                           </div>
 
-                          {(task.assigned_to || task.location || task.Date) && (
+                          {(task.assigned_to || task.location || task.Date || task.files) && (
                             <div className='flex items-center gap-3 mt-1'>
 
                               {/* task assigned to on task card */}
@@ -740,6 +717,23 @@ const handleToggleStatus = async (taskId) => {
                                   {task.visit_date}
                                 </span>
                               )}
+
+                              {/* Files section */}
+                              {task.files && task.files.length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleOpenFilesModal(task.files, task.title);
+                                  }}
+                                  className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500 transition-colors duration-200`}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                  </svg>
+                                  {task.files.length}
+                                </button>
+                              )}
                             </div>
                           )}
 
@@ -750,22 +744,7 @@ const handleToggleStatus = async (taskId) => {
                             </p>
                           )}
 
-                          {/* Files section */}
-                          {task.files && task.files.length > 0 && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleOpenFilesModal(task.files, task.title);
-                              }}
-                              className={`text-xs flex items-center gap-1 ${task.completed ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500 transition-colors duration-200`}
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                              </svg>
-                              {task.files.length}
-                            </button>
-                          )}
+                          {/* add files here if this doesn't work */}
                         </div>
                       </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BASE_URL } from '../Configuration/Config';
+import { useAuth } from "../Components/AuthContext";
 
 const NewProjectModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { authFetch } = useAuth();
 
   // ==================== API CONFIG ====================
   const CREATE_PROJECT_API = `${BASE_URL}/projects/projects`;
@@ -46,7 +48,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
       console.log('Sending to backend:', backendData);
 
       // ==================== API CALL ====================
-      const response = await fetch(CREATE_PROJECT_API, {
+      const response = await authFetch(CREATE_PROJECT_API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

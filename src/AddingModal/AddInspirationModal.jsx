@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider from "../Alerts/StatusMessage";
 import { useStatusMessage } from "../Alerts/StatusMessage";
-
+import { useAuth } from "../Components/AuthContext";
 const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const { showMessage } = useStatusMessage();
+  const { authFetch } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     file: null,
@@ -51,66 +52,68 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   };
 
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (importOption === 'upload' && !formData.file) {
-    showMessage('Please select an image to upload', 'failed');
-    return;
-  }
-
-  setIsUploading(true);
-
-  try {
-    const uploadData = new FormData(); // declare first
-
-    uploadData.append('space_id', spaceId);
-    uploadData.append('title', formData.title || 'Untitled Inspiration');
-
-    if (importOption === 'upload') {
-      uploadData.append('uploads', formData.file);
-    } else if (importOption === 'pinterest') {
-      // Extract board ID
-      const boardId = extractBoardIdFromUrl(formData.pinterestUrl);
-
-      // Append Pinterest data
-      uploadData.append('url', formData.pinterestUrl);
-      uploadData.append('board_id', boardId); // send boardId to backend
-      uploadData.append('isBoard', isPinterestBoardUrl(formData.pinterestUrl));
+    if (importOption === 'upload' && !formData.file) {
+      showMessage('Please select an image to upload', 'failed');
+      return;
     }
 
-    if (formData.description) {
-      uploadData.append('description', formData.description);
-    }
+    setIsUploading(true);
 
-    if (formData.tags.length > 0) {
-      uploadData.append('tags', formData.tags.join(','));
-    }
+    try {
+      const uploadData = new FormData();
+      console.log("============DEBUG spaceId:=============", spaceId);
 
-    const response = await fetch(`${BASE_URL}/inspiration/post`, {
-      method: 'POST',
-      body: uploadData,
-    });
 
-    if (response.ok) {
-      const newInspiration = await response.json();
-      if (importOption === 'pinterest') {
-        newInspiration.pinterestUrl = formData.pinterestUrl;
+      uploadData.append('space_id', spaceId);
+      uploadData.append('title', formData.title || 'Untitled Inspiration');
+
+      if (importOption === 'upload') {
+        uploadData.append('uploads', formData.file);
+      } else if (importOption === 'pinterest') {
+        // Extract board ID
+        const boardId = extractBoardIdFromUrl(formData.pinterestUrl);
+
+        // Append Pinterest data
+        uploadData.append('url', formData.pinterestUrl);
+        uploadData.append('board_id', boardId); // send boardId to backend
+        uploadData.append('isBoard', isPinterestBoardUrl(formData.pinterestUrl));
       }
-      onAdd(newInspiration);
-      showMessage('Inspiration added successfully!', 'success');
-      onClose();
-    } else {
-      const errorText = await response.text();
-      throw new Error(`Failed to add inspiration: ${response.status} - ${errorText}`);
+
+      if (formData.description) {
+        uploadData.append('description', formData.description);
+      }
+
+      if (formData.tags.length > 0) {
+        uploadData.append('tags', formData.tags.join(','));
+      }
+
+      const response = await authFetch(`${BASE_URL}/inspiration/post`, {
+        method: 'POST',
+        body: uploadData,
+      });
+
+      if (response.ok) {
+        const newInspiration = await response.json();
+        if (importOption === 'pinterest') {
+          newInspiration.pinterestUrl = formData.pinterestUrl;
+        }
+        onAdd(newInspiration);
+        showMessage('Inspiration added successfully!', 'success');
+        onClose();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Failed to add inspiration: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error adding inspiration:', error);
+      showMessage('Failed to add image: ' + error.message, 'failed');
+    } finally {
+      setIsUploading(false);
     }
-  } catch (error) {
-    console.error('Error adding inspiration:', error);
-    showMessage('Failed to add image: ' + error.message, 'failed');
-  } finally {
-    setIsUploading(false);
-  }
-};
+  };
 
 
   const handleAddCustomTag = () => {

@@ -2,18 +2,6 @@ import React from 'react';
 import { BASE_URL } from '../Configuration/Config';
 
 const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
-  // console.log('🔍 FULL InspirationCard props:', { item, onEdit, onDelete, onClick });
-  // console.log('🔍 Item title value:', item?.title);
-  // console.log('🔍 Item type:', typeof item);
-  // console.log('🔍 Is item null/undefined?', item === null || item === undefined);
-  // console.log('🔍 Image debug:', {
-  //   files: item.files,
-  //   file_path: item.files?.[0]?.file_path,
-  //   full_url: item.files?.[0]?.file_path ? `${BASE_URL}/${item.files[0].file_path}` : null,
-  //   file_url: item.file_url,
-  //   url: item.url,
-  //   image_url: item.image_url
-  // });
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
@@ -60,10 +48,11 @@ const InspirationCard = ({ item, onEdit, onDelete, onClick }) => {
         {/* Image with zoom effect */}
         <div className="relative w-full h-full overflow-hidden">
           <img
-            src={`${BASE_URL}/${item.files?.[0]?.file_path}`}
+            src={item.files?.[0]?.file_path ? `${BASE_URL}/${item.files[0].file_path}` : item.file_url || item.pinterestUrl}
             alt={item.title || item.name}
             className="w-full h-full object-cover transition-transform duration-300 md:group-hover:scale-110"
           />
+
 
           {/* Hover Overlay with Title & Description */}
           <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-end">

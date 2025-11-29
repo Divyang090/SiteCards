@@ -102,7 +102,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
               {showUserMenu && (
                 <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
                   <div className="p-2">
-                    <div className="px-3 py-2 theme-text-secondary text-sm border-b theme-border">
+                    <div className="px-3 py-2 theme-text-secondary overflow-x-auto whitespace-nowrap scrollbar-hidden text-sm border-b theme-border">
                       {user.email}
                     </div>
                     <button

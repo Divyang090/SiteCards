@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
-const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = false, onCancel }) => {
+const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = false, onCancel, onTaskCreated }) => {
   const { showMessage, showFailed, showConfirmation } = useStatusMessage();
+  const { authFetch } = useAuth();
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
@@ -14,17 +16,17 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
     location: ''
   });
 
-  const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
+  const [showtask_typeDropdown, setShowtask_typeDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const taskTypeDropdownRef = useRef(null);
+  const task_typeDropdownRef = useRef(null);
   const assigneeDropdownRef = useRef(null);
 
   // Add this useEffect for debugging
-  useEffect(() => {
-    console.log('Current task data:', taskData);
-  }, [taskData]);
+  // useEffect(() => {
+  //   console.log('Current task data:', taskData);
+  // }, [taskData]);
 
   // Add this validation function
   const validateForm = () => {
@@ -51,8 +53,8 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (taskTypeDropdownRef.current && !taskTypeDropdownRef.current.contains(event.target)) {
-        setShowTaskTypeDropdown(false);
+      if (task_typeDropdownRef.current && !task_typeDropdownRef.current.contains(event.target)) {
+        setShowtask_typeDropdown(false);
       }
       if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target)) {
         setShowAssigneeDropdown(false);
@@ -65,7 +67,7 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
     };
   }, []);
 
-  const taskTypeOptions = [
+  const task_typeOptions = [
     'Simple Task',
     'Site Visits',
     'Meeting',
@@ -75,7 +77,6 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
   ];
 
   const assigneeOptions = [
-    'Unassigned',
     'Sarah Johnson',
     'The Martinez Family',
     'TechCorp Inc.',
@@ -87,72 +88,43 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('DEBUG - projectId:', projectId);
-    console.log('DEBUG - Current taskData:', taskData);
 
     if (!taskData.title.trim()) {
       showMessage('Task title is required', 'error');
       return;
     }
 
+    // if (taskData.assigned_to === 'Unassigned') {
+    //   showMessage('Please assign the task to someone', 'error');
+    //   return;
+    // }
+
     setUploading(true);
     try {
       const formData = new FormData();
-
       formData.append('task_name', taskData.title.trim());
       formData.append('description', taskData.description || '');
       formData.append('task_type', taskData.task_type);
       formData.append('project_id', String(projectId));
-
-      if (taskData.date) {
-        // For MySQL DATETIME format: YYYY-MM-DD HH:MM:SS
-        const dateObj = new Date(taskData.date);
-        const mysqlDateTime = dateObj.toISOString().slice(0, 19).replace('T', ' ');
-        formData.append('date', mysqlDateTime);
-        console.log('DEBUG - Date being sent (MySQL DATETIME):', mysqlDateTime);
-      }
-
-      if (taskData.location && taskData.location.trim()) {
-        formData.append('location', taskData.location.trim());
-        console.log('DEBUG - Location being sent:', taskData.location.trim());
-      }
-
+      if (taskData.date) formData.append('date', new Date(taskData.date).toISOString());
+      if (taskData.location) formData.append('location', taskData.location.trim());
       if (taskData.assigned_to && taskData.assigned_to !== 'Unassigned') {
         formData.append('assigned_to', taskData.assigned_to);
       }
+      taskData.files.forEach(file => formData.append('uploads', file));
 
-      taskData.files.forEach(file => {
-        formData.append('files', file);
-      });
-
-      console.log('DEBUG - FormData entries:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
-        } else {
-          console.log(`${key}:`, value);
-        }
-      }
-
-      const taskResponse = await fetch(`${BASE_URL}/tasks/tasks`, {
+      const taskResponse = await authFetch(`${BASE_URL}/tasks/tasks`, {
         method: 'POST',
-        body: formData,
+        body: formData
       });
-
-      console.log('DEBUG - Response status:', taskResponse.status);
 
       if (!taskResponse.ok) {
         const errorData = await taskResponse.json();
-        console.error('Task creation error:', errorData);
-        throw new Error(errorData.error || `Failed to create task: ${taskResponse.status}`);
+        throw new Error(errorData.error || 'Failed to create task');
       }
 
-      const taskResult = await taskResponse.json();
-      console.log('DEBUG - Task created successfully:', taskResult);
-
-      // Check if location was saved
-      console.log('DEBUG - Location in response:', taskResult.location);
-      console.log('DEBUG - All response keys:', Object.keys(taskResult));
+      // ✅ Success - refresh the projects list
+      showMessage('Task created successfully!', 'success');
 
       // Reset form
       setTaskData({
@@ -165,15 +137,16 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
         location: ''
       });
 
-      onCreate(taskResult, projectId);
-
-      if (!isInline && onClose) {
-        onClose();
+      // Trigger refresh in parent component
+      if (typeof onTaskCreated === 'function') {
+        onTaskCreated();
       }
+
+      if (!isInline && onClose) onClose();
 
     } catch (error) {
       console.error('Error creating task:', error);
-      showFailed(`Failed to create task: ${error.message}`);
+      showMessage(`Failed to create task: ${error.message}`, 'error');
     } finally {
       setUploading(false);
     }
@@ -186,14 +159,14 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
     });
   };
 
-  const handleTaskTypeSelect = (type) => {
+  const handletask_typeSelect = (type) => {
     setTaskData({
       ...taskData,
       task_type: type,
       date: type === 'Site Visits' || type === 'Meeting' ? taskData.date : '',
       location: type === 'Meeting' ? taskData.location : ''
     });
-    setShowTaskTypeDropdown(false);
+    setShowtask_typeDropdown(false);
   };
 
   const handleAssigneeSelect = (assigned_to) => {
@@ -204,14 +177,14 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
     setShowAssigneeDropdown(false);
   };
 
-  const toggleTaskTypeDropdown = () => {
-    setShowTaskTypeDropdown(!showTaskTypeDropdown);
+  const toggletask_typeDropdown = () => {
+    setShowtask_typeDropdown(!showtask_typeDropdown);
     setShowAssigneeDropdown(false);
   };
 
   const toggleAssigneeDropdown = () => {
     setShowAssigneeDropdown(!showAssigneeDropdown);
-    setShowTaskTypeDropdown(false);
+    setShowtask_typeDropdown(false);
   };
 
   const handleFileChange = (e) => {
@@ -265,17 +238,17 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
   const formProps = {
     taskData,
     uploading,
-    showTaskTypeDropdown,
+    showtask_typeDropdown,
     showAssigneeDropdown,
-    taskTypeDropdownRef,
+    task_typeDropdownRef,
     assigneeDropdownRef,
-    taskTypeOptions,
+    task_typeOptions,
     assigneeOptions,
     handleChange,
     handleSubmit,
-    handleTaskTypeSelect,
+    handletask_typeSelect,
     handleAssigneeSelect,
-    toggleTaskTypeDropdown,
+    toggletask_typeDropdown,
     toggleAssigneeDropdown,
     handleFileChange,
     removeFile,
@@ -333,16 +306,7 @@ const TextInput = ({ label, name, value, onChange, required, placeholder, isInli
   </div>
 );
 
-const DropdownField = ({
-  label,
-  value,
-  options,
-  isOpen,
-  dropdownRef,
-  onToggle,
-  onSelect,
-  isInline
-}) => (
+const DropdownField = ({ label, value, options, isOpen, dropdownRef, onToggle, onSelect, isInline }) => (
   <div className="relative" ref={dropdownRef}>
     <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
       {label}
@@ -460,8 +424,8 @@ const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
 );
 
 // Conditional fields for selecting task type
-const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
-  if (taskType === 'Site Visits') {
+const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
+  if (task_type === 'Site Visits') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -482,7 +446,7 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
     );
   }
 
-  if (taskType === 'Meeting') {
+  if (task_type === 'Meeting') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -519,7 +483,7 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
 
 // Main TaskForm component
 const TaskForm = (props) => {
-  const { isInline, taskData, uploading, showTaskTypeDropdown, showAssigneeDropdown } = props;
+  const { isInline, taskData, uploading, showtask_typeDropdown, showAssigneeDropdown } = props;
 
   return (
     <form onSubmit={props.handleSubmit} className={isInline ? "" : "p-6 overflow-y-auto scrollbar-hidden flex-1"}>
@@ -546,18 +510,18 @@ const TaskForm = (props) => {
             <DropdownField
               label="Task Type"
               value={taskData.task_type}
-              options={props.taskTypeOptions}
-              isOpen={showTaskTypeDropdown}
-              dropdownRef={props.taskTypeDropdownRef}
-              onToggle={props.toggleTaskTypeDropdown}
-              onSelect={props.handleTaskTypeSelect}
+              options={props.task_typeOptions}
+              isOpen={showtask_typeDropdown}
+              dropdownRef={props.task_typeDropdownRef}
+              onToggle={props.toggletask_typeDropdown}
+              onSelect={props.handletask_typeSelect}
               isInline={false}
             />
 
-            {/* FIXED: Use assigned_to instead of assignee */}
             <DropdownField
               label="Assigned to"
-              value={taskData.assigned_to} // CHANGED HERE
+              required={true}
+              value={taskData.assigned_to}
               options={props.assigneeOptions}
               isOpen={showAssigneeDropdown}
               dropdownRef={props.assigneeDropdownRef}
@@ -575,7 +539,7 @@ const TaskForm = (props) => {
               isInline={false}
             />
             <ConditionalFields
-              taskType={taskData.task_type}
+              task_type={taskData.task_type}
               taskData={taskData}
               handleChange={props.handleChange}
               isInline={false}
@@ -607,19 +571,19 @@ const TaskForm = (props) => {
               <div className="md:col-span-1">
                 <DropdownField
                   value={taskData.task_type}
-                  options={props.taskTypeOptions}
-                  isOpen={showTaskTypeDropdown}
-                  dropdownRef={props.taskTypeDropdownRef}
-                  onToggle={props.toggleTaskTypeDropdown}
-                  onSelect={props.handleTaskTypeSelect}
+                  options={props.task_typeOptions}
+                  isOpen={showtask_typeDropdown}
+                  dropdownRef={props.task_typeDropdownRef}
+                  onToggle={props.toggletask_typeDropdown}
+                  onSelect={props.handletask_typeSelect}
                   isInline={true}
                 />
               </div>
 
               <div className="md:col-span-1">
-                {/* FIXED: Use assigned_to instead of assignee */}
                 <DropdownField
-                  value={taskData.assigned_to} // CHANGED HERE
+                  required={true}
+                  value={taskData.assigned_to}
                   options={props.assigneeOptions}
                   isOpen={showAssigneeDropdown}
                   dropdownRef={props.assigneeDropdownRef}
@@ -632,7 +596,7 @@ const TaskForm = (props) => {
 
             {/* Conditional Fields Row */}
             <ConditionalFields
-              taskType={taskData.task_type}
+              task_type={taskData.task_type}
               taskData={taskData}
               handleChange={props.handleChange}
               isInline={true}

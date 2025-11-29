@@ -75,7 +75,7 @@ const SiteTaskCard = ({
             </span>
             <div className="flex items-center gap-2 ml-4">
               <span className="theme-bg-secondary px-2 py-1 rounded text-xs">
-                {task.task_type || task.taskType}
+                {task.task_type || task.task_type}
               </span>
             </div>
           </div>

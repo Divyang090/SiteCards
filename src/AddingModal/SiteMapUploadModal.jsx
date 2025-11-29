@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
   const {showConfirmation, showMessage} = useStatusMessage();

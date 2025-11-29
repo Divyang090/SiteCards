@@ -64,7 +64,7 @@ const DrawingClickModal = ({ drawing, onClose }) => {
 
           {/* Description */}
           {drawing.description && (
-            <div className="mb-6">
+            <div className="mb-2">
               <p className="flex theme-text-secondary text-lg whitespace-pre-wrap">{drawing.description}</p>
             </div>
           )}

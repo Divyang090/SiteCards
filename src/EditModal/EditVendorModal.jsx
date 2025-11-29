@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdate }) => {
   const { showMessage, showFailed } = useStatusMessage();
@@ -15,6 +16,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
   });
   const [customTag, setCustomTag] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { authFetch } = useAuth();
 
   const predefinedTags = [
     'supplier', 'contractor', 'service-provider', 'furniture', 'paint', 'tiles',
@@ -114,7 +116,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
 
       console.log("2. Request data to backend:", requestData);
 
-      const response = await fetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
+      const response = await authFetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

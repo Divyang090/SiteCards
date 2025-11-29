@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import ReactDOM from 'react-dom';
+import { useAuth } from "../Components/AuthContext";
 
 const CreateSiteTask = ({
     isOpen,
@@ -23,12 +24,13 @@ const CreateSiteTask = ({
         location: ''
     });
 
-    const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
+    const [showtask_typeDropdown, setShowtask_typeDropdown] = useState(false);
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
     const [uploading, setUploading] = useState(false);
 
-    const taskTypeDropdownRef = useRef(null);
+    const task_typeDropdownRef = useRef(null);
     const assigneeDropdownRef = useRef(null);
+    const { authFetch } = useAuth();
 
     // Add this useEffect for debugging
     useEffect(() => {
@@ -60,8 +62,8 @@ const CreateSiteTask = ({
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (taskTypeDropdownRef.current && !taskTypeDropdownRef.current.contains(event.target)) {
-                setShowTaskTypeDropdown(false);
+            if (task_typeDropdownRef.current && !task_typeDropdownRef.current.contains(event.target)) {
+                setShowtask_typeDropdown(false);
             }
             if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target)) {
                 setShowAssigneeDropdown(false);
@@ -74,7 +76,7 @@ const CreateSiteTask = ({
         };
     }, []);
 
-    const taskTypeOptions = [
+    const task_typeOptions = [
         'Simple Task',
         'Site Visits',
         'Meeting',
@@ -143,7 +145,7 @@ const CreateSiteTask = ({
                 }
             }
 
-            const taskResponse = await fetch(`${BASE_URL}/tasks/tasks`, {
+            const taskResponse = await authFetch(`${BASE_URL}/tasks/tasks`, {
                 method: 'POST',
                 body: formData,
             });
@@ -191,14 +193,14 @@ const CreateSiteTask = ({
         });
     };
 
-    const handleTaskTypeSelect = (type) => {
+    const handletask_typeSelect = (type) => {
         setTaskData({
             ...taskData,
             task_type: type,
             date: type === 'Site Visits' || type === 'Meeting' ? taskData.date : '',
             location: type === 'Meeting' ? taskData.location : ''
         });
-        setShowTaskTypeDropdown(false);
+        setShowtask_typeDropdown(false);
     };
 
     const handleAssigneeSelect = (assigned_to) => {
@@ -209,14 +211,14 @@ const CreateSiteTask = ({
         setShowAssigneeDropdown(false);
     };
 
-    const toggleTaskTypeDropdown = () => {
-        setShowTaskTypeDropdown(!showTaskTypeDropdown);
+    const toggletask_typeDropdown = () => {
+        setShowtask_typeDropdown(!showtask_typeDropdown);
         setShowAssigneeDropdown(false);
     };
 
     const toggleAssigneeDropdown = () => {
         setShowAssigneeDropdown(!showAssigneeDropdown);
-        setShowTaskTypeDropdown(false);
+        setShowtask_typeDropdown(false);
     };
 
     const handleFileChange = (e) => {
@@ -270,17 +272,17 @@ const CreateSiteTask = ({
     const formProps = {
         taskData,
         uploading,
-        showTaskTypeDropdown,
+        showtask_typeDropdown,
         showAssigneeDropdown,
-        taskTypeDropdownRef,
+        task_typeDropdownRef,
         assigneeDropdownRef,
-        taskTypeOptions,
+        task_typeOptions,
         assigneeOptions,
         handleChange,
         handleSubmit,
-        handleTaskTypeSelect,
+        handletask_typeSelect,
         handleAssigneeSelect,
-        toggleTaskTypeDropdown,
+        toggletask_typeDropdown,
         toggleAssigneeDropdown,
         handleFileChange,
         removeFile,
@@ -456,8 +458,8 @@ const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
 );
 
 // Conditional fields for selecting task type
-const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
-    if (taskType === 'Site Visits') {
+const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
+    if (task_type === 'Site Visits') {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -478,7 +480,7 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
         );
     }
 
-    if (taskType === 'Meeting') {
+    if (task_type === 'Meeting') {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -515,7 +517,7 @@ const ConditionalFields = ({ taskType, taskData, handleChange, isInline }) => {
 
 // Main TaskForm component
 const TaskForm = (props) => {
-    const { isInline, taskData, uploading, showTaskTypeDropdown, showAssigneeDropdown } = props;
+    const { isInline, taskData, uploading, showtask_typeDropdown, showAssigneeDropdown } = props;
 
     return (
         <form onSubmit={props.handleSubmit} className={isInline ? "" : "p-6 overflow-y-auto scrollbar-hidden flex-1"}>
@@ -542,11 +544,11 @@ const TaskForm = (props) => {
                         <DropdownField
                             label="Task Type"
                             value={taskData.task_type}
-                            options={props.taskTypeOptions}
-                            isOpen={showTaskTypeDropdown}
-                            dropdownRef={props.taskTypeDropdownRef}
-                            onToggle={props.toggleTaskTypeDropdown}
-                            onSelect={props.handleTaskTypeSelect}
+                            options={props.task_typeOptions}
+                            isOpen={showtask_typeDropdown}
+                            dropdownRef={props.task_typeDropdownRef}
+                            onToggle={props.toggletask_typeDropdown}
+                            onSelect={props.handletask_typeSelect}
                             isInline={false}
                         />
 
@@ -571,7 +573,7 @@ const TaskForm = (props) => {
                             isInline={false}
                         />
                         <ConditionalFields
-                            taskType={taskData.task_type}
+                            task_type={taskData.task_type}
                             taskData={taskData}
                             handleChange={props.handleChange}
                             isInline={false}
@@ -603,11 +605,11 @@ const TaskForm = (props) => {
                             <div className="md:col-span-1">
                                 <DropdownField
                                     value={taskData.task_type}
-                                    options={props.taskTypeOptions}
-                                    isOpen={showTaskTypeDropdown}
-                                    dropdownRef={props.taskTypeDropdownRef}
-                                    onToggle={props.toggleTaskTypeDropdown}
-                                    onSelect={props.handleTaskTypeSelect}
+                                    options={props.task_typeOptions}
+                                    isOpen={showtask_typeDropdown}
+                                    dropdownRef={props.task_typeDropdownRef}
+                                    onToggle={props.toggletask_typeDropdown}
+                                    onSelect={props.handletask_typeSelect}
                                     isInline={true}
                                 />
                             </div>
@@ -628,7 +630,7 @@ const TaskForm = (props) => {
 
                         {/* Conditional Fields Row */}
                         <ConditionalFields
-                            taskType={taskData.task_type}
+                            task_type={taskData.task_type}
                             taskData={taskData}
                             handleChange={props.handleChange}
                             isInline={true}

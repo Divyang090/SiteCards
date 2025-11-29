@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = false }) => {
     const { showMessage, showFailed } = useStatusMessage();
@@ -15,11 +16,12 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
         status: 'pending'
     });
 
-    const [showTaskTypeDropdown, setShowTaskTypeDropdown] = useState(false);
+    const [showtask_typeDropdown, setShowtask_typeDropdown] = useState(false);
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { authFetch } = useAuth();
 
-    const taskTypeDropdownRef = useRef(null);
+    const task_typeDropdownRef = useRef(null);
     const assigneeDropdownRef = useRef(null);
 
     useEffect(() => {
@@ -39,8 +41,8 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (taskTypeDropdownRef.current && !taskTypeDropdownRef.current.contains(event.target)) {
-                setShowTaskTypeDropdown(false);
+            if (task_typeDropdownRef.current && !task_typeDropdownRef.current.contains(event.target)) {
+                setShowtask_typeDropdown(false);
             }
             if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(event.target)) {
                 setShowAssigneeDropdown(false);
@@ -53,7 +55,7 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
         };
     }, []);
 
-    const taskTypeOptions = [
+    const task_typeOptions = [
         'Simple Task',
         'Site Visits',
         'Meeting',
@@ -165,7 +167,7 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
                 }
             }
 
-            const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+            const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
                 method: 'PUT',
                 body: submitFormData,
             });
@@ -198,14 +200,14 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
         });
     };
 
-    const handleTaskTypeSelect = (type) => {
+    const handletask_typeSelect = (type) => {
         setFormData({
             ...formData,
             task_type: type,
             date: type === 'Site Visits' || type === 'Meeting' ? formData.date : '',
             location: type === 'Meeting' ? formData.location : ''
         });
-        setShowTaskTypeDropdown(false);
+        setShowtask_typeDropdown(false);
     };
 
     const handleAssigneeSelect = (assigned_to) => {
@@ -216,14 +218,14 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
         setShowAssigneeDropdown(false);
     };
 
-    const toggleTaskTypeDropdown = () => {
-        setShowTaskTypeDropdown(!showTaskTypeDropdown);
+    const toggletask_typeDropdown = () => {
+        setShowtask_typeDropdown(!showtask_typeDropdown);
         setShowAssigneeDropdown(false);
     };
 
     const toggleAssigneeDropdown = () => {
         setShowAssigneeDropdown(!showAssigneeDropdown);
-        setShowTaskTypeDropdown(false);
+        setShowtask_typeDropdown(false);
     };
 
     if (!task) {
@@ -258,11 +260,11 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
                         <DropdownField
                             // label="Task Type"
                             value={formData.task_type}
-                            options={taskTypeOptions}
-                            isOpen={showTaskTypeDropdown}
-                            dropdownRef={taskTypeDropdownRef}
-                            onToggle={toggleTaskTypeDropdown}
-                            onSelect={handleTaskTypeSelect}
+                            options={task_typeOptions}
+                            isOpen={showtask_typeDropdown}
+                            dropdownRef={task_typeDropdownRef}
+                            onToggle={toggletask_typeDropdown}
+                            onSelect={handletask_typeSelect}
                         />
                     </div>
 
@@ -280,7 +282,7 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
                 </div>
 
                 <ConditionalFields
-                    taskType={formData.task_type}
+                    task_type={formData.task_type}
                     formData={formData}
                     handleChange={handleChange}
                 />
@@ -468,7 +470,7 @@ const ActionButtons = ({ isLoading, onCancel, taskTitle, isEdit }) => (
     </div>
 );
 
-const ConditionalFields = ({ taskType, formData, handleChange }) => {
+const ConditionalFields = ({ task_type, formData, handleChange }) => {
     const formatDateForInput = (dateString) => {
         if (!dateString) return '';
         if (dateString.includes('T')) return dateString;
@@ -478,7 +480,7 @@ const ConditionalFields = ({ taskType, formData, handleChange }) => {
         return date.toISOString().slice(0, 16);
     };
 
-    if (taskType === 'Site Visits') {
+    if (task_type === 'Site Visits') {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                 <div>
@@ -499,7 +501,7 @@ const ConditionalFields = ({ taskType, formData, handleChange }) => {
         );
     }
 
-    if (taskType === 'Meeting') {
+    if (task_type === 'Meeting') {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                 <div>

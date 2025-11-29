@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { BASE_URL } from '../Configuration/Config';
+import { useAuth } from "../Components/AuthContext";
 
 const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
     const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const { authFetch } = useAuth();
 
     useEffect(() => {
         if (project) {
@@ -53,7 +55,7 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
                 status: formData.status
             };
 
-            const response = await fetch(`${BASE_URL}/projects/projects/${project.id}`, {
+            const response = await authFetch(`${BASE_URL}/projects/projects/${project.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

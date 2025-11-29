@@ -11,6 +11,20 @@ const AuthModal = () => {
   const [otp, setOtp] = useState('');
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [ForgotPasswordEmail, setForgotPasswordEmail] = useState();
+  const [registrationStep, setRegistrationStep] = useState('personal');
+  const { authFetch } = useAuth();
+  const [personalData, setPersonalData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [companyData, setCompanyData] = useState({
+    company_name: '',
+    company_address: '',
+    company_email: '',
+    company_phone: ''
+  });
 
   const API_BASE = `${BASE_URL}/user`;
   const LOGIN_API = `${API_BASE}/login`;
@@ -31,6 +45,19 @@ const AuthModal = () => {
     if (!showAuthModal) {
       setCurrentView('login');
       setLoginStep('credentials');
+      setRegistrationStep('personal');
+      setPersonalData({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+      setCompanyData({
+        company_name: '',
+        company_address: '',
+        company_email: '',
+        company_phone: ''
+      });
       setPendingLoginData(null);
       setOtp('');
       setError('');
@@ -137,7 +164,6 @@ const AuthModal = () => {
       setLoading(false);
     }
   };
-
   // ==================== STEP 2: VERIFY OTP ====================
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
@@ -273,83 +299,47 @@ const AuthModal = () => {
   };
 
   // ==================== REGISTER FUNCTION ====================
-  const handleRegisterSubmit = async (e) => {
+
+  const handleCompleteRegistration = async (e) => {
     e.preventDefault();
-
-    // Get form values directly from the form elements
-    const form = e.target;
-    const fullName = form.fullName.value.trim();
-    const email = form.email.value.trim();
-    const password = form.password.value.trim();
-    const confirmPassword = form.confirmPassword.value.trim();
-
-    console.log('REGISTER DEBUG:', {
-      fullName, email, password, confirmPassword,
-      fullNameLength: fullName.length,
-      emailLength: email.length,
-      passwordLength: password.length,
-      confirmPasswordLength: confirmPassword.length
-    });
-
-    // Validation
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords don't match!");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-
     setLoading(true);
     setError('');
-    setSuccess('');
 
     try {
-      const response = await fetch(REGISTER_API, {
+      // 1. Register user
+      const userResponse = await fetch(REGISTER_API, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        //Use backend field names
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_name: fullName,
-          user_email: email,
-          user_password: password
+          user_name: personalData.fullName,
+          user_email: personalData.email,
+          user_password: personalData.password
         })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+      if (!userResponse.ok) {
+        const errorData = await userResponse.json();
+        throw new Error(errorData.message || 'User registration failed');
       }
 
-      const data = await response.json();
+      // 2. Create company
+      const companyResponse = await fetch(`${BASE_URL}/companies/companies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(companyData)
+      });
 
-      setSuccess('Registration successful! Please check your email to verify your account.');
+      if (!companyResponse.ok) {
+        throw new Error('Company creation failed');
+      }
 
+      setSuccess('Registration successful! You can now login.');
       setTimeout(() => {
-        setCurrentView('login');
+        closeAuthModal();
       }, 2000);
 
     } catch (err) {
-      console.error('Registration error:', err);
-      if (err.message.includes('Failed to fetch')) {
-        setError('Cannot connect to server. Please check if backend is running on port 5000.');
-      } else {
-        setError(err.message || 'Registration failed. Please try again.');
-      }
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -358,12 +348,20 @@ const AuthModal = () => {
   // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {
     if (!showAuthModal) {
+      setCurrentView('login');
+      setLoginStep('credentials');
+      setRegistrationStep('personal'); // Reset to first step
+      setPersonalData({
+        fullName: '',
+        email: '',
+        password: '',
+        confirmPassword: ''
+      });
+      setPendingLoginData(null);
+      setOtp('');
       setError('');
       setSuccess('');
       setLoading(false);
-      setLoginStep('credentials');
-      setPendingLoginData(null);
-      setOtp('');
     }
   }, [showAuthModal]);
 
@@ -381,7 +379,7 @@ const AuthModal = () => {
       {/* Modal content */}
       <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+        <div className="flex justify-between items-center p-4 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">
             {loginStep === 'credentials'
               ? 'Login to Your Account'
@@ -438,7 +436,7 @@ const AuthModal = () => {
 
         {/* Login Form - Credentials Step */}
         {currentView === 'login' && loginStep === 'credentials' && (
-          <form onSubmit={handleVerifyCredentials} className="p-6">
+          <form onSubmit={handleVerifyCredentials} className="p-4">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
@@ -508,7 +506,7 @@ const AuthModal = () => {
             </button>
 
             {/* Switch to Register */}
-            <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+            <div className=" pt-4 border-t border-gray-100 text-center">
               <p className="theme-text-primary text-sm">
                 Don't have an account?{' '}
                 <button
@@ -526,7 +524,7 @@ const AuthModal = () => {
 
         {/* OTP Verification Step */}
         {currentView === 'login' && loginStep === 'otp' && (
-          <form onSubmit={handleVerifyOtp} className="p-6">
+          <form onSubmit={handleVerifyOtp} className="p-4">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
@@ -581,15 +579,44 @@ const AuthModal = () => {
           </form>
         )}
 
-        <ForgotPasswordModal 
-        isOpen={showForgotPasswordModal}
-        onClose={handleCloseForgotPasswordModal}
-        initialEmail={ForgotPasswordEmail}
+        <ForgotPasswordModal
+          isOpen={showForgotPasswordModal}
+          onClose={handleCloseForgotPasswordModal}
+          initialEmail={ForgotPasswordEmail}
         />
 
-        {/* Register Form */}
-        {currentView === 'register' && (
-          <form onSubmit={handleRegisterSubmit} className="p-6">
+        {/* Register Flow - Personal Details */}
+        {currentView === 'register' && registrationStep === 'personal' && (
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.target;
+            const fullName = form.fullName.value.trim();
+            const email = form.email.value.trim();
+            const password = form.password.value.trim();
+            const confirmPassword = form.confirmPassword.value.trim();
+
+            // Your existing validation
+            if (!fullName || !email || !password || !confirmPassword) {
+              setError('Please fill in all fields');
+              return;
+            }
+            if (!isValidEmail(email)) {
+              setError('Please enter a valid email address');
+              return;
+            }
+            if (password !== confirmPassword) {
+              setError("Passwords don't match!");
+              return;
+            }
+            if (!isStrongPassword(password)) {
+              setError("Password must be at least 6 characters long");
+              return;
+            }
+
+            setPersonalData({ fullName, email, password, confirmPassword });
+            setRegistrationStep('company');
+            setError('');
+          }} className="p-4">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
@@ -598,9 +625,9 @@ const AuthModal = () => {
                 <input
                   type="text"
                   name="fullName"
+                  defaultValue={personalData.fullName}
                   required
-                  disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -612,9 +639,9 @@ const AuthModal = () => {
                 <input
                   type="email"
                   name="email"
+                  defaultValue={personalData.email}
                   required
-                  disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Enter your email"
                 />
               </div>
@@ -626,10 +653,10 @@ const AuthModal = () => {
                 <input
                   type="password"
                   name="password"
+                  defaultValue={personalData.password}
                   required
-                  disabled={loading}
                   minLength={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Create a password (min. 6 characters)"
                 />
               </div>
@@ -641,67 +668,85 @@ const AuthModal = () => {
                 <input
                   type="password"
                   name="confirmPassword"
+                  defaultValue={personalData.confirmPassword}
                   required
-                  disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Confirm your password"
                 />
               </div>
+            </div>
 
-              <div className="text-sm">
-                <label className="flex items-start">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
-                    required
-                    disabled={loading}
-                  />
-                  <span className="ml-2 theme-text-primary">
-                    I agree to the{' '}
-                    <button type="button" className="text-blue-600 hover:text-blue-800 disabled:opacity-50" disabled={loading}>
-                      Terms of Service
-                    </button>{' '}
-                    and{' '}
-                    <button type="button" className="text-blue-600 hover:text-blue-800 disabled:opacity-50" disabled={loading}>
-                      Privacy Policy
-                    </button>
-                  </span>
-                </label>
+            <button
+              type="submit"
+              className="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200"
+            >
+              Next → Company Details
+            </button>
+          </form>
+        )}
+
+        {/* Register Flow - Company Details */}
+        {currentView === 'register' && registrationStep === 'company' && (
+          <form onSubmit={handleCompleteRegistration} className="p-4">
+            <h3 className="text-lg font-semibold theme-text-primary mb-4">Company Information</h3>
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={companyData.company_name}
+                  onChange={(e) => setCompanyData({ ...companyData, company_name: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Company Name *"
+                />
+              </div>
+              <div>
+                <input
+                  type="text"
+                  value={companyData.company_address}
+                  onChange={(e) => setCompanyData({ ...companyData, company_address: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Company Address *"
+                />
+              </div>
+              <div>
+                <input
+                  type="email"
+                  value={companyData.company_email}
+                  onChange={(e) => setCompanyData({ ...companyData, company_email: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Company Email *"
+                />
+              </div>
+              <div>
+                <input
+                  type="tel"
+                  value={companyData.company_phone}
+                  onChange={(e) => setCompanyData({ ...companyData, company_phone: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  placeholder="Company Phone *"
+                />
               </div>
             </div>
 
-            {/* Register Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-
-            {/* Switch to Login */}
-            <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-              <p className="theme-text-primary text-sm">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setCurrentView('login')}
-                  disabled={loading}
-                  className="text-blue-600 hover:text-blue-800 font-medium focus:outline-none disabled:opacity-50"
-                >
-                  Sign in
-                </button>
-              </p>
+            <div className="flex gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setRegistrationStep('personal')}
+                className="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors duration-200"
+              >
+                ← Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200 disabled:opacity-50"
+              >
+                {loading ? 'Registering...' : 'Complete Registration'}
+              </button>
             </div>
           </form>
         )}

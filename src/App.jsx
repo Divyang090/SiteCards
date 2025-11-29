@@ -16,11 +16,12 @@ import InspirationClickModal from './Components/InspirationClickModal';
 import { AuthProvider } from './Components/AuthContext';
 import { useAuth } from './Components/AuthContext';
 import ForgotPasswordModal from './Components/ForgotPasswordModal';
+import AuthDebug from './Pages/AuthDebug';
 
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, projectsloading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
   const [statusFilter, setStatusFilter] = useState('all');
-  const { user, openAuthModal, authFetch, loading: authLoading } = useAuth();
+  const { authFetch } = useAuth();
 
   const handleDeleteWithMessage = async (projectId) => {
     console.log('Project ID received:', projectId);
@@ -36,7 +37,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
         try {
           console.log('Deleting project:', projectId);
 
-          const response = await fetch(`${BASE_URL}/projects/projects/${projectId}`, {
+          const response = await authFetch(`${BASE_URL}/projects/projects/${projectId}`, {
             method: 'DELETE',
           });
 
@@ -196,7 +197,7 @@ const AppContent = () => {
           setError('');
           console.log('Fetching projects from API...');
 
-          const response = await fetch(`${BASE_URL}/projects/projects`);
+          const response = await authFetch(`${BASE_URL}/projects/projects`);
 
           console.log('Response status:', response.status);
 
@@ -273,7 +274,7 @@ const AppContent = () => {
       console.log('Raw backend response received:', backendResponse);
 
       // Refreshing project list 
-      const response = await fetch(`${BASE_URL}/projects/projects`);
+      const response = await authFetch(`${BASE_URL}/projects/projects`);
 
       if (!response.ok) {
         throw new Error(`Failed to load projects: ${response.status}`);
@@ -327,7 +328,7 @@ const AppContent = () => {
       console.log('Project updated, refreshing list...');
 
       // Refresh the entire projects list to get updated data
-      const response = await fetch(`${BASE_URL}/projects/projects`);
+      const response = await authFetch(`${BASE_URL}/projects/projects`);
 
       if (!response.ok) {
         throw new Error(`Failed to load projects: ${response.status}`);
@@ -461,7 +462,7 @@ const AppContent = () => {
         {/* NOT LOGGED IN STATE */}
         {!user && !authLoading && (
           <>
-            <div className="flex bg-[url('bgimage.png')] md:justify-between justify-center items-center p-6">
+            <div className="flex md:justify-between justify-center items-center p-6">
               <Link to="/" className=" md:text-2xl text-6xl font-bold theme-text-primary">
                 SiteCards
               </Link>
@@ -519,6 +520,9 @@ const AppContent = () => {
                 element={<ProjectDetails projects={projects} />}
               />
               <Route path="/templates" element={<Templates />} />
+
+              <Route path="/debug/auth" element={<AuthDebug />} />
+
             </Routes>
 
             <NewProjectModal

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider from "../Alerts/StatusMessage";
 import { useStatusMessage } from "../Alerts/StatusMessage";
+import { useAuth } from "../Components/AuthContext";
 
 const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
   const { showMessage, showConfirmation } = useStatusMessage();
+  const { authFetch } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     file: null,
@@ -53,7 +55,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
         console.log(`${key}:`, value);
       }
 
-      const response = await fetch(`${BASE_URL}/drawings/post`, {
+      const response = await authFetch(`${BASE_URL}/drawings/post`, {
         method: 'POST',
         body: uploadData,
       });

@@ -111,21 +111,21 @@ const TaskFileModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-[1px]"
+        className="absolute inset-0  bg-opacity-80 backdrop-blur-[1px]"
         onClick={onClose}
       ></div>
 
       {/* Modal */}
       <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+        <div className="flex justify-between items-center p-3 border-b border-gray-100">
           <div>
             <h2 className="text-xl font-semibold theme-text-primary">
               Files
             </h2>
             {taskTitle && (
               <p className="text-sm text-gray-500 mt-1">
-                For task: {taskTitle}
+                For task : {taskTitle}
               </p>
             )}
           </div>
@@ -138,7 +138,7 @@ const TaskFileModal = ({
         </div>
 
         {/* Files List */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-3 overflow-y-auto flex-1">
           {files.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-gray-400 mb-3">
@@ -189,14 +189,14 @@ const TaskFileModal = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-4 border-t border-gray-100">
+        {/* <div className="flex justify-end p-4 border-t border-gray-100">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
           >
             Close
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

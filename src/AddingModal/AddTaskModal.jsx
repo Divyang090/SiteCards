@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import StatusMessageProvider from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const AddTaskModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const {showMessage, showConfirmation} = useStatusMessage();  const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const AddTaskModal = ({ spaceId, projectId, onClose, onAdd }) => {
     due_date: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { authFetch } = useAuth();
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -34,7 +36,7 @@ const handleSubmit = async (e) => {
 
     let response;
     try {
-      response = await fetch(`${BASE_URL}/tasks`, {
+      response = await authFetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ const handleSubmit = async (e) => {
       console.log('Standard fetch failed, trying with no-cors:', error);
       
       // Approach 2: Try with no-cors mode (limited - can't read response)
-      response = await fetch(`${BASE_URL}/tasks`, {
+      response = await authFetch(`${BASE_URL}/tasks`, {
         method: 'POST',
         mode: 'no-cors',
         headers: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, drawingId, onClick }) => {
   console.log('=== EDIT MODAL PROPS ===');
@@ -17,6 +18,7 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
   });
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const { authFetch } = useAuth();
 
   useEffect(() => {
     return () => {
@@ -81,7 +83,7 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
         console.log(`   ${key}:`, value, `(type: ${typeof value})`);
       }
 
-      const response = await fetch(`${BASE_URL}/drawings/update/drawing/${currentDrawingId}`, {
+      const response = await authFetch(`${BASE_URL}/drawings/update/drawing/${currentDrawingId}`, {
         method: 'PUT',
         body: uploadData,
       });

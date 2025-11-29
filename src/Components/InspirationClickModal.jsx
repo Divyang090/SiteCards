@@ -100,7 +100,7 @@ const getFileUrl = (item) => {
 
                     {/* Description */}
                     {inspiration.description && (
-                        <div className="mb-6">
+                        <div className="mb-2">
                             <p className="theme-text-secondary whitespace-pre-wrap">{inspiration.description}</p>
                         </div>
                     )}

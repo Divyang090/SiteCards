@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import StatusMessageProvider from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const { showConfirmation, showMessage } = useStatusMessage();
   const [activeTab, setActiveTab] = useState('manual');
   const [selectedContact, setSelectedContact] = useState(null);
   const [isContactsApiSupported, setIsContactApiSupported] = useState(false);
+  const { authFetch } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -121,7 +123,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
     try {
       setIsSubmitting(true);
 
-      const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
+      const response = await authFetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(vendorData),
@@ -256,7 +258,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       console.log('Manual spaceId:', spaceId);
       console.log('=== MANUAL SUBMIT DEBUG END ===');
 
-      const response = await fetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
+      const response = await authFetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

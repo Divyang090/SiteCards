@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import { BASE_URL } from '../Configuration/Config';
 import { useParams } from 'react-router-dom';
+import { useAuth } from "../Components/AuthContext";
 
 const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRefreshTrigger }) => {
   const [presets, setPresets] = useState([]);
@@ -9,6 +10,7 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRef
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const { showMessage } = useStatusMessage();
+  const { authFetch } = useAuth();
 
   const groupPresets = (data) => {
     const map = {};
@@ -33,7 +35,7 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRef
   // Fetch presets from backend
   useEffect(() => {
     const fetchPresets = async () => {
-      const res = await fetch(`${BASE_URL}/preset/presets`)
+      const res = await authFetch(`${BASE_URL}/preset/presets`)
       const data = await res.json();
 
       const grouped = groupPresets(data);
@@ -52,7 +54,7 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRef
 
     try {
 
-      const res = await fetch(
+      const res = await authFetch(
         `${BASE_URL}/spaces/projects/${projectId}/apply-preset`,
         {
           method: "POST",

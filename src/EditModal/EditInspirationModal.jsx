@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpdate, onClick }) => {
   const { showMessage, showFailed } = useStatusMessage();
@@ -13,6 +14,7 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
   const [isUploading, setIsUploading] = useState(false);
   const [customTag, setCustomTag] = useState('');
   const [showCustomTagInput, setShowCustomTagInput] = useState(false);
+  const { authFetch } = useAuth();
 
   // Predefined tags from your screenshot
   const predefinedTags = [
@@ -109,7 +111,7 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
       console.log('🕐 Starting fetch request...');
       const startTime = Date.now();
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method: 'PUT',
         body: uploadData,
         signal: controller.signal

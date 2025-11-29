@@ -20,6 +20,7 @@ import BulkPresetModal from '../AddingModal/BulkPresetModal';
 import EditSiteTask from '../EditModal/EditSiteTask';
 import CreateSiteTask from '../AddingModal/CreateSiteTask';
 import PinterestBoardModal from './PinterestBoardModal';
+import { useAuth } from './AuthContext';
 
 const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -32,6 +33,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [loading, setLoading] = useState();
   const [refershTrigger, setRefreshTrigger] = useState(0);
+  const { authFetch } = useAuth();
 
   const menuRef = useRef(null);
 
@@ -46,7 +48,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       console.log("=============RECEIVED FROM API:==========", siteMapsList);
       try {
         console.log('Fetching ALL site maps');
-        const response = await fetch(`${BASE_URL}/spaces/get/project/${projectId}`);
+        const response = await authFetch(`${BASE_URL}/spaces/get/project/${projectId}`);
         console.log('Fetch response status:', response.status);
 
         if (response.ok) {
@@ -128,7 +130,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       }
       // add site maps
       console.log('Sending POST request to upload endpoint');
-      const response = await fetch(`${BASE_URL}/spaces/post`, {
+      const response = await authFetch(`${BASE_URL}/spaces/post`, {
         method: 'POST',
         body: uploadData,
       });
@@ -173,7 +175,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
           const spaceId = siteMap.space_id || siteMap.id;
           console.log('Attempting to delete site map. Space ID:', spaceId);
 
-          const response = await fetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
+          const response = await authFetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -367,6 +369,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [boardError, setBoardError] = useState(null);
   const [boardPage, setBoardPage] = useState(1);
   const [hasMoreBoardPosts, setHasMoreBoardPosts] = useState(true);
+  const {authFetch} = useAuth();
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -374,32 +377,23 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   // Click handler for inspiration cards
   const handleInspirationClick = (item) => {
-
-    const determinePinterestType = (item) => {
-      if (!item.pinterestUrl) return 'unknown';
-
-      if (item.pinterestUrl.includes('/board/') || item.type === 'pinterest_board' || item.isBoard) {
-        return 'board';
-      }
-
-      if (item.pinterestUrl.includes('/pin/') || item.type === 'pinterest_pin') {
-        return 'pin';
-      }
-
+    const type = (() => {
+      if (item.pinterestUrl && (item.pinterestUrl.includes('/board/') || item.isBoard || item.type === 'pinterest_board')) return 'board';
+      if (item.pinterestUrl && (item.pinterestUrl.includes('/pin/') || item.type === 'pinterest_pin')) return 'pin';
+      if (item.files && item.files.length > 0) return 'image'; // handle gallery uploads
       return 'unknown';
-    };
-
-    const type = determinePinterestType(item); // ← Call the helper here
+    })();
 
     if (type === 'board') {
       setSelectedBoard(item);
-      fetchBoardPosts(item, true); // reset = true
-    } else if (type === 'pin') {
+      fetchBoardPosts(item);
+    } else if (type === 'pin' || type === 'image') {
       setSelectedInspiration(item);
     } else {
       console.warn('Unknown Pinterest item type:', item);
     }
   };
+
 
 
   const handleCloseInspirationModal = () => {
@@ -435,7 +429,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${taskName}"? This action cannot be undone.`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+          const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
             method: 'DELETE',
           });
 
@@ -464,7 +458,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   //Delete Drawing
   const handleDeleteDrawing = async (drawingId) => {
     try {
-      const response = await fetch(`${BASE_URL}/drawings/delete/${drawingId}`, {
+      const response = await authFetch(`${BASE_URL}/drawings/delete/${drawingId}`, {
         method: 'DELETE',
       });
 
@@ -520,7 +514,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       `Are you sure you want to delete "${vendorname}"? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/vendors/del_vendors/${vendorId}`, {
+          const response = await authFetch(`${BASE_URL}/vendors/del_vendors/${vendorId}`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -549,29 +543,38 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   };
 
   //deleteinspiration
-  const handleDeleteInspiration = async (inspirationId, inspiration) => {
-    console.log('Inspiration object:', inspiration);
-    console.log('Available properties:', Object.keys(inspiration || {}));
-    const inspirationName = inspiration?.title || inspiration?.name || inspiration?.filename || 'this inspiration';
+const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
+    console.log('Inspiration item:', inspirationItem);
+    const inspirationName = inspirationItem?.title || inspirationItem?.name || inspirationItem?.filename || 'this inspiration';
 
     showConfirmation(
       'Delete Inspiration',
       `Are you sure you want to delete "${inspirationName}"? This action cannot be undone`,
       async () => {
         try {
-          const response = await fetch(`${BASE_URL}/inspiration/del_inspirations/${inspirationId}`, {
+          // OPTIMISTIC UPDATE - Remove immediately from UI
+          const originalData = Array.isArray(inspiration) ? [...inspiration] : [];
+          setInspiration(prev => {
+            if (!Array.isArray(prev)) return prev;
+            return prev.filter(item => item.id !== inspirationId);
+          });
+          
+          const response = await authFetch(`${BASE_URL}/inspiration/del_inspirations/${inspirationId}`, {
             method: 'DELETE',
           });
 
           if (response.ok) {
-            setInspiration(prev => prev.filter(item => item.id !== inspirationId));
             showMessage(`Inspiration "${inspirationName}" deleted successfully!`, 'success');
+            // Only refresh after successful delete to sync with server
+            setRefreshInspiration(prev => prev + 1);
           } else {
             const errorText = await response.text();
             throw new Error(`Failed to delete inspiration: ${errorText}`);
           }
         } catch (error) {
           console.error('Error deleting inspiration:', error);
+          // ROLLBACK - Restore original state
+          setInspiration(originalData);
           showFailed('Failed to delete inspiration: ' + error.message);
         }
       }
@@ -627,7 +630,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
           const apiUrl = `${BASE_URL}/vendors/vendors/space/${spaceId}`;
           console.log('🌐 Fetching vendors from:', apiUrl);
 
-          const response = await fetch(apiUrl);
+          const response = await authFetch(apiUrl);
 
           if (response && response.ok) {
             const responseData = await response.json();
@@ -691,7 +694,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, drawings: true }));
         try {
           console.log('Fetching all drawings...');
-          const response = await fetch(`${BASE_URL}/drawings/get/space/${spaceId}`);
+          const response = await authFetch(`${BASE_URL}/drawings/get/space/${spaceId}`);
 
           console.log('Drawings fetch response status:', response.status);
 
@@ -749,7 +752,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, inspiration: true }));
         try {
           console.log('Fetching inspiration for space:', spaceId);
-          const response = await fetch(`${BASE_URL}/inspiration/get/space/${spaceId}`);
+          const response = await authFetch(`${BASE_URL}/inspiration/get/space/${spaceId}`);
 
           console.log('Inspiration fetch response status:', response.status);
 
@@ -805,7 +808,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
     try {
       const page = reset ? 1 : boardPage;
-      const response = await fetch(`${BASE_URL}/pinterest/boards/${boardId}/posts?page=${page}`);
+      const response = await authFetch(`${BASE_URL}/pinterest/boards/${boardId}/posts?page=${page}`);
 
       if (!response.ok) throw new Error(`Failed to fetch board posts: ${response.status}`);
 
@@ -886,7 +889,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
         setLoading(prev => ({ ...prev, tasks: true }));
         try {
           console.log('Fetching tasks for space:', spaceId);
-          const response = await fetch(`${BASE_URL}/tasks/tasks/space/${spaceId}`);
+          const response = await authFetch(`${BASE_URL}/tasks/tasks/space/${spaceId}`);
 
           console.log('Tasks fetch response status:', response.status);
 
@@ -963,7 +966,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       formData.append("status", newStatus);
 
       // Send request
-      const response = await fetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
+      const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: "PUT",
         body: formData, // ❗ formData, NOT JSON
       });

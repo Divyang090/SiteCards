@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BASE_URL } from '../Configuration/Config';
 import { useStatusMessage } from '../Alerts/StatusMessage';
+import { useAuth } from "../Components/AuthContext";
 
 const EditSiteMapModal = ({ siteMap, projectId, onClose, onUpdate }) => {
   const { showMessage, showFailed } = useStatusMessage();
@@ -11,6 +12,7 @@ const EditSiteMapModal = ({ siteMap, projectId, onClose, onUpdate }) => {
     file: null
   });
   const [isUploading, setIsUploading] = useState(false);
+  const { authFetch } = useAuth();
 
   useEffect(() => {
     if (siteMap) {
@@ -54,7 +56,7 @@ const EditSiteMapModal = ({ siteMap, projectId, onClose, onUpdate }) => {
         console.log(`${key}:`, value);
       }
 
-      const response = await fetch(`${BASE_URL}/spaces/update/${spaceId}`, {
+      const response = await authFetch(`${BASE_URL}/spaces/update/${spaceId}`, {
         method: 'PUT',
         body: uploadData,
       });
