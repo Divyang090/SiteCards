@@ -26,7 +26,7 @@ const AuthModal = () => {
     company_phone: ''
   });
 
-  const API_BASE = `${BASE_URL}/user`;
+  const API_BASE = `${BASE_URL}/auth`;
   const LOGIN_API = `${API_BASE}/login`;
   const REGISTER_API = `${API_BASE}/register`;
   const VERIFY_OTP = `${API_BASE}/verify_login_otp`;
@@ -229,74 +229,75 @@ const AuthModal = () => {
   };
 
   // ==================== LOGIN FUNCTION ====================
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
+  // const handleLoginSubmit = async (e) => {
+  //   e.preventDefault();
 
-    // Get form values directly from the form elements
-    const form = e.target;
-    const email = form.email.value.trim();
-    const password = form.password.value.trim();
+  //   // Get form values directly from the form elements
+  //   const form = e.target;
+  //   const email = form.email.value.trim();
+  //   const password = form.password.value.trim();
 
-    console.log('LOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
+  //   console.log('LOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
 
-    // Basic validation
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
+  //   // Basic validation
+  //   if (!email || !password) {
+  //     setError('Please fill in all fields');
+  //     return;
+  //   }
 
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
+  //   if (!isValidEmail(email)) {
+  //     setError('Please enter a valid email address');
+  //     return;
+  //   }
 
-    setLoading(true);
-    setError('');
-    setSuccess('');
+  //   setLoading(true);
+  //   setError('');
+  //   setSuccess('');
 
-    try {
-      const response = await fetch(LOGIN_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_email: email,
-          user_password: password
-        })
-      });
+  //   try {
+  //     const response = await fetch(LOGIN_API, {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({
+  //         user_email: email,
+  //         user_password: password
+  //       })
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.message || 'Login failed');
+  //     }
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      login({
-        name: data.user_name || 'user',
-        email: data.user_email
-      }, {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken
-      })
+  //     login({
+  //       name: data.user_name || 'user',
+  //       email: data.user_email
+  //     }, {
+  //       accessToken: data.accessToken,
+  //       refreshToken: data.refreshToken
+  //     })
 
-      setSuccess('Login successful!');
-      setTimeout(() => {
-        closeAuthModal();
-      }, 1500);
+  //     setSuccess('Login successful!');
+  //     localStorage.setItem("jwt_token", data.accessToken); // <- use accessToken, not data.token
+  //     setTimeout(() => {
+  //       closeAuthModal();
+  //     }, 1500);
 
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err.message.includes('Failed to fetch')) {
-        setError('Cannot connect to server. Please check if backend is running on port 5000.');
-      } else {
-        setError(err.message || 'Login failed. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   } catch (err) {
+  //     console.error('Login error:', err);
+  //     if (err.message.includes('Failed to fetch')) {
+  //       setError('Cannot connect to server. Please check if backend is running on port 5000.');
+  //     } else {
+  //       setError(err.message || 'Login failed. Please try again.');
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // ==================== REGISTER FUNCTION ====================
 
@@ -306,37 +307,29 @@ const AuthModal = () => {
     setError('');
 
     try {
-      // 1. Register user
-      const userResponse = await fetch(REGISTER_API, {
+      const response = await fetch(REGISTER_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_name: personalData.fullName,
           user_email: personalData.email,
-          user_password: personalData.password
+          user_password: personalData.password,
+
+          company_name: companyData.company_name,
+          company_address: companyData.company_address,
+          company_email: companyData.company_email,
+          company_phone: companyData.company_phone
         })
       });
 
-      if (!userResponse.ok) {
-        const errorData = await userResponse.json();
-        throw new Error(errorData.message || 'User registration failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
 
-      // 2. Create company
-      const companyResponse = await fetch(`${BASE_URL}/companies/companies`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(companyData)
-      });
-
-      if (!companyResponse.ok) {
-        throw new Error('Company creation failed');
-      }
-
-      setSuccess('Registration successful! You can now login.');
-      setTimeout(() => {
-        closeAuthModal();
-      }, 2000);
+      const data = await response.json();
+      setSuccess('Registration successful! Please check your email for OTP.');
+      setTimeout(() => closeAuthModal(), 2000);
 
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -344,6 +337,7 @@ const AuthModal = () => {
       setLoading(false);
     }
   };
+
 
   // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {

@@ -3,19 +3,25 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from './ThemeContext';
 import MorphOverlay from './MorphOverlay';
 import { useAuth } from './AuthContext';
+import AddMembersModal from '../AddingModal/AddMembersModal';
+import ManageMembersModal from './ManageMembersModal';
 
-const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onClose }) => {
-  const { user, logout, openAuthModal } = useAuth();
+const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onClose, companyId }) => {
+  const { user, logout, openAuthModal, authFetch } = useAuth();
   const { isDark, toggleTheme, isAnimating } = useTheme();
   const [showMorph, setShowMorph] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
+  const [isAddMembersOpen, setIsMembersOpen] = useState(false);
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
 
   const menuRef = useRef(null);
 
   const userMenuRef = useRef(null);
 
+  //Click Outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target) &&
@@ -31,6 +37,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
     };
   }, []);
 
+  //Click Outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -44,6 +51,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
     };
   }, []);
 
+  //THEME
   const handleThemeToggle = () => {
     if (isAnimating) return;
 
@@ -59,6 +67,81 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
   const handleTemplatesClick = () => {
     navigate('/templates');
   };
+
+  //LINK PINTEREST
+  const handlePinterestLink = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/pinterest/pinterest/start", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        console.error("Backend error:", res.status);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.auth_url) {
+        // Redirect the user to Pinterest OAuth
+        window.location.href = data.auth_url;
+      } else {
+        console.error("auth_url missing from response");
+      }
+    } catch (err) {
+      console.error("Pinterest link failed:", err);
+    }
+  };
+
+  // LINK PINTEREST
+  // const handlePinterestLink = async () => {
+  //   try {
+  //     // 1. Get JWT from localStorage
+  //     const jwtToken = localStorage.getItem("jwt_token");
+  //     if (!jwtToken) {
+  //       console.error("JWT token not found. Please login first.");
+  //       return;
+  //     }
+
+  //     // 2. Generate random OAuth state
+  //     const oauthState = crypto.randomUUID();
+
+  //     // 3. Combine OAuth state and JWT into a single string, then encode
+  //     const combinedState = btoa(JSON.stringify({ oauthState, jwtToken }));
+
+  //     // 4. Call backend to get auth URL
+  //     const res = await fetch("http://localhost:5000/api/pinterest/pinterest/start", {
+  //       method: "GET",
+  //       credentials: "include",
+  //       headers: {
+  //         "X-Auth-State": combinedState // optional: backend can also read this
+  //       },
+  //     });
+
+  //     if (!res.ok) {
+  //       console.error("Backend error:", res.status);
+  //       return;
+  //     }
+
+  //     const data = await res.json();
+
+  //     if (data.auth_url) {
+  //       // 5. Append combined state to the Pinterest URL
+  //       const url = new URL(data.auth_url);
+  //       url.searchParams.set("state", combinedState);
+
+  //       // Redirect the user to Pinterest OAuth
+  //       window.location.href = url.toString();
+  //     } else {
+  //       console.error("auth_url missing from response");
+  //     }
+
+  //   } catch (err) {
+  //     console.error("Pinterest link failed:", err);
+  //   }
+  // };
+
 
   return (
     <>
@@ -143,7 +226,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
+              <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border shadow-2xl z-50">
                 <div className="p-2">
 
                   {/* New Project */}
@@ -174,6 +257,60 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                     Templates
                   </button>
 
+                  {/* Manage Members */}
+                  <button
+                    onClick={() => {
+                      setIsManageMembersOpen(true); // ← open new panel
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="9" cy="7" r="4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      {/* <circle cx="18" cy="10" r="1.2" />
+                      <circle cx="18" cy="14" r="1.2" />
+                      <circle cx="18" cy="18" r="1.2" /> */}
+                    </svg>
+                    Manage Members
+                  </button>
+
+                  {/* Connect to Pinterest */}
+                  <button
+                    onClick={() => {
+                      handlePinterestLink();
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-white font-medium
+                             bg-[#E60023] hover:bg-[#AD001A] active:bg-[#8A0014]
+                               transition-all duration-200"
+                  >
+                    {/* Pinterest Logo */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      width="22"
+                      height="22"
+                      fill="currentColor"
+                      className="text-white"
+                    >
+                      <path d="M12 2C6.48 2 2 6.26 2 11.64c0 3.71 2.21 6.92 5.56 
+                      8.29-.07-.66-.13-1.67.03-2.39.14-.6.92-3.84.92-3.84s-.23-.47-.23-1.17c0-1.1.64-1.91 1.43-1.91.68 
+                      0 1 .51 1 1.12 0 .68-.43 1.69-.66 2.63-.19.79.39 1.44 1.15 1.44 1.38 0 2.44-1.46 2.44-3.56 0-1.86-1.34-3.15-3.25-3.15-2.22 
+                      0-3.52 1.66-3.52 3.38 0 .67.26 1.39.58 1.78a.23.23 0 0 1 .05.22c-.06.24-.21.79-.24.9-.04.17-.13.2-.3.12-1.11-.52-1.8-2.17-1.8-3.5 
+                      0-2.85 2.07-5.47 5.98-5.47 3.14 0 5.59 2.24 5.59 5.23 0 3.12-1.96 5.62-4.68 5.62-0.91 0-1.77-.47-2.07-1.02 0 0-.49 1.86-.6 2.31-.18.7-.67 
+                      1.58-.99 2.12.74.23 1.53.36 2.35.36 5.52 0 10-4.26 10-9.64C22 6.26 17.52 2 12 2z" />
+                    </svg>
+
+                    Link Pinterest
+                  </button>
+
+
                   {/* Theme Toggle */}
                   <button
                     onClick={() => {
@@ -200,12 +337,24 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                       </>
                     )}
                   </button>
+
                 </div>
               </div>
             )}
           </div>
         </div>
       </div>
+      {isAddMembersOpen && (
+        <AddMembersModal onClose={() => setIsMembersOpen(false)} />
+      )}
+
+      {isManageMembersOpen && (
+        <ManageMembersModal
+          onClose={() => setIsManageMembersOpen(false)}
+          companyId={companyId}
+        />
+      )}
+
     </>
   );
 };

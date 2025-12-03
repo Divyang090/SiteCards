@@ -1,11 +1,10 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 
 const AuthContext = createContext();
 
 // API endpoints
-const REFRESH_TOKEN_API = `${BASE_URL}/user/refresh`;
-const VALIDATE_TOKEN_API = `${BASE_URL}/user/user/protected`;
+const REFRESH_TOKEN_API = `${BASE_URL}/auth/refresh`;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -14,6 +13,9 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Prevent multiple concurrent refresh attempts
+  const isRefreshing = useRef(false);
+
   // Load auth data from localStorage on app start
   useEffect(() => {
     const initializeAuth = async () => {
@@ -21,57 +23,29 @@ export const AuthProvider = ({ children }) => {
       const savedAccessToken = localStorage.getItem('accessToken');
       const savedRefreshToken = localStorage.getItem('refreshToken');
 
-      console.log('🔄 Initializing auth...', {
-        hasUser: !!savedUser,
-        hasAccessToken: !!savedAccessToken,
-        hasRefreshToken: !!savedRefreshToken
-      });
-
       if (savedUser && savedAccessToken) {
+        // Load from localStorage
         setUser(JSON.parse(savedUser));
         setAccessToken(savedAccessToken);
         if (savedRefreshToken) {
           setRefreshToken(savedRefreshToken);
         }
-
-        // Validate token on app start
-        await validateToken(savedAccessToken);
-      } else {
-        console.log('🔐 No saved tokens found, setting loading to false');
-        setLoading(false);
       }
+      
+      setLoading(false);
     };
 
     initializeAuth();
   }, []);
 
-  // Token validation function
-  const validateToken = async (token) => {
-    try {
-      console.log('🔍 Validating token...');
-      const response = await fetch(VALIDATE_TOKEN_API, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        console.log('✅ Token is valid');
-        setLoading(false);
-        return true;
-      } else {
-        console.log('❌ Token validation failed, status:', response.status);
-        return false; // ✅ Return false instead of throwing
-      }
-    } catch (error) {
-      console.log('❌ Token validation error:', error);
-      return false; // ✅ Return false instead of auto-refreshing
-    }
-  };
-
   // Refresh access token using refresh token
   const refreshAccessToken = async () => {
+    if (isRefreshing.current) {
+      return null;
+    }
+
+    isRefreshing.current = true;
+
     try {
       const currentRefreshToken = refreshToken || localStorage.getItem('refreshToken');
 
@@ -79,7 +53,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error('No refresh token available');
       }
 
-      console.log('🔄 Refreshing access token...');
       const response = await fetch(REFRESH_TOKEN_API, {
         method: 'POST',
         headers: {
@@ -90,10 +63,8 @@ export const AuthProvider = ({ children }) => {
         })
       });
 
-      // ✅ Handle expired/invalid refresh token
       if (!response.ok) {
         if (response.status === 401 || response.status === 422) {
-          console.log('❌ Refresh token also expired/invalid');
           logout();
           return null;
         }
@@ -101,33 +72,34 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      console.log('🔍 Refresh token response:', data);
-
       const newAccessToken = data.access_token;
+      const newRefreshToken = data.refresh_token;
 
       if (newAccessToken) {
         setAccessToken(newAccessToken);
         localStorage.setItem('accessToken', newAccessToken);
-        console.log('✅ Access token refreshed successfully');
+
+        if (newRefreshToken) {
+          setRefreshToken(newRefreshToken);
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
+
         return newAccessToken;
       } else {
         throw new Error('No access token in response');
       }
     } catch (error) {
-      console.error('❌ Refresh token failed:', error);
       logout();
       return null;
+    } finally {
+      isRefreshing.current = false;
     }
   };
 
   // Enhanced login function that stores tokens
   const login = (userData, tokens = {}) => {
-    console.log('🔐 Logging in user:', userData);
-    console.log('🔐 Tokens received:', tokens);
-
     setUser(userData);
 
-    // Store tokens if provided
     if (tokens.accessToken) {
       setAccessToken(tokens.accessToken);
       localStorage.setItem('accessToken', tokens.accessToken);
@@ -142,24 +114,36 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
-  const logout = () => {
-    console.log('🔐 Logging out user');
-    setUser(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    setLoading(false);
+  const logout = async () => {
+    try {
+      const rt = refreshToken || localStorage.getItem("refreshToken");
 
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+      if (rt) {
+        fetch(`${BASE_URL}/auth/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+        }).catch(() => {});
+      }
+    } catch (err) {
+      // Ignore errors
+    } finally {
+      // Always clear frontend state
+      setUser(null);
+      setAccessToken(null);
+      setRefreshToken(null);
+      setShowAuthModal(false);
+      setLoading(false);
+
+      localStorage.removeItem("user");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
   };
 
   // Enhanced fetch with automatic token refresh
   const authFetch = async (url, options = {}) => {
-    console.log('🔥 authFetch called:', url);
-
     let token = accessToken || localStorage.getItem('accessToken');
-    console.log('🔑 Access token being used:', token);
 
     if (!token) {
       throw new Error('No access token available');
@@ -181,55 +165,37 @@ export const AuthProvider = ({ children }) => {
         headers,
       });
 
-      console.log('📩 First response status:', response.status);
-
-      // ✅ HANDLE BOTH 401 AND 422 TOKEN ERRORS
+      // Handle token expiration
       if (response.status === 401 || response.status === 422) {
-        const errorText = await response.text();
-        console.log('🔄 Token issue detected:', { status: response.status, errorText });
-        
-        // ✅ Check if it's actually a token-related error
-        if (response.status === 401 || 
-            errorText.includes('Signature verification failed') || 
-            errorText.includes('Token expired') ||
-            errorText.includes('Not enough segments')) {
-          
-          console.log('🔄 Token invalid/expired - attempting refresh...');
-          const newToken = await refreshAccessToken();
-          if (newToken) {
-            // Retry the request with new token
-            headers.Authorization = `Bearer ${newToken}`;
-            response = await fetch(url, {
-              ...options,
-              headers,
-            });
-          } else {
-            logout();
-            throw new Error('Authentication failed');
-          }
+        const newToken = await refreshAccessToken();
+
+        if (newToken) {
+          // Retry the request with new token
+          headers.Authorization = `Bearer ${newToken}`;
+          response = await fetch(url, {
+            ...options,
+            headers,
+          });
+        } else {
+          throw new Error('Authentication failed');
         }
       }
 
       if (!response.ok) {
-        const text = await response.text();
-        console.error('❌ authFetch failed:', response.status, text);
-        throw new Error(`Failed to fetch: ${response.status} ${text}`);
+        throw new Error(`Failed to fetch: ${response.status}`);
       }
 
       return response;
     } catch (err) {
-      console.error('🔥 authFetch error:', err);
       throw err;
     }
   };
 
   const openAuthModal = () => {
-    console.log('🔐 Opening auth modal');
     setShowAuthModal(true);
   };
 
   const closeAuthModal = () => {
-    console.log('🔐 Closing auth modal');
     setShowAuthModal(false);
   };
 
@@ -244,8 +210,6 @@ export const AuthProvider = ({ children }) => {
     authFetch,
     loading
   };
-
-  console.log('🔄 AuthProvider rendering, loading:', loading, 'user:', user);
 
   return (
     <AuthContext.Provider value={value}>

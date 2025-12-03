@@ -8,20 +8,20 @@ const ProjectCard = ({ project, onEdit, onDelete }) => {
   // console.log('ProjectCard rendering',project.title)
   const { isDark } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef =useRef(null);
+  const menuRef = useRef(null);
 
-  useEffect(() =>{
+  useEffect(() => {
     // console.log('ProjectCard mounted', project.title)
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)){
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
     };
-      document.addEventListener('mousedown', handleClickOutside);
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-  },[])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [])
 
   const handleEdit = (e) => {
     e.preventDefault();
@@ -65,75 +65,85 @@ const ProjectCard = ({ project, onEdit, onDelete }) => {
               dueDate={project.due_date || project.end_date || project.docDate}
             />
             {/* Kebab Menu */}
-<div className="relative" ref={menuRef}>
-  <button
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsMenuOpen(!isMenuOpen);
-    }}
-    className={`
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMenuOpen(!isMenuOpen);
+                }}
+                className={`
       p-1 rounded transition-colors duration-200
-      ${isDark 
-        ? 'hover:theme-bg-hover text-gray-400 hover:text-gray-200' 
-        : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
-      }
+      ${isDark
+                    ? 'hover:theme-bg-hover text-gray-400 hover:text-gray-200'
+                    : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                  }
     `}
-  >
-    <svg 
-      width="16" 
-      height="16" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="12" cy="5" r="1" />
-      <circle cx="12" cy="19" r="1" />
-    </svg>
-  </button>
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
+              </button>
 
-  {/* Dropdown Menu */}
-  {isMenuOpen && (
-    <div 
-      className={`
-        absolute right-0 top-6 mt-1 w-32 rounded-md shadow-lg py-1 z-10
-        ${isDark 
-          ? 'theme-bg-card theme-border' 
-          : 'bg-white border border-gray-200'
-        }
+              {/* Dropdown Menu */}
+              {isMenuOpen && (
+                <div
+                  className={`absolute right-0 top-6 mt-1 w-32 rounded-md shadow-lg py-1 z-10 
+                    ${isDark
+                      ? 'theme-bg-card theme-border'
+                      : 'bg-white border border-gray-200'
+                    }
       `}
-    >
-      <button
-        onClick={handleEdit}
-        className={`
+                >
+                  <button
+                  onClick={handleEdit}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 
+                      ${isDark
+                        ? 'hover:theme-bg-hover theme-text-primary'
+                        : 'hover:bg-gray-100 text-gray-700'
+                      }`} >
+                    Add Members
+                    </button>
+
+                  {/* Edit Button */}
+                  <button
+                    onClick={handleEdit}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 
+                      ${isDark
+                        ? 'hover:theme-bg-hover theme-text-primary'
+                        : 'hover:bg-gray-100 text-gray-700'
+                      }`}
+                  >
+                    Edit
+                  </button>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={handleDelete}
+                    className={`
           block w-full text-left px-4 py-2 text-sm transition-colors duration-200
-          ${isDark 
-            ? 'hover:theme-bg-hover theme-text-primary' 
-            : 'hover:bg-gray-100 text-gray-700'
-          }
+          ${isDark
+                        ? 'hover:theme-bg-hover text-red-400'
+                        : 'hover:bg-gray-100 text-red-600'
+                      }
         `}
-      >
-        Edit
-      </button>
-      <button
-        onClick={handleDelete}
-        className={`
-          block w-full text-left px-4 py-2 text-sm transition-colors duration-200
-          ${isDark 
-            ? 'hover:theme-bg-hover text-red-400' 
-            : 'hover:bg-gray-100 text-red-600'
-          }
-        `}
-      >
-        Delete
-      </button>
-    </div>
-  )}
-</div>
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

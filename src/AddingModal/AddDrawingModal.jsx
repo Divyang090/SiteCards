@@ -15,6 +15,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   });
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [isClosing, setIsClosing] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -23,6 +24,12 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
     }
+  };
+
+  //CLOSE ANIMATION HANDLER
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => onClose(), 200); // match CSS duration
   };
 
   useEffect(() => {
@@ -83,7 +90,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className={`theme-bg-secondary shadow-2xl rounded-lg max-w-md w-full p-6 ${isClosing ? "animate-fadeOutDown " : "animate-fadeInUp"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4">Add New Drawing</h2>

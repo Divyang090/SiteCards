@@ -1,21 +1,28 @@
 import React from 'react';
+import { BASE_URL } from '../Configuration/Config';
 
-const TaskFileModal = ({ 
-  isOpen, 
-  onClose, 
-  files = [], 
-  taskTitle = '' 
+const TaskFileModal = ({
+  isOpen,
+  onClose,
+  files = [],
+  taskTitle = ''
 }) => {
   if (!isOpen) return null;
 
+  //Download handler
   const handleDownload = (file) => {
-    // If file is a URL string, open in new tab
+    if (file.file_path && file.filename) {
+      const downloadUrl = `${file.file_path}`;
+      window.open(downloadUrl, '_blank');
+      return;
+    }
+
+    // Original logic for other file types
     if (typeof file === 'string') {
       window.open(file, '_blank');
       return;
     }
-    
-    // If file is a File object, create download link
+
     if (file instanceof File) {
       const url = URL.createObjectURL(file);
       const a = document.createElement('a');
@@ -28,66 +35,71 @@ const TaskFileModal = ({
     }
   };
 
+  // View handler
   const handleView = (file) => {
-    // If file is a URL string, open in new tab
+    // Handle backend file objects
+    if (file.file_path && file.filename) {
+      const viewUrl = `${file.file_path}`; // You might need your base URL here
+      window.open(viewUrl, '_blank');
+      return;
+    }
+
+    // Original logic for other file types
     if (typeof file === 'string') {
       window.open(file, '_blank');
       return;
     }
-    
-    // If file is a File object, create object URL and open
+
     if (file instanceof File) {
       const url = URL.createObjectURL(file);
       window.open(url, '_blank');
-      // Note: We don't revoke the URL immediately as it's being viewed
     }
   };
 
+  //FileIcon
   const getFileIcon = (file) => {
-    if (typeof file === 'string') {
-      const extension = file.split('.').pop()?.toLowerCase();
-      switch (extension) {
-        case 'pdf':
-          return '📄';
-        case 'doc':
-        case 'docx':
-          return '📝';
-        case 'xls':
-        case 'xlsx':
-          return '📊';
-        case 'jpg':
-        case 'jpeg':
-        case 'png':
-        case 'gif':
-          return '🖼️';
-        case 'zip':
-        case 'rar':
-          return '📦';
-        default:
-          return '📎';
-      }
+    let fileName = '';
+
+    // Handle backend file objects
+    if (file.filename) {
+      fileName = file.filename;
+    } else if (typeof file === 'string') {
+      fileName = file;
+    } else if (file instanceof File) {
+      fileName = file.name;
     }
-    
-    if (file instanceof File) {
-      const type = file.type.split('/')[0];
-      switch (type) {
-        case 'image':
-          return '🖼️';
-        case 'application':
-          if (file.type.includes('pdf')) return '📄';
-          if (file.type.includes('word')) return '📝';
-          if (file.type.includes('excel') || file.type.includes('sheet')) return '📊';
-          if (file.type.includes('zip')) return '📦';
-          return '📄';
-        default:
-          return '📎';
-      }
+
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return '📄';
+      case 'doc':
+      case 'docx':
+        return '📝';
+      case 'xls':
+      case 'xlsx':
+        return '📊';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return '🖼️';
+      case 'zip':
+      case 'rar':
+        return '📦';
+      default:
+        return '📎';
     }
-    
-    return '📎';
   };
 
+  //FileName
   const getFileName = (file) => {
+    // Handle backend file objects
+    if (file.filename) {
+      return file.filename;
+    }
+
+    // Original logic
     if (typeof file === 'string') {
       return file.split('/').pop() || 'File';
     }
@@ -97,11 +109,21 @@ const TaskFileModal = ({
     return 'Unknown File';
   };
 
+  //FileSize
   const getFileSize = (file) => {
+    // Handle backend file objects
+    if (file.file_size) {
+      const sizeInMB = parseFloat(file.file_size);
+      return sizeInMB < 1
+        ? `${(sizeInMB * 1024).toFixed(2)} KB`
+        : `${sizeInMB.toFixed(2)} MB`;
+    }
+
+    // Original logic
     if (file instanceof File) {
       const sizeInMB = file.size / (1024 * 1024);
-      return sizeInMB < 1 
-        ? `${(file.size / 1024).toFixed(2)} KB` 
+      return sizeInMB < 1
+        ? `${(file.size / 1024).toFixed(2)} KB`
         : `${sizeInMB.toFixed(2)} MB`;
     }
     return 'Unknown size';
@@ -167,7 +189,7 @@ const TaskFileModal = ({
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleView(file)}
@@ -188,15 +210,6 @@ const TaskFileModal = ({
           )}
         </div>
 
-        {/* Footer */}
-        {/* <div className="flex justify-end p-4 border-t border-gray-100">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
-          >
-            Close
-          </button>
-        </div> */}
       </div>
     </div>
   );

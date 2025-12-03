@@ -51,7 +51,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       id: 2,
       name: 'XYZ Electrical',
       description: 'Electrical works specialist',
-      tags: 'electrical,lighting', // ✅ String format with no spaces
+      tags: 'electrical,lighting',
       company: 'XYZ Electric',
       phone: '+91 98765 43211',
       email: 'info@xayzelectrical.com'
@@ -60,7 +60,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       id: 3,
       name: 'Premium Paints',
       description: 'Painting and coating services',
-      tags: 'paint,interior', // ✅ String format with no spaces
+      tags: 'paint,interior',
       company: 'Premium Paints Co.',
       phone: '+91 98765 43212',
       email: 'sales@paremiumpaints.com'
@@ -301,7 +301,7 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="overflow-y-scroll shadow-2xl whitespace-nowrap scrollbar-hidden theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className="overflow-y-scroll animate-fadeInUp shadow-2xl whitespace-nowrap scrollbar-hidden theme-bg-secondary rounded-lg max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4 theme-text-primary">Add Vendor</h2>

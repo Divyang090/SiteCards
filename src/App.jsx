@@ -17,6 +17,9 @@ import { AuthProvider } from './Components/AuthContext';
 import { useAuth } from './Components/AuthContext';
 import ForgotPasswordModal from './Components/ForgotPasswordModal';
 import AuthDebug from './Pages/AuthDebug';
+import AddMembersModal from './AddingModal/AddMembersModal';
+import InviteAccept from './Components/InviteAccept';
+import PinterestCallback from './Components/PinterestCallback';
 
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, projectsloading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
@@ -168,25 +171,30 @@ const AppContent = () => {
     const checkForToken = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
+      const path = window.location.pathname;
 
-      console.log('🔍 App.jsx - Checking URL for reset token:', token);
+      // console.log('🔍 App.jsx - Checking URL for token:', token, 'at path:', path);
 
-      if (token) {
-        console.log('✅ App.jsx - Token found, opening modal');
+      if (!token) return;
+
+      if (path === '/reset-password') {
+        console.log('✅ Reset password token found, opening ForgotPasswordModal');
         setShowForgotPasswordModal(true);
+      } else if (path === '/invite/accept') {
+        console.log('✅ Invite token found, redirecting to InviteAccept component');
       }
     };
 
     // Check immediately
     checkForToken();
 
-    // Also check when popstate events occur (back/forward navigation)
     window.addEventListener('popstate', checkForToken);
 
     return () => {
       window.removeEventListener('popstate', checkForToken);
     };
   }, []);
+
 
   // Fetch projects from API
   useEffect(() => {
@@ -522,6 +530,12 @@ const AppContent = () => {
               <Route path="/templates" element={<Templates />} />
 
               <Route path="/debug/auth" element={<AuthDebug />} />
+
+              <Route path="/reset-password" element={<ForgotPasswordModal />} />
+
+              <Route path="/invite/accept" element={<InviteAccept />} />
+
+              <Route path="/pinterest/callback" element={<PinterestCallback />} />
 
             </Routes>
 

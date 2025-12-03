@@ -28,7 +28,7 @@ export default function AuthDebug() {
     log("🔍 Testing access token…");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/me", {
+      const res = await fetch("http://127.0.0.1:5000/api/auth/user/protected", {
         headers: {
           Authorization: "Bearer " + access,
         },
@@ -46,7 +46,7 @@ export default function AuthDebug() {
     log("🔄 Testing refresh token…");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/refresh", {
+      const res = await fetch("http://127.0.0.1:5000/api/auth/refresh", {
         method: "POST",
         headers: {
           Authorization: "Bearer " + refresh,
@@ -86,16 +86,16 @@ export default function AuthDebug() {
 
   return (
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
-      <h2>🔧 Auth Debug Panel</h2>
+      <h2 className="bg-violet-100 rounded-2xl flex justify-center mb-4 text-2xl">🔧 Auth Debug Panel</h2>
 
-      <button onClick={showTokens}>Show Tokens</button>
-      <button onClick={testAccess} style={{ marginLeft: 10 }}>Test Access</button>
-      <button onClick={testRefresh} style={{ marginLeft: 10 }}>Test Refresh</button>
+      <button className="bg-blue-300 rounded-2xl p-1" onClick={showTokens}>Show Tokens</button>
+      <button className="bg-green-300 rounded-2xl p-1" onClick={testAccess} style={{ marginLeft: 10 }}>Test Access</button>
+      <button className="bg-red-300 rounded-2xl p-1" onClick={testRefresh} style={{ marginLeft: 10 }}>Test Refresh</button>
 
       <br /><br />
 
-      <button onClick={breakAccess}>Corrupt Access Token</button>
-      <button onClick={removeAccess} style={{ marginLeft: 10 }}>
+      <button className="bg-yellow-300 rounded-2xl p-1" onClick={breakAccess}>Corrupt Access Token</button>
+      <button className="bg-purple-300 rounded-2xl p-1" onClick={removeAccess} style={{ marginLeft: 10 }}>
         Remove Access Token
       </button>
 
@@ -105,13 +105,13 @@ export default function AuthDebug() {
         Clear All Tokens
       </button>
 
-      <pre
+      <pre className="scrollbar-hidden"
         style={{
           marginTop: "20px",
           padding: "10px",
           background: "#111",
           color: "#0f0",
-          height: "300px",
+          height: "70vh",
           overflow: "auto",
           whiteSpace: "pre-wrap",
         }}

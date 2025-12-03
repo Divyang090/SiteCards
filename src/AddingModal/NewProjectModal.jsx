@@ -14,6 +14,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
   const { authFetch } = useAuth();
 
   // ==================== API CONFIG ====================
@@ -156,6 +157,12 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     onClose();
   };
 
+  //CLOSING ANIMATION HANDLER
+  const handleCloseModal = () => {
+    setIsClosing(true);
+    setTimeout(() => onClose(), 200); // match animation duration
+  };
+
   // ==================== RENDER ====================
   if (!isOpen) return null;
 
@@ -163,12 +170,12 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 z-50 theme-black flex items-center justify-center">
       {/* Overlay */}
       <div
-        className="absolute inset-0  bg-opacity-80 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-opacity-80 backdrop-blur-[1px]"
         onClick={handleOverlayClick}
       ></div>
 
       {/* Modal content */}
-      <div className="relative theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
+      <div className="relative animate-fadeInUp theme-bg-secondary rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">

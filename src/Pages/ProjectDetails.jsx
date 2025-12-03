@@ -561,7 +561,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
             <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
               {displayProject.status}
             </span>
-            <span>• Due {displayProject.docDate}</span>
+            <span>• Due: {displayProject.docDate}</span>
             <span>• {displayProject.location}</span>
           </div>
 

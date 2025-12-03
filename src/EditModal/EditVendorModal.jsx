@@ -96,11 +96,11 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
     try {
       const vendorId = vendor.vendor_id || vendor.id;
 
-      console.log("🔍 DEBUG VENDOR ID ANALYSIS:");
-      console.log("vendor.vendor_id:", vendor.vendor_id);
-      console.log("vendor.id:", vendor.id);
-      console.log("Final vendorId being used:", vendorId);
-      console.log("Full vendor object:", vendor);
+      // console.log("🔍 DEBUG VENDOR ID ANALYSIS:");
+      // console.log("vendor.vendor_id:", vendor.vendor_id);
+      // console.log("vendor.id:", vendor.id);
+      // console.log("Final vendorId being used:", vendorId);
+      // console.log("Full vendor object:", vendor);
 
       // ⛔ Backend expects tags as a STRING, not ARRAY
       const formattedTags =
@@ -174,7 +174,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6"
+      <div className="theme-bg-secondary animate-fadeInUp shadow-2xl rounded-lg max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4">Edit Vendor</h2>

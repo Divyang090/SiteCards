@@ -150,7 +150,7 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
     >
-      <div className="theme-bg-secondary shadow-2xl rounded-lg max-w-md w-full p-6"
+      <div className="theme-bg-secondary animate-fadeInUp shadow-2xl rounded-lg max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-xl font-bold mb-4">Edit Drawing</h2>
