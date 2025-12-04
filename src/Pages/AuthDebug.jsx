@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { BASE_URL } from "../Configuration/Config";
 
 export default function AuthDebug() {
   const [output, setOutput] = useState("");
@@ -28,7 +29,7 @@ export default function AuthDebug() {
     log("🔍 Testing access token…");
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/auth/user/protected", {
+      const res = await fetch(`${BASE_URL}/auth/user/protected`, {
         headers: {
           Authorization: "Bearer " + access,
         },
@@ -46,7 +47,7 @@ export default function AuthDebug() {
     log("🔄 Testing refresh token…");
 
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/auth/refresh", {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: "POST",
         headers: {
           Authorization: "Bearer " + refresh,

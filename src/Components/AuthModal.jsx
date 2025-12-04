@@ -123,9 +123,7 @@ const AuthModal = () => {
     try {
       const response = await fetch(LOGIN_API, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_email: email,
           user_password: password
@@ -139,17 +137,18 @@ const AuthModal = () => {
 
       const data = await response.json();
 
-      // Store user data for later login, but don't login yet
+      console.log('Login API response:', data);
+
       setPendingLoginData({
         name: data.user_name || 'user',
         email: email,
+        company_id: data.company_id,
         tokens: {
           accessToken: data.access_token,
           refreshToken: data.refresh_token
         }
       });
 
-      // Move to OTP verification step
       setLoginStep('otp');
       setSuccess('OTP has been sent to your email. Please enter it below.');
 
@@ -164,6 +163,7 @@ const AuthModal = () => {
       setLoading(false);
     }
   };
+
   // ==================== STEP 2: VERIFY OTP ====================
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
@@ -202,7 +202,9 @@ const AuthModal = () => {
       const data = await response.json();
 
       // Only now do we actually log the user in
-      login(pendingLoginData, {
+      login({pendingLoginData, 
+        company_id: pendingLoginData.company_id },
+        {
         accessToken: data.access_token,
         refreshToken: data.refresh_token
       });
@@ -227,77 +229,6 @@ const AuthModal = () => {
     setError('');
     setSuccess('');
   };
-
-  // ==================== LOGIN FUNCTION ====================
-  // const handleLoginSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   // Get form values directly from the form elements
-  //   const form = e.target;
-  //   const email = form.email.value.trim();
-  //   const password = form.password.value.trim();
-
-  //   console.log('LOGIN DEBUG:', { email, password, emailLength: email.length, passwordLength: password.length });
-
-  //   // Basic validation
-  //   if (!email || !password) {
-  //     setError('Please fill in all fields');
-  //     return;
-  //   }
-
-  //   if (!isValidEmail(email)) {
-  //     setError('Please enter a valid email address');
-  //     return;
-  //   }
-
-  //   setLoading(true);
-  //   setError('');
-  //   setSuccess('');
-
-  //   try {
-  //     const response = await fetch(LOGIN_API, {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         user_email: email,
-  //         user_password: password
-  //       })
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || 'Login failed');
-  //     }
-
-  //     const data = await response.json();
-
-  //     login({
-  //       name: data.user_name || 'user',
-  //       email: data.user_email
-  //     }, {
-  //       accessToken: data.accessToken,
-  //       refreshToken: data.refreshToken
-  //     })
-
-  //     setSuccess('Login successful!');
-  //     localStorage.setItem("jwt_token", data.accessToken); // <- use accessToken, not data.token
-  //     setTimeout(() => {
-  //       closeAuthModal();
-  //     }, 1500);
-
-  //   } catch (err) {
-  //     console.error('Login error:', err);
-  //     if (err.message.includes('Failed to fetch')) {
-  //       setError('Cannot connect to server. Please check if backend is running on port 5000.');
-  //     } else {
-  //       setError(err.message || 'Login failed. Please try again.');
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   // ==================== REGISTER FUNCTION ====================
 
@@ -337,7 +268,6 @@ const AuthModal = () => {
       setLoading(false);
     }
   };
-
 
   // ==================== EFFECT FOR CLEANUP ====================
   useEffect(() => {

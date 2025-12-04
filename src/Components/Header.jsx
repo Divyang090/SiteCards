@@ -5,9 +5,11 @@ import MorphOverlay from './MorphOverlay';
 import { useAuth } from './AuthContext';
 import AddMembersModal from '../AddingModal/AddMembersModal';
 import ManageMembersModal from './ManageMembersModal';
+import DeleteAccountModal from './DeleteAccountModal';
 
-const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onClose, companyId }) => {
+const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onClose, closeModal, companyId }) => {
   const { user, logout, openAuthModal, authFetch } = useAuth();
+  const [userInfo, setUserInfo] = useState(null);
   const { isDark, toggleTheme, isAnimating } = useTheme();
   const [showMorph, setShowMorph] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -16,10 +18,38 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
   const [isAddMembersOpen, setIsMembersOpen] = useState(false);
   const [showMembersPanel, setShowMembersPanel] = useState(false);
   const [isManageMembersOpen, setIsManageMembersOpen] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   const menuRef = useRef(null);
 
   const userMenuRef = useRef(null);
+
+  //check 
+  useEffect(() => {
+    console.log('Auth user from context:', user);
+    console.log('Current userInfo state:', userInfo);
+  }, [user, userInfo]);
+
+  //Extract user info
+  useEffect(() => {
+    if (user) {
+      // Create a normalized userInfo object
+      const normalizedUserInfo = {
+        name: user.pendingLoginData?.name || 'User',
+        email: user.pendingLoginData?.email || '',
+        companyId: user.company_id || user.pendingLoginData?.company_id || '',
+      };
+      setUserInfo(normalizedUserInfo);
+    } else {
+      setUserInfo(null);
+    }
+  }, [user]);
+
+  //check 2
+  // Add this to verify the normalized structure
+  useEffect(() => {
+    console.log('Normalized userInfo:', userInfo);
+  }, [userInfo]);
 
   //Click Outside
   useEffect(() => {
@@ -28,20 +58,6 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
         userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowMenu(false);
         setShowUserMenu(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
-  //Click Outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
       }
     };
 
@@ -142,7 +158,6 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
   //   }
   // };
 
-
   return (
     <>
       {/* Morph Overlay */}
@@ -165,9 +180,11 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
             {activeProjectsCount} active project{activeProjectsCount !== 1 ? 's' : ''}
           </p>
         </div>
+
         <div className="flex items-center gap-4">
+          
           {/* User/Login Section */}
-          {user ? (
+          {userInfo ? (
             <div ref={userMenuRef} className="relative">
               <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -178,7 +195,9 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-                <span className="max-w-24 truncate">{user.name}</span>
+                <span className="max-w-24 truncate">
+                  {userInfo.name}
+                </span>
               </button>
 
               {/* User Dropdown Menu */}
@@ -186,20 +205,38 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                 <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
                   <div className="p-2">
                     <div className="px-3 py-2 theme-text-secondary overflow-x-auto whitespace-nowrap scrollbar-hidden text-sm border-b theme-border">
-                      {user.email}
+                      {userInfo.email}
                     </div>
+
+                    {/* Logout */}
                     <button
                       onClick={() => {
                         logout();
                         setShowUserMenu(false);
+                        setUserInfo(null);
                       }}
-                      className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200 mt-1"
+                      className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200 mt-1 border-b theme-border"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
                       Logout
                     </button>
+
+                    {/* Delete Account */}
+                    <button
+                      onClick={() => {
+                        setIsDeleteAccountOpen(true);
+                        setShowUserMenu(false);
+                      }}
+                      className='w-full px-2.5 py-2 rounded-md text-left flex items-center gap-3 text-red-500 transition-all duration-200 mt-1'
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Account
+                    </button>
+
                   </div>
                 </div>
               )}
@@ -343,6 +380,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
             )}
           </div>
         </div>
+
       </div>
       {isAddMembersOpen && (
         <AddMembersModal onClose={() => setIsMembersOpen(false)} />
@@ -351,8 +389,13 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
       {isManageMembersOpen && (
         <ManageMembersModal
           onClose={() => setIsManageMembersOpen(false)}
-          companyId={companyId}
+          companyId={userInfo?.companyId}
         />
+      )}
+
+      {/* Delete Account */}
+      {isDeleteAccountOpen && (
+        <DeleteAccountModal onClose={() => setIsDeleteAccountOpen(false)} />
       )}
 
     </>

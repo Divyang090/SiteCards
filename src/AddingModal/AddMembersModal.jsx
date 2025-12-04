@@ -180,7 +180,7 @@ const AddMembersModal = ({ onClose }) => {
             onClick={onClose}
         >
             <div
-                className="theme-bg-card shadow-2xl rounded-xl w-[30rem] max-w-[90vw] p-5 animate-slide-in-up absolute bottom-16 right-0 z-50"
+                className="theme-bg-card shadow-2xl rounded-xl p-3 animate-slide-in-up absolute bottom-16 right-0 z-50"
                 onClick={(e) => e.stopPropagation()}
                 ref={modalRef}
             >

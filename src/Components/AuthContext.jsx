@@ -12,6 +12,8 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [companyId, setCompanyId] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   // Prevent multiple concurrent refresh attempts
   const isRefreshing = useRef(false);
@@ -24,14 +26,22 @@ export const AuthProvider = ({ children }) => {
       const savedRefreshToken = localStorage.getItem('refreshToken');
 
       if (savedUser && savedAccessToken) {
-        // Load from localStorage
         setUser(JSON.parse(savedUser));
         setAccessToken(savedAccessToken);
         if (savedRefreshToken) {
           setRefreshToken(savedRefreshToken);
         }
+
+        // 🔍 Decode company_id + user_id
+        try {
+          const decoded = JSON.parse(atob(savedAccessToken.split(".")[1]));
+          setCompanyId(decoded.company_id);
+          setUserId(decoded.user_id);
+        } catch (e) {
+          console.error("Failed to decode access token:", e);
+        }
       }
-      
+
       setLoading(false);
     };
 
@@ -98,21 +108,30 @@ export const AuthProvider = ({ children }) => {
 
   // Enhanced login function that stores tokens
   const login = (userData, tokens = {}) => {
-    setUser(userData);
+    // Ensure userData contains company_id
+    const enhancedUser = {
+      ...userData,
+      company_id: userData.company_id,   // <-- important
+    };
+
+    setUser(enhancedUser);
 
     if (tokens.accessToken) {
       setAccessToken(tokens.accessToken);
       localStorage.setItem('accessToken', tokens.accessToken);
     }
+
     if (tokens.refreshToken) {
       setRefreshToken(tokens.refreshToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
     }
 
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(enhancedUser));
+
     setShowAuthModal(false);
     setLoading(false);
   };
+
 
   const logout = async () => {
     try {
@@ -123,7 +142,7 @@ export const AuthProvider = ({ children }) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: rt }),
-        }).catch(() => {});
+        }).catch(() => { });
       }
     } catch (err) {
       // Ignore errors

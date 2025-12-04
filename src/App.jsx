@@ -111,6 +111,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
   return (
     <>
       <Header
+      // companyId={mySelectedCompanyId}
         onNewProjectClick={onAddProject}
         onLoginClick={onLoginClick}
         activeProjectsCount={activeProjectsCount}
