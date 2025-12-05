@@ -23,12 +23,6 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
   const task_typeDropdownRef = useRef(null);
   const assigneeDropdownRef = useRef(null);
 
-  // Add this useEffect for debugging
-  // useEffect(() => {
-  //   console.log('Current task data:', taskData);
-  // }, [taskData]);
-
-  // Add this validation function
   const validateForm = () => {
     if (!taskData.title.trim()) {
       showMessage('Task title is required', 'error');
@@ -94,11 +88,6 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
       return;
     }
 
-    // if (taskData.assigned_to === 'Unassigned') {
-    //   showMessage('Please assign the task to someone', 'error');
-    //   return;
-    // }
-
     setUploading(true);
     try {
       const formData = new FormData();
@@ -106,12 +95,32 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
       formData.append('description', taskData.description || '');
       formData.append('task_type', taskData.task_type);
       formData.append('project_id', String(projectId));
-      if (taskData.date) formData.append('date', new Date(taskData.date).toISOString());
+
+      // ✅ FIX: Convert date from "yyyy-mm-ddThh:mm" to "dd-mm-yyyyThh-mm"
+      if (taskData.date) {
+        // Parse the datetime-local input (format: "yyyy-mm-ddThh:mm")
+        const [datePart, timePart] = taskData.date.split('T');
+        const [year, month, day] = datePart.split('-');
+        const [hours, minutes] = timePart.split(':');
+
+        // Convert to "dd-mm-yyyyThh-mm"
+        const formattedDate = `${day}-${month}-${year}T${hours}:${minutes}`;
+        formData.append('date', formattedDate);
+      }
+
       if (taskData.location) formData.append('location', taskData.location.trim());
+
       if (taskData.assigned_to && taskData.assigned_to !== 'Unassigned') {
         formData.append('assigned_to', taskData.assigned_to);
       }
+
       taskData.files.forEach(file => formData.append('uploads', file));
+
+      // Debug: Log FormData contents
+      console.log('Sending FormData:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+      }
 
       const taskResponse = await authFetch(`${BASE_URL}/tasks/tasks`, {
         method: 'POST',
@@ -119,11 +128,17 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
       });
 
       if (!taskResponse.ok) {
-        const errorData = await taskResponse.json();
-        throw new Error(errorData.error || 'Failed to create task');
+        // Try to get more detailed error message
+        let errorMessage = 'Failed to create task';
+        try {
+          const errorData = await taskResponse.json();
+          errorMessage = errorData.error || errorData.message || `HTTP ${taskResponse.status}`;
+        } catch {
+          errorMessage = `HTTP ${taskResponse.status}: ${taskResponse.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      // ✅ Success - refresh the projects list
       showMessage('Task created successfully!', 'success');
 
       // Reset form

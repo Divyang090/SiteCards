@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   };
 
-
+  //logout
   const logout = async () => {
     try {
       const rt = refreshToken || localStorage.getItem("refreshToken");

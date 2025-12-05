@@ -138,15 +138,15 @@ const TaskFileModal = ({
       ></div>
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
+      <div className="relative theme-bg-card rounded-lg shadow-xl w-full max-w-2xl mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex justify-between items-center p-3 border-b border-gray-100">
+        <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100">
           <div>
-            <h2 className="text-xl font-semibold theme-text-primary">
+            <h2 className="text-xl px-1 font-semibold theme-text-primary">
               Files
             </h2>
             {taskTitle && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm px-1 theme-text-secondary">
                 For task : {taskTitle}
               </p>
             )}
@@ -176,7 +176,7 @@ const TaskFileModal = ({
               {files.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-2xl transition-colors duration-200"
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <span className="text-xl">{getFileIcon(file)}</span>

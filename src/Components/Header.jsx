@@ -182,7 +182,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
         </div>
 
         <div className="flex items-center gap-4">
-          
+
           {/* User/Login Section */}
           {userInfo ? (
             <div ref={userMenuRef} className="relative">
@@ -202,7 +202,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
 
               {/* User Dropdown Menu */}
               {showUserMenu && (
-                <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
+                <div className=" animate-fadeInUp absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
                   <div className="p-2">
                     <div className="px-3 py-2 theme-text-secondary overflow-x-auto whitespace-nowrap scrollbar-hidden text-sm border-b theme-border">
                       {userInfo.email}
@@ -263,7 +263,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border shadow-2xl z-50">
+              <div className="animate-fadeInUp absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border shadow-2xl z-50">
                 <div className="p-2">
 
                   {/* New Project */}

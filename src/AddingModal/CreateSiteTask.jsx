@@ -4,15 +4,7 @@ import { useStatusMessage } from '../Alerts/StatusMessage';
 import ReactDOM from 'react-dom';
 import { useAuth } from "../Components/AuthContext";
 
-const CreateSiteTask = ({
-    isOpen,
-    onClose,
-    onCreate,
-    projectId,
-    spaceId,
-    isInline = false,
-    onCancel
-}) => {
+const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInline = false, onCancel }) => {
     const { showMessage, showFailed, showConfirmation } = useStatusMessage();
     const [taskData, setTaskData] = useState({
         title: '',
@@ -96,11 +88,9 @@ const CreateSiteTask = ({
         'Coci'
     ];
 
+    //Submit handler
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('DEBUG - projectId:', projectId);
-        console.log('DEBUG - spaceId:', spaceId); // Add this
-        console.log('DEBUG - Current taskData:', taskData);
 
         if (!taskData.title.trim()) {
             showMessage('Task title is required', 'error');
@@ -117,15 +107,18 @@ const CreateSiteTask = ({
             formData.append('space_id', String(spaceId));
 
             if (taskData.date) {
-                const dateObj = new Date(taskData.date);
-                const mysqlDateTime = dateObj.toISOString().slice(0, 19).replace('T', ' ');
-                formData.append('date', mysqlDateTime);
-                console.log('DEBUG - Date being sent (MySQL DATETIME):', mysqlDateTime);
+                // Parse the datetime-local input (format: "yyyy-mm-ddThh:mm")
+                const [datePart, timePart] = taskData.date.split('T');
+                const [year, month, day] = datePart.split('-');
+                const [hours, minutes] = timePart.split(':');
+
+                // Convert to "dd-mm-yyyyThh-mm"
+                const formattedDate = `${day}-${month}-${year}T${hours}:${minutes}`;
+                formData.append('date', formattedDate);
             }
 
             if (taskData.location && taskData.location.trim()) {
                 formData.append('location', taskData.location.trim());
-                console.log('DEBUG - Location being sent:', taskData.location.trim());
             }
 
             if (taskData.assigned_to && taskData.assigned_to !== 'Unassigned') {
@@ -133,10 +126,11 @@ const CreateSiteTask = ({
             }
 
             taskData.files.forEach(file => {
-                formData.append('files', file);
+                formData.append('uploads', file);
             });
 
-            console.log('DEBUG - FormData entries:');
+            // Debug: Log FormData contents
+            console.log('Sending FormData:');
             for (let [key, value] of formData.entries()) {
                 if (value instanceof File) {
                     console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
@@ -150,16 +144,21 @@ const CreateSiteTask = ({
                 body: formData,
             });
 
-            console.log('DEBUG - Response status:', taskResponse.status);
-
             if (!taskResponse.ok) {
-                const errorData = await taskResponse.json();
-                console.error('Task creation error:', errorData);
-                throw new Error(errorData.error || `Failed to create task: ${taskResponse.status}`);
+                // Better error handling
+                let errorMessage = 'Failed to create task';
+                try {
+                    const errorData = await taskResponse.json();
+                    errorMessage = errorData.error || errorData.message || `HTTP ${taskResponse.status}`;
+                    console.error('Task creation error details:', errorData);
+                } catch {
+                    errorMessage = `HTTP ${taskResponse.status}: ${taskResponse.statusText}`;
+                }
+                throw new Error(errorMessage);
             }
 
             const taskResult = await taskResponse.json();
-            console.log('DEBUG - Task created successfully:', taskResult);
+            console.log('Task creation success:', taskResult);
 
             // Reset form
             setTaskData({
@@ -172,7 +171,7 @@ const CreateSiteTask = ({
                 location: ''
             });
 
-            onCreate(taskResult, projectId, spaceId); // Update this line
+            onCreate(taskResult, projectId, spaceId);
 
             if (!isInline && onClose) {
                 onClose();
@@ -341,42 +340,42 @@ const TextInput = ({ label, name, value, onChange, required, placeholder, isInli
 );
 
 const DropdownField = ({ label, value, options, isOpen, dropdownRef, onToggle, onSelect, isInline }) => (
-  <div className="relative" ref={dropdownRef}>
-    <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
-      {label}
-    </label>
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`w-full flex items-center justify-between p-${isInline ? '2' : '3'} border border-gray-300 rounded-lg ${isInline ? 'theme-bg-card hover:bg-gray-50' : 'bg-white hover:bg-gray-50'} transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
-    >
-      <span className={isInline ? "text-gray-500 truncate" : "text-gray-700"}>{value}</span>
-      <svg
-        className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-
-    {isOpen && (
-      <div className={`absolute z-20 w-full mt-1 ${isInline ? 'theme-bg-card' : 'bg-white'} border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hidden`}>
-        {options.map((option) => (
-          <button
-            key={option}
+    <div className="relative" ref={dropdownRef}>
+        <label className={`block text-sm font-medium ${isInline ? 'theme-text-secondary' : 'text-gray-700'} mb-${isInline ? '1' : '2'}`}>
+            {label}
+        </label>
+        <button
             type="button"
-            onClick={() => onSelect(option)}
-            className={`w-full text-left px-${isInline ? '3' : '4'} py-2 hover:bg-gray-500 transition-colors duration-200 text-sm ${value === option ? 'bg-blue-50 text-blue-600' : (isInline ? 'theme-text-primary' : 'text-gray-700')
-              }`}
-          >
-            {option}
-          </button>
-        ))}
-      </div>
-    )}
-  </div>
+            onClick={onToggle}
+            className={`w-full flex items-center justify-between p-${isInline ? '2' : '3'} border border-gray-300 rounded-lg ${isInline ? 'theme-bg-card hover:bg-gray-50' : 'bg-white hover:bg-gray-50'} transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
+        >
+            <span className={isInline ? "text-gray-500 truncate" : "text-gray-700"}>{value}</span>
+            <svg
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+
+        {isOpen && (
+            <div className={`absolute z-20 w-full mt-1 ${isInline ? 'theme-bg-card' : 'bg-white'} border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hidden`}>
+                {options.map((option) => (
+                    <button
+                        key={option}
+                        type="button"
+                        onClick={() => onSelect(option)}
+                        className={`w-full text-left px-${isInline ? '3' : '4'} py-2 hover:bg-gray-500 transition-colors duration-200 text-sm ${value === option ? 'bg-blue-50 text-blue-600' : (isInline ? 'theme-text-primary' : 'text-gray-700')
+                            }`}
+                    >
+                        {option}
+                    </button>
+                ))}
+            </div>
+        )}
+    </div>
 );
 
 const TextArea = ({ label, name, value, onChange, placeholder, isInline }) => (

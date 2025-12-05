@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { BASE_URL } from "../Configuration/Config";
 
 const DeleteAccountModal = ({ onClose }) => {
     const { user } = useAuth();
@@ -28,9 +29,34 @@ const DeleteAccountModal = ({ onClose }) => {
         return () => document.removeEventListener("keydown", handleEscape);
     }, [onClose]);
 
+    //check
+    // Add this debug to your DeleteAccountModal
+    useEffect(() => {
+        console.log("=== LOCALSTORAGE CONTENTS ===");
+        console.log("accessToken:", localStorage.getItem("accessToken"));
+        console.log("refreshToken:", localStorage.getItem("refreshToken"));
+        console.log("user:", localStorage.getItem("user"));
+        console.log("pendingLoginData:", localStorage.getItem("pendingLoginData"));
+        console.log("============================");
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+
+        console.log("🔍 Debugging User Object:");
+        console.log("User from useAuth():", user);
+        console.log("LocalStorage user:", localStorage.getItem("user"));
+
+        // Get user ID from the user object
+        const userId = user?.user_id;
+
+        if (!userId) {
+            setError("Cannot find user ID. Please login again.");
+            return;
+        }
+
+        console.log("Using user ID:", userId);
 
         // Validate confirmation text
         if (confirmationText.toLowerCase() !== "delete account") {
@@ -52,45 +78,97 @@ const DeleteAccountModal = ({ onClose }) => {
         setIsDeleting(true);
 
         try {
-            // TODO: Replace with your actual delete account API
-            // const response = await fetch("YOUR_DELETE_ACCOUNT_API_ENDPOINT", {
-            //   method: "DELETE",
-            //   headers: {
-            //     "Content-Type": "application/json",
-            //     Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-            //   },
-            //   body: JSON.stringify({
-            //     user_id: user?.user_id,
-            //     password: password,
-            //   }),
-            // });
-            // 
-            // if (!response.ok) {
-            //   throw new Error("Failed to delete account");
-            // }
-            // 
-            // const data = await response.json();
+            // Get the access token from localStorage
+            const accessToken = localStorage.getItem("accessToken") ||
+                localStorage.getItem("access_token") ||
+                localStorage.getItem("jwt_token") ||
+                "";
 
-            // Simulate API call - Remove this when integrating real API
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            console.log("🗑️ Deleting user with ID:", userId);
+            console.log("Using token:", accessToken ? accessToken.substring(0, 20) + "..." : "No token");
+            console.log("Password length:", password.length);
+
+            // Make API call to delete user
+            const response = await fetch(`http://127.0.0.1:5000/api/user/delete_user/${userId}`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(accessToken && { "Authorization": `Bearer ${accessToken}` }),
+                },
+                body: JSON.stringify({
+                    user_password: password,
+                    user_id: userId  // Add user_id in body for verification
+                }),
+            });
+
+            console.log("Response status:", response.status);
+
+            let errorData;
+            try {
+                errorData = await response.json();
+                console.log("Response data:", errorData);
+            } catch (parseError) {
+                console.error("Failed to parse response as JSON");
+                errorData = { message: "Server returned invalid JSON" };
+            }
+
+            if (!response.ok) {
+                // Handle specific error messages from backend
+                if (response.status === 401) {
+                    throw new Error(errorData.message || "Invalid password or unauthorized access");
+                } else if (response.status === 404) {
+                    throw new Error("User not found");
+                } else if (response.status === 400) {
+                    throw new Error(errorData.message || "Invalid request");
+                } else if (response.status === 500) {
+                    // Get detailed error from backend
+                    const errorMessage = errorData.message ||
+                        errorData.error ||
+                        errorData.detail ||
+                        "Internal server error";
+                    console.error("Backend error details:", errorData);
+                    throw new Error(`Server error:`);
+                    // ${errorMessage}
+                } else {
+                    throw new Error(errorData.message || `Failed to delete account (Status: ${response.status})`);
+                }
+            }
+
+            // Success - account deleted
+            console.log("✅ Account deletion successful:", errorData);
 
             // Show success message
             alert("Account deleted successfully. You will be logged out.");
 
-            // Clear local storage
+            // Clear all storage
             localStorage.clear();
+            sessionStorage.clear();
 
-            // Redirect to home or login page
+            // Clear cookies
+            document.cookie.split(";").forEach(cookie => {
+                document.cookie = cookie
+                    .replace(/^ +/, "")
+                    .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+            });
+
+            // Redirect to home page
             window.location.href = "/";
 
-            onClose();
         } catch (err) {
-            console.error("Delete account error:", err);
+            console.error("❌ Delete account error:", err);
+            console.error("Error stack:", err.stack);
             setError(err.message || "Failed to delete account. Please try again.");
+
+            // If it's a 500 error, suggest checking backend logs
+            if (err.message.includes("500") || err.message.includes("Server error")) {
+                setError(prev => prev + " Please try again later ");
+                //Please check backend server logs for details.
+            }
         } finally {
             setIsDeleting(false);
         }
     };
+
 
     const isFormValid =
         password.length >= 6 &&

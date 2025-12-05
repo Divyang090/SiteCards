@@ -89,7 +89,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6 z-50"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center md:p-6 p-4 z-50"
       onClick={onClose}
     >
       <div
@@ -171,7 +171,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
                 </div>
               </div>
 
-              {/* Mobile Card View - Compact Version */}
+              {/* Mobile Card View */}
               <div className="sm:hidden">
                 {members.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-gray-500">

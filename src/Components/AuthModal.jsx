@@ -143,6 +143,7 @@ const AuthModal = () => {
         name: data.user_name || 'user',
         email: email,
         company_id: data.company_id,
+        user_id: data.user_id,
         tokens: {
           accessToken: data.access_token,
           refreshToken: data.refresh_token
@@ -203,7 +204,9 @@ const AuthModal = () => {
 
       // Only now do we actually log the user in
       login({pendingLoginData, 
-        company_id: pendingLoginData.company_id },
+        company_id: pendingLoginData.company_id,
+        user_id: pendingLoginData.user_id,
+      },
         {
         accessToken: data.access_token,
         refreshToken: data.refresh_token

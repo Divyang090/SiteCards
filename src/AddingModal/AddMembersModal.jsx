@@ -78,6 +78,10 @@ const AddMembersModal = ({ onClose }) => {
 
     // Add new member row
     const addMemberField = () => {
+        if (members.length >= 5) {
+            showMessage("Maximum 5 members can be added at once", 'message');
+            return;
+        }
         setMembers((prev) => [...prev, { username: "", domain: domains[0] }]);
     };
 
@@ -180,7 +184,7 @@ const AddMembersModal = ({ onClose }) => {
             onClick={onClose}
         >
             <div
-                className="theme-bg-card shadow-2xl rounded-xl p-3 animate-slide-in-up absolute bottom-16 right-0 z-50"
+                className="theme-bg-card shadow-2xl rounded-xl p-3 w-[250px] md:w-[400px] animate-slide-in-up absolute bottom-12 right-0 z-50"
                 onClick={(e) => e.stopPropagation()}
                 ref={modalRef}
             >
@@ -200,7 +204,7 @@ const AddMembersModal = ({ onClose }) => {
                                     onChange={(e) =>
                                         handleUsernameChange(index, e.target.value)
                                     }
-                                    placeholder="username"
+                                    placeholder="user-mail"
                                     className="flex-1 outline-none"
                                 />
 

@@ -538,6 +538,8 @@ const AppContent = () => {
 
               <Route path="/pinterest/callback" element={<PinterestCallback />} />
 
+              {/* <Route path='/send' element={<AddMembersModal />}/> */}
+
             </Routes>
 
             <NewProjectModal
@@ -555,7 +557,6 @@ const AppContent = () => {
           </>
         )}
 
-        {/* ✅ MODALS - ALWAYS RENDERED (regardless of auth state) */}
         <AuthModal />
         <ForgotPasswordModal
           isOpen={showForgotPasswordModal}

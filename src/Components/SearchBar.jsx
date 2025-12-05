@@ -115,7 +115,7 @@ const SearchBar = ({ onSearch, onFilter, currentFilter, onClose }) => {
 
         {/* Filter Dropdown */}
         {showFilterDropdown && (
-          <div className="absolute top-full right-0 mt-1 w-48 theme-bg-card theme-border rounded-lg shadow-lg z-10 border">
+          <div className="animate-fadeInUp absolute top-full right-0 mt-1 w-48 theme-bg-card theme-border rounded-lg shadow-lg z-10 border">
             <div className="p-2 border-b theme-border">
               <h3 className="text-sm font-medium theme-text-primary">Filter by Status</h3>
             </div>

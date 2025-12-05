@@ -251,7 +251,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
 
             {/* Dropdown Menu */}
             {showMenu && (
-              <div className="absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
+              <div className="animate-fadeInUp absolute right-0 top-12 mt-2 w-48 rounded-lg theme-border theme-bg-card border theme-shadow z-50">
                 <div className="p-2">
                   {/* Bulk Preset Button */}
                   <button

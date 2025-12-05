@@ -321,6 +321,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
               task_name: newTaskData.task_name,
               description: newTaskData.description || '',
               task_type: newTaskData.task_type,
+              date: newTaskData.date,
               assigned_to: newTaskData.assigned_to || 'Unassigned',
               status: newTaskData.status || 'pending',
               location: newTaskData.location || '',
@@ -645,7 +646,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
                   ) : (
                     <div
                       key={task.id}
-                      className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
+                      className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-xl transition-all duration-200 ${task.completed ? 'opacity-60 scale-[0.98]' : ''
                         }`}
                     >
                       <div className="flex items-center gap-3 flex-1">

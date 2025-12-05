@@ -81,8 +81,10 @@ const EditProjectModal = ({ isOpen, onClose, project, onSave }) => {
     if (!isOpen || !project) return null;
 
     return (
-        <div className='fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-[1px]'>
-            <div className='theme-bg-card rounded-lg max-w-md w-full p-6'>
+        <div className='fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-[1px]'
+        onClick={onClose}>
+            <div className='theme-bg-card rounded-lg max-w-md w-full p-6 animate-fadeInUp shadow-2xl'
+            onClick={(e) => e.stopPropagation()}>
                 <h2 className='text-xl font-bold mb-4'>
                     Edit Project
                 </h2>
