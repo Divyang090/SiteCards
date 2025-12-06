@@ -31,22 +31,22 @@ const DeleteAccountModal = ({ onClose }) => {
 
     //check
     // Add this debug to your DeleteAccountModal
-    useEffect(() => {
-        console.log("=== LOCALSTORAGE CONTENTS ===");
-        console.log("accessToken:", localStorage.getItem("accessToken"));
-        console.log("refreshToken:", localStorage.getItem("refreshToken"));
-        console.log("user:", localStorage.getItem("user"));
-        console.log("pendingLoginData:", localStorage.getItem("pendingLoginData"));
-        console.log("============================");
-    }, []);
+    // useEffect(() => {
+    //     console.log("=== LOCALSTORAGE CONTENTS ===");
+    //     console.log("accessToken:", localStorage.getItem("accessToken"));
+    //     console.log("refreshToken:", localStorage.getItem("refreshToken"));
+    //     console.log("user:", localStorage.getItem("user"));
+    //     console.log("pendingLoginData:", localStorage.getItem("pendingLoginData"));
+    //     console.log("============================");
+    // }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
 
-        console.log("🔍 Debugging User Object:");
-        console.log("User from useAuth():", user);
-        console.log("LocalStorage user:", localStorage.getItem("user"));
+        // console.log("🔍 Debugging User Object:");
+        // console.log("User from useAuth():", user);
+        // console.log("LocalStorage user:", localStorage.getItem("user"));
 
         // Get user ID from the user object
         const userId = user?.user_id;
@@ -185,7 +185,7 @@ const DeleteAccountModal = ({ onClose }) => {
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="p-5 pb-3 border-b theme-border">
+                <div className="p-3 pb-3 border-b theme-border">
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl font-semibold text-red-700">
                             Delete Account
@@ -211,13 +211,13 @@ const DeleteAccountModal = ({ onClose }) => {
                             </svg>
                         </button>
                     </div>
-                    <p className="text-sm theme-text-secondary mt-1">
+                    {/* <p className="text-sm theme-text-secondary mt-1">
                         This action cannot be undone. All your data will be permanently deleted.
-                    </p>
+                    </p> */}
                 </div>
 
                 {/* Warning Banner */}
-                <div className="p-4 bg-red-100 border-l-4 border-red-500 mx-5 mt-4 rounded-r">
+                <div className="p-4 bg-red-100 border-l-4 border-red-500 mx-4 mt-4 rounded-r">
                     <div className="flex items-start">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -245,10 +245,10 @@ const DeleteAccountModal = ({ onClose }) => {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="p-5 space-y-4">
+                <form onSubmit={handleSubmit} className="p-3 space-y-4">
                     {/* Password Input */}
                     <div>
-                        <label className="block text-sm font-medium theme-text-primary mb-1.5">
+                        <label className="block text-sm font-medium theme-text-primary mb-1">
                             Confirm Password
                         </label>
                         <div className="relative">
@@ -316,7 +316,7 @@ const DeleteAccountModal = ({ onClose }) => {
 
                     {/* Confirmation Text Input */}
                     <div>
-                        <label className="block text-sm font-medium theme-text-primary mb-1.5">
+                        <label className="block text-sm font-medium theme-text-primary mb-1">
                             Type confirmation text
                         </label>
                         <div className="mb-2 p-3 bg-gray-50 rounded-lg border theme-border">
@@ -324,9 +324,9 @@ const DeleteAccountModal = ({ onClose }) => {
                                 delete account
                             </p>
                         </div>
-                        <p className="text-xs text-gray-500 mb-1.5">
+                        {/* <p className="text-xs text-gray-500 mb-1.5">
                             Please type <span className="font-mono">"delete account"</span> below to confirm deleting account
-                        </p>
+                        </p> */}
                         <input
                             type="text"
                             value={confirmationText}
@@ -386,7 +386,7 @@ const DeleteAccountModal = ({ onClose }) => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3">
 
                         {/* CANCEL BUTTON */}
                         {/* <button
@@ -439,7 +439,7 @@ const DeleteAccountModal = ({ onClose }) => {
                 </form>
 
                 {/* Footer Note */}
-                <div className="px-5 pb-4 pt-2 bg-blue-50 rounded-b-lg border-t theme-border">
+                <div className="px-3 pb-3 pt-2 bg-blue-50 rounded-b-lg border-t theme-border">
                     <p className="text-xs text-gray-800 text-center">
                         Need help? Contact support before proceeding.
                     </p>

@@ -59,14 +59,14 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
       try {
         setLoading(true);
 
-        console.log('Loading project with ID:', id);
+        // console.log('Loading project with ID:', id);
         //remove after testing
         // console.log('propProjects:', propProjects);
         // console.log('localStorage projects:', JSON.parse(localStorage.getItem('projects') || '[]'));
         if (Array.isArray(propProjects) && propProjects.length > 0) {
           const foundFromProps = propProjects.find(p => (p.id && p.id.toString() === id) || (p.project_id && p.project_id.toString() === id));
           if (foundFromProps) {
-            console.log('Found project in parent propProjects:', foundFromProps);
+            // console.log('Found project in parent propProjects:', foundFromProps);
             setProject(foundFromProps);
             setLoading(false);
             return;
@@ -75,13 +75,13 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
 
         const localProject = getProjectFromLocalStorage(id);
         if (localProject) {
-          console.log('Found project in localStorage:', localProject);
+          // console.log('Found project in localStorage:', localProject);
           setProject(localProject);
           setLoading(false);
           return;
         }
 
-        console.log('Project not in localStorage, trying API...');
+        // console.log('Project not in localStorage, trying API...');
         let response = await authFetch(`${BASE_URL}/projects/projects/${id}`);
 
         if (response.ok) {
@@ -152,7 +152,7 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
         }
 
         const tasksData = await response.json();
-        console.log(`Fetched tasks for project ${id} FROM BACKEND:`, tasksData);
+        // console.log(`Fetched tasks for project ${id} FROM BACKEND:`, tasksData);
 
         // Normalize backend format
         const tasksArray =
@@ -253,14 +253,14 @@ const ProjectDetails = ({ projects: propProjects = [] }) => {
   };
 
   const transformProjectData = (projectData) => {
-    console.log('projectData', projectData);
-    console.log("✅ RAW projectData.something:", {
-      site_maps: projectData.site_maps,
-      siteMaps: projectData.siteMaps,
-      sitemaps: projectData.sitemaps,
-      site_map: projectData.site_map,
-      siteMap: projectData.siteMap
-    });
+    // console.log('projectData', projectData);
+    // console.log("✅ RAW projectData.something:", {
+    //   site_maps: projectData.site_maps,
+    //   siteMaps: projectData.siteMaps,
+    //   sitemaps: projectData.sitemaps,
+    //   site_map: projectData.site_map,
+    //   siteMap: projectData.siteMap
+    // });
 
     return {
 

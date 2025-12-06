@@ -50,13 +50,16 @@ const AddMembersModal = ({ onClose }) => {
     const usernameRegex = /^[A-Za-z0-9]+$/;
 
     // Username (local-part) validation
-    const handleUsernameChange = (index, value) => {
-        if (value === "" || usernameRegex.test(value)) {
-            const updated = [...members];
-            updated[index].username = value;
-            setMembers(updated);
-        }
-    };
+// Regex for the local part of an email (before @)
+const emailLocalPartRegex = /^[a-zA-Z0-9._]+$/;
+
+const handleUsernameChange = (index, value) => {
+    if (value === "" || emailLocalPartRegex.test(value)) {
+        const updated = [...members];
+        updated[index].username = value;
+        setMembers(updated);
+    }
+};
 
     // Domain change
     const handleDomainChange = (index, value) => {
@@ -156,14 +159,14 @@ const AddMembersModal = ({ onClose }) => {
             });
 
             const data = await response.json();
-            console.log("API Response:", data);
+            // console.log("API Response:", data);
 
             if (!response.ok) {
                 throw new Error(data.error || "Failed to send invites");
             }
 
             showMessage("Invites sent successfully!", 'success');
-            console.log("Invites sent successfully");
+            // console.log("Invites sent successfully");
 
             onClose(); // close modal on success
 
@@ -184,7 +187,7 @@ const AddMembersModal = ({ onClose }) => {
             onClick={onClose}
         >
             <div
-                className="theme-bg-card shadow-2xl rounded-xl p-3 w-[250px] md:w-[400px] animate-slide-in-up absolute bottom-12 right-0 z-50"
+                className="theme-bg-card shadow-2xl rounded-xl p-3 animate-slide-in-up absolute bottom-12 right-0 z-50"
                 onClick={(e) => e.stopPropagation()}
                 ref={modalRef}
             >

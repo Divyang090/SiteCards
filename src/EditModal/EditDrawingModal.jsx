@@ -4,11 +4,11 @@ import { useStatusMessage } from '../Alerts/StatusMessage';
 import { useAuth } from "../Components/AuthContext";
 
 const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, drawingId, onClick }) => {
-  console.log('=== EDIT MODAL PROPS ===');
-  console.log('drawing:', drawing);
-  console.log('spaceId prop:', spaceId);
-  console.log('projectId prop:', projectId);
-  console.log('drawingId prop:', drawingId);
+  // console.log('=== EDIT MODAL PROPS ===');
+  // console.log('drawing:', drawing);
+  // console.log('spaceId prop:', spaceId);
+  // console.log('projectId prop:', projectId);
+  // console.log('drawingId prop:', drawingId);
   const { showMessage, showFailed } = useStatusMessage();
   const [Loading, setLoading] = useState();
   const [formData, setFormData] = useState({
@@ -71,14 +71,14 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
       }
 
       // EXTREME DEBUGGING - Log EVERYTHING
-      console.log('🔍 === EXTREME DEBUGGING ===');
-      console.log('📝 Drawing object:', drawing);
-      console.log('🆔 Current Drawing ID:', currentDrawingId);
-      console.log('🏠 Space ID being sent:', spaceId);
-      console.log('📋 Project ID being sent:', projectId);
-      console.log('🌐 Full URL:', `${BASE_URL}drawings/update/drawing/${currentDrawingId}`);
+      // console.log('🔍 === EXTREME DEBUGGING ===');
+      // console.log('📝 Drawing object:', drawing);
+      // console.log('🆔 Current Drawing ID:', currentDrawingId);
+      // console.log('🏠 Space ID being sent:', spaceId);
+      // console.log('📋 Project ID being sent:', projectId);
+      // console.log('🌐 Full URL:', `${BASE_URL}drawings/update/drawing/${currentDrawingId}`);
 
-      console.log('📦 FormData contents:');
+      // console.log('📦 FormData contents:');
       for (let [key, value] of uploadData.entries()) {
         console.log(`   ${key}:`, value, `(type: ${typeof value})`);
       }
@@ -88,16 +88,16 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
         body: uploadData,
       });
 
-      console.log('📡 Response Status:', response.status);
+      // console.log('📡 Response Status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.log('❌ Backend Error Response:', errorText);
+        // console.log('❌ Backend Error Response:', errorText);
         throw new Error(`Failed to update drawing: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Update result:', result);
+      // console.log('✅ Update result:', result);
 
       // MANUAL CONSTRUCTION: Create updated drawing object from form data
       const updatedDrawing = {
@@ -127,8 +127,8 @@ const EditDrawingModal = ({ drawing, spaceId, projectId, onClose, onUpdate, draw
         ...(result.new_revision && { revision: result.new_revision })
       };
 
-      console.log('📥 Constructed updated drawing:', updatedDrawing);
-      console.log('🔄 Sending to parent onUpdate...');
+      // console.log('📥 Constructed updated drawing:', updatedDrawing);
+      // console.log('🔄 Sending to parent onUpdate...');
 
       // Pass the complete updated drawing data to onUpdate
       onUpdate(updatedDrawing);

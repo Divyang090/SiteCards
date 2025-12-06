@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AddMembersModal from "../AddingModal/AddMembersModal";
 import { BASE_URL } from "../Configuration/Config";
 import { useAuth } from "./AuthContext";
+import StatusMessageProvider, { useStatusMessage } from "../Alerts/StatusMessage";
 
 const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
   const [members, setMembers] = useState([]);
@@ -9,6 +10,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [error, setError] = useState("");
   const { user } = useAuth();
+  const { showMessage, showConfirmation } = useStatusMessage();
 
   // Use prop companyId if provided, otherwise fallback to user context
   const companyId = propCompanyId || user?.company_id;
@@ -59,9 +61,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
 
   // Revoke/Remove member
   const handleRevoke = async (member) => {
-    if (!window.confirm(`Are you sure you want to remove ${member.user_name}?`)) {
-      return;
-    }
+    showConfirmation(`Are you sure you want to remove ${member.user_name}?`)
 
     try {
       // Update this endpoint with your actual delete endpoint
@@ -83,7 +83,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
       fetchMembers(); // refresh list
     } catch (err) {
       console.error("Failed to revoke member:", err);
-      alert("Failed to remove member. Please check the API endpoint.");
+      showMessage("Failed to remove member. Please check the API endpoint.", 'error');
     }
   };
 
@@ -262,11 +262,12 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
           )}
 
           {showInvitePopup && (
-            <div className="absolute bottom-14 right-0 animate-slide-in-up w-[26rem]">
+            <div className="absolute bottom-14 right-0 animate-slide-in-up w-[100rem]">
+              {/* change */}
               <AddMembersModal
                 onClose={() => {
                   setShowInvitePopup(false);
-                  fetchMembers(); // Refresh after adding
+                  fetchMembers();
                 }}
                 companyId={companyId}
               />

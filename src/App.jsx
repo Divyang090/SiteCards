@@ -111,7 +111,7 @@ const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilt
   return (
     <>
       <Header
-      // companyId={mySelectedCompanyId}
+        // companyId={mySelectedCompanyId}
         onNewProjectClick={onAddProject}
         onLoginClick={onLoginClick}
         activeProjectsCount={activeProjectsCount}
@@ -196,7 +196,6 @@ const AppContent = () => {
     };
   }, []);
 
-
   // Fetch projects from API
   useEffect(() => {
     if (user && !authLoading) {
@@ -204,7 +203,7 @@ const AppContent = () => {
         try {
           setProjectsLoading(true);
           setError('');
-          console.log('Fetching projects from API...');
+          // console.log('Fetching projects from API...');
 
           const response = await authFetch(`${BASE_URL}/projects/projects`);
 
@@ -215,9 +214,9 @@ const AppContent = () => {
           }
 
           const result = await response.json();
-          console.log('API Response received:', result);
-          console.log('Type of result:', typeof result);
-          console.log('Is array?:', Array.isArray(result));
+          // console.log('API Response received:', result);
+          // console.log('Type of result:', typeof result);
+          // console.log('Is array?:', Array.isArray(result));
 
           // Handle different API response structures
           let projectsArray = [];
@@ -321,7 +320,7 @@ const AppContent = () => {
         description: project.project_description || project.description
       }));
 
-      console.log('All transformed projects:', transformedProjects);
+      // console.log('All transformed projects:', transformedProjects);
       setProjects(transformedProjects);
       showMessage('Project created successfully!', 'success');
 
@@ -334,7 +333,7 @@ const AppContent = () => {
   // Edit/Update Project
   const handleUpdateProject = async (updatedProject) => {
     try {
-      console.log('Project updated, refreshing list...');
+      // console.log('Project updated, refreshing list...');
 
       // Refresh the entire projects list to get updated data
       const response = await authFetch(`${BASE_URL}/projects/projects`);
@@ -344,7 +343,7 @@ const AppContent = () => {
       }
 
       const result = await response.json();
-      console.log('Refreshed projects after update:', result);
+      // console.log('Refreshed projects after update:', result);
 
       let projectsArray = [];
 
@@ -375,12 +374,12 @@ const AppContent = () => {
         description: project.project_description || project.description
       }));
 
-      console.log('All transformed projects after update:', transformedProjects);
+      // console.log('All transformed projects after update:', transformedProjects);
       setProjects(transformedProjects);
       showMessage('Project updated successfully!', 'success');
 
     } catch (err) {
-      console.error('Error updating project:', err);
+      // console.error('Error updating project:', err);
       showMessage(`Failed to update project: ${err.message}`, 'error');
     }
   };

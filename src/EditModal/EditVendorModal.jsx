@@ -114,7 +114,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
         tags: formattedTags,   // ✅ FIXED — convert array to string
       };
 
-      console.log("2. Request data to backend:", requestData);
+      // console.log("2. Request data to backend:", requestData);
 
       const response = await authFetch(`${BASE_URL}/vendors/vendors/${vendorId}`, {
         method: "PUT",
@@ -124,7 +124,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
         body: JSON.stringify(requestData),
       });
 
-      console.log("3. Response status:", response.status);
+      // console.log("3. Response status:", response.status);
 
       if (response.ok) {
         setRefreshTrigger(prev => prev + 1);
@@ -133,11 +133,11 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
 
         try {
           responseBody = await response.json();
-          console.log("4. RAW API RESPONSE:", responseBody);
+          // console.log("4. RAW API RESPONSE:", responseBody);
         } catch (parseError) {
-          console.error("5. Failed to parse JSON response:", parseError);
+          // console.error("5. Failed to parse JSON response:", parseError);
           const textResponse = await response.text();
-          console.log("5. Text response:", textResponse);
+          // console.log("5. Text response:", textResponse);
           responseBody = textResponse;
         }
 
@@ -150,7 +150,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
           tags: formData.tags, // Keep original array for UI
         };
 
-        console.log("6. Final transformed vendor:", transformedVendor);
+        // console.log("6. Final transformed vendor:", transformedVendor);
 
         onUpdate(transformedVendor);
         showMessage("Vendor updated successfully!", "success");

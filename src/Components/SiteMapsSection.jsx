@@ -45,15 +45,15 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   // SiteMaps Fetch API
   useEffect(() => {
     const fetchSiteMaps = async () => {
-      console.log("=============RECEIVED FROM API:==========", siteMapsList);
+      // console.log("=============RECEIVED FROM API:==========", siteMapsList);
       try {
-        console.log('Fetching ALL site maps');
+        // console.log('Fetching ALL site maps');
         const response = await authFetch(`${BASE_URL}/spaces/get/project/${projectId}`);
-        console.log('Fetch response status:', response.status);
+        // console.log('Fetch response status:', response.status);
 
         if (response.ok) {
           const allSiteMaps = await response.json();
-          console.log('Fetched ALL site maps data:', allSiteMaps);
+          // console.log('Fetched ALL site maps data:', allSiteMaps);
 
           //filtering based on projectId
           const filteredSiteMaps = allSiteMaps.filter(siteMap => {
@@ -61,7 +61,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
             return siteMapProjectId?.toString() === projectId;
           });
 
-          console.log('Filtered site maps for project:', projectId, filteredSiteMaps);
+          // console.log('Filtered site maps for project:', projectId, filteredSiteMaps);
           setSiteMapsList(filteredSiteMaps);
         } else {
           console.error('Fetch failed with status:', response.status);
@@ -614,7 +614,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
     // console.log('  📍 Should fetch vendors:', activeTab === 'Vendors' && spaceId);
 
     const fetchVendors = async (spaceId) => {
-      console.log('🚀 fetchVendors called with spaceId:', spaceId);
+      // console.log('🚀 fetchVendors called with spaceId:', spaceId);
 
       if (activeTab === 'Vendors') {
         // Check if spaceId is valid before making API call
@@ -628,7 +628,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
         setLoading(prev => ({ ...prev, vendors: true }));
         try {
           const apiUrl = `${BASE_URL}/vendors/vendors/space/${spaceId}`;
-          console.log('🌐 Fetching vendors from:', apiUrl);
+          // console.log('🌐 Fetching vendors from:', apiUrl);
 
           const response = await authFetch(apiUrl);
 
@@ -650,7 +650,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
               allVendors = [];
             }
 
-            console.log('📋 Vendors found:', allVendors.length);
+            // console.log('📋 Vendors found:', allVendors.length);
 
             // ✅ UPDATED: Remove category and use tags instead
             const mappedVendors = allVendors.map(vendor => ({
@@ -677,15 +677,15 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       }
     };
 
-    console.log('🔧 Calling fetchVendors function...');
+    // console.log('🔧 Calling fetchVendors function...');
     fetchVendors(spaceId);
   }, [activeTab, spaceId]);
 
   // Add this additional useEffect to track when spaceId becomes available
-  useEffect(() => {
-    console.log('🔍 SpaceId Monitor - Current spaceId:', spaceId);
-    console.log('🔍 SpaceId Monitor - spaceId available:', !!spaceId);
-  }, [spaceId]);
+  // useEffect(() => {
+  //   console.log('🔍 SpaceId Monitor - Current spaceId:', spaceId);
+  //   console.log('🔍 SpaceId Monitor - spaceId available:', !!spaceId);
+  // }, [spaceId]);
 
   // Fetch drawing
   useEffect(() => {
@@ -693,7 +693,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       if (activeTab === 'Drawings') {
         setLoading(prev => ({ ...prev, drawings: true }));
         try {
-          console.log('Fetching all drawings...');
+          // console.log('Fetching all drawings...');
           const response = await authFetch(`${BASE_URL}/drawings/get/space/${spaceId}`);
 
           console.log('Drawings fetch response status:', response.status);
@@ -743,15 +743,15 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
   // Inspiration fetch API
   useEffect(() => {
     const fetchInspiration = async () => {
-      console.log('=== INSPIRATION FETCH TRIGGERED ===', {
-        activeTab,
-        spaceId,
-        shouldFetch: activeTab === 'Inspiration' && spaceId
-      });
+      // console.log('=== INSPIRATION FETCH TRIGGERED ===', {
+      //   activeTab,
+      //   spaceId,
+      //   shouldFetch: activeTab === 'Inspiration' && spaceId
+      // });
       if (activeTab === 'Inspiration' && spaceId) {
         setLoading(prev => ({ ...prev, inspiration: true }));
         try {
-          console.log('Fetching inspiration for space:', spaceId);
+          // console.log('Fetching inspiration for space:', spaceId);
           const response = await authFetch(`${BASE_URL}/inspiration/get/space/${spaceId}`);
 
           console.log('Inspiration fetch response status:', response.status);
@@ -888,14 +888,14 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       if (activeTab === 'Tasks' && spaceId) {
         setLoading(prev => ({ ...prev, tasks: true }));
         try {
-          console.log('Fetching tasks for space:', spaceId);
+          // console.log('Fetching tasks for space:', spaceId);
           const response = await authFetch(`${BASE_URL}/tasks/tasks/space/${spaceId}`);
 
-          console.log('Tasks fetch response status:', response.status);
+          // console.log('Tasks fetch response status:', response.status);
 
           if (response.ok) {
             const tasksData = await response.json();
-            console.log('Fetched tasks data:', tasksData);
+            // console.log('Fetched tasks data:', tasksData);
 
             // Handle different response formats
             let tasksArray = [];

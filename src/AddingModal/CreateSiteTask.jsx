@@ -115,6 +115,7 @@ const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInlin
                 // Convert to "dd-mm-yyyyThh-mm"
                 const formattedDate = `${day}-${month}-${year}T${hours}:${minutes}`;
                 formData.append('date', formattedDate);
+                formData.append('visit_date',formattedDate);
             }
 
             if (taskData.location && taskData.location.trim()) {

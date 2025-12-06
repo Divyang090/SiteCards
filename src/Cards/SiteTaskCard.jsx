@@ -37,6 +37,40 @@ const SiteTaskCard = ({
     }
   };
 
+  // Helper function to format date from "2025-12-27T21:51:00" to "27-12-2025 21:51"
+  const formatTaskDate = (dateString) => {
+    if (!dateString) return '';
+
+    try {
+      // Handle both formats: "2025-12-27T21:51:00" and "27-12-2025T21:51"
+      if (dateString.includes('T')) {
+        const [datePart, timePart] = dateString.split('T');
+
+        // Check if date is in YYYY-MM-DD format
+        if (datePart.includes('-')) {
+          const parts = datePart.split('-');
+          if (parts[0].length === 4) {
+            // YYYY-MM-DD format
+            const [year, month, day] = parts;
+            const time = timePart ? timePart.substring(0, 5) : ''; // Get HH:MM
+            return time ? `${day}-${month}-${year} ${time}` : `${day}-${month}-${year}`;
+          } else {
+            // DD-MM-YYYY format
+            const [day, month, year] = parts;
+            const time = timePart ? timePart.substring(0, 5) : ''; // Get HH:MM
+            return time ? `${day}-${month}-${year} ${time}` : `${day}-${month}-${year}`;
+          }
+        }
+      }
+
+      // Return original if format is unknown
+      return dateString;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
   return (
     <div
       className={`theme-bg-primary overflow-x-auto scrollbar-hidden whitespace-nowrap rounded-lg border border-gray-500 p-4 flex items-center justify-between group hover:shadow-md transition-all duration-200 ${task.completed || task.status === 'completed' ? 'opacity-60 scale-[0.98]' : ''
@@ -75,12 +109,12 @@ const SiteTaskCard = ({
             </span>
             <div className="flex items-center gap-2 ml-4">
               <span className="theme-bg-secondary px-2 py-1 rounded text-xs">
-                {task.task_type || task.task_type}
+                {task.task_type}
               </span>
             </div>
           </div>
 
-          {(task.assigned_to || task.location || task.visit_date || task.date) && (
+          {(task.assigned_to || task.location || task.date || task.files) && (
             <div className='flex items-center gap-3 mt-1'>
 
               {/* task assigned to on task card */}
@@ -104,14 +138,31 @@ const SiteTaskCard = ({
                 </span>
               )}
 
-              {/* task date on task card  */}
-              {(task.visit_date || task.date) && (
+              {/* task date on task card - FIXED THIS SECTION */}
+              {task.date && (
                 <span className={`text-xs flex items-center gap-1 ${task.completed || task.status === 'completed' ? 'text-gray-400' : 'theme-text-secondary'}`}>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  {task.visit_date || task.date}
+                  {formatTaskDate(task.date)}
                 </span>
+              )}
+
+              {/* Files section */}
+              {task.files && task.files.length > 0 && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleFilesClick(e);
+                  }}
+                  className={`text-xs flex items-center gap-1 ${task.completed || task.status === 'completed' ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500 transition-colors duration-200`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  {task.files.length}
+                </button>
               )}
             </div>
           )}
@@ -121,19 +172,6 @@ const SiteTaskCard = ({
               }`}>
               {task.description}
             </p>
-          )}
-
-          {/* Files section */}
-          {task.files && task.files.length > 0 && (
-            <button
-              onClick={handleFilesClick}
-              className={`text-xs flex items-center gap-1 ${task.completed || task.status === 'completed' ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500 transition-colors duration-200`}
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-              {task.files.length} file{task.files.length !== 1 ? 's' : ''}
-            </button>
           )}
         </div>
       </div>
@@ -147,8 +185,12 @@ const SiteTaskCard = ({
 
         {/* Edit Button*/}
         <button
-          onClick={() => onEdit(task.id)}
-          className="text-gray-400 hover:text-blue-500 transition-colors duration-200"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEdit(task.id || task.task_id);
+          }}
+          className="text-gray-400 hover:text-blue-500 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-all duration-200"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -157,7 +199,11 @@ const SiteTaskCard = ({
 
         {/* Delete Button */}
         <button
-          onClick={handleDelete}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleDelete(e);
+          }}
           className="text-gray-400 hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-all duration-200"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

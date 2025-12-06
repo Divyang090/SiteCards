@@ -25,10 +25,10 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
   const userMenuRef = useRef(null);
 
   //check 
-  useEffect(() => {
-    console.log('Auth user from context:', user);
-    console.log('Current userInfo state:', userInfo);
-  }, [user, userInfo]);
+  // useEffect(() => {
+  //   console.log('Auth user from context:', user);
+  //   console.log('Current userInfo state:', userInfo);
+  // }, [user, userInfo]);
 
   //Extract user info
   useEffect(() => {
@@ -47,9 +47,9 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
 
   //check 2
   // Add this to verify the normalized structure
-  useEffect(() => {
-    console.log('Normalized userInfo:', userInfo);
-  }, [userInfo]);
+  // useEffect(() => {
+  //   console.log('Normalized userInfo:', userInfo);
+  // }, [userInfo]);
 
   //Click Outside
   useEffect(() => {

@@ -9,6 +9,8 @@ const AuthModal = () => {
   const [loginStep, setLoginStep] = useState('credentials');
   const [pendingLoginData, setPendingLoginData] = useState(null);
   const [otp, setOtp] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showCPassword, setShowCPassword] = useState(false);
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [ForgotPasswordEmail, setForgotPasswordEmail] = useState();
   const [registrationStep, setRegistrationStep] = useState('personal');
@@ -137,7 +139,7 @@ const AuthModal = () => {
 
       const data = await response.json();
 
-      console.log('Login API response:', data);
+      // console.log('Login API response:', data);
 
       setPendingLoginData({
         name: data.user_name || 'user',
@@ -203,14 +205,15 @@ const AuthModal = () => {
       const data = await response.json();
 
       // Only now do we actually log the user in
-      login({pendingLoginData, 
+      login({
+        pendingLoginData,
         company_id: pendingLoginData.company_id,
         user_id: pendingLoginData.user_id,
       },
         {
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token
-      });
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token
+        });
       setSuccess('Login successful!');
       setTimeout(() => {
         closeAuthModal();
@@ -379,18 +382,48 @@ const AuthModal = () => {
                 />
               </div>
 
-              <div>
+              <div className='relative'>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
                   Password *
                 </label>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   required
                   disabled={loading}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Enter your password"
                 />
+                <button
+                  type='button'
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? (
+                    // Eye with slash (hide)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.5 12c2.25 4.5 6.75 7.5 10.5 7.5 
+                           1.76 0 3.42-.45 4.86-1.24M21 21l-4.24-4.24m0 0A10.477 10.477 0 0022.5 
+                           12c-2.25-4.5-6.75-7.5-10.5-7.5-1.76 0-3.42.45-4.86 1.24m0 0L3 3" />
+                    </svg>
+                  ) : (
+                    // Eye (show)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M2.25 12C3.75 7.5 8.25 4.5 12 4.5s8.25 3 9.75 7.5c-1.5 
+                 4.5-6 7.5-9.75 7.5s-8.25-3-9.75-7.5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                    </svg>
+                  )}
+                </button>
               </div>
 
               <div className="flex items-center justify-between text-sm">
@@ -573,12 +606,12 @@ const AuthModal = () => {
                 />
               </div>
 
-              <div>
+              <div className='relative'>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
                   Password *
                 </label>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   defaultValue={personalData.password}
                   required
@@ -586,20 +619,80 @@ const AuthModal = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Create a password (min. 6 characters)"
                 />
+                <button
+                  type='button'
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPassword ? (
+                    // Eye with slash (hide)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.5 12c2.25 4.5 6.75 7.5 10.5 7.5 
+                           1.76 0 3.42-.45 4.86-1.24M21 21l-4.24-4.24m0 0A10.477 10.477 0 0022.5 
+                           12c-2.25-4.5-6.75-7.5-10.5-7.5-1.76 0-3.42.45-4.86 1.24m0 0L3 3" />
+                    </svg>
+                  ) : (
+                    // Eye (show)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M2.25 12C3.75 7.5 8.25 4.5 12 4.5s8.25 3 9.75 7.5c-1.5 
+                           4.5-6 7.5-9.75 7.5s-8.25-3-9.75-7.5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                    </svg>
+                  )}
+                </button>
               </div>
 
-              <div>
+              <div className='relative'>
                 <label className="block text-sm font-medium theme-text-primary mb-1">
                   Confirm Password *
                 </label>
                 <input
-                  type="password"
+                  type={showCPassword ? "text" : "password"}
                   name="confirmPassword"
                   defaultValue={personalData.confirmPassword}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Confirm your password"
                 />
+                <button
+                  type='button'
+                  onClick={() => setShowCPassword(!showCPassword)}
+                  className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showCPassword ? (
+                    // Eye with slash (hide)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M3.98 8.223A10.477 10.477 0 001.5 12c2.25 4.5 6.75 7.5 10.5 7.5 
+                           1.76 0 3.42-.45 4.86-1.24M21 21l-4.24-4.24m0 0A10.477 10.477 0 0022.5 
+                           12c-2.25-4.5-6.75-7.5-10.5-7.5-1.76 0-3.42.45-4.86 1.24m0 0L3 3" />
+                    </svg>
+                  ) : (
+                    // Eye (show)
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                      fill="none" viewBox="0 0 24 24"
+                      strokeWidth={1.5} stroke="currentColor"
+                      className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M2.25 12C3.75 7.5 8.25 4.5 12 4.5s8.25 3 9.75 7.5c-1.5 
+                           4.5-6 7.5-9.75 7.5s-8.25-3-9.75-7.5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round"
+                        d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
 

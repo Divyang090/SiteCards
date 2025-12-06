@@ -55,9 +55,9 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
       }
 
       // DEBUG: Log FormData contents
-      console.log('=== DRAWING UPLOAD DATA ===');
-      console.log('space_id:', spaceId);
-      console.log('project_id:', projectId);
+      // console.log('=== DRAWING UPLOAD DATA ===');
+      // console.log('space_id:', spaceId);
+      // console.log('project_id:', projectId);
       for (let [key, value] of uploadData.entries()) {
         console.log(`${key}:`, value);
       }
