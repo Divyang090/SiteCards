@@ -27,7 +27,14 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const [siteMapsList, setSiteMapsList] = useState(siteMaps);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedSiteMap, setSelectedSiteMap] = useState(null);
-  const [activeTab, setActiveTab] = useState('Drawings');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('activeTab') || 'Drawings';
+  });
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  //CHECK FOR STATE PERSISTANCE 8/12
   const [isEditingSiteMap, setIsEditingSiteMap] = useState();
   const [isBulkPresetModalOpen, setIsBulkPresetModalOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -111,40 +118,83 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   const handleSiteMapSubmit = async (formData) => {
     setIsUploading(true);
     setLoading(true);
+
+    // Generate a temporary ID for optimistic update
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create optimistic site map object
+    const optimisticSiteMap = {
+      id: tempId,
+      space_name: formData.name || formData.space_name || 'Untitled Space',
+      category: formData.category || 'general',
+      project_id: projectId,
+      created_at: new Date().toISOString(),
+      isOptimistic: true, // Flag to identify optimistic updates
+      status: 'uploading' // Track upload status
+    };
+
     try {
-      console.log('Starting upload with form data:', formData);
+      // Apply optimistic update immediately
+      setSiteMapsList(prev => [optimisticSiteMap, ...prev]);
+
+      // console.log('Starting upload with form data:', formData);
 
       const uploadData = new FormData();
       uploadData.append('space_name', formData.name || formData.space_name || 'Untitled Space');
       uploadData.append('category', formData.category || 'general');
       uploadData.append('project_id', projectId);
-      uploadData.append('files', formData.file);
 
-      if (formData.description) {
-        uploadData.append('description', formData.description);
-      }
-
-      console.log('FormData entries:');
+      // console.log('FormData entries:');
       for (let [key, value] of uploadData.entries()) {
         console.log(`${key}:`, value);
       }
+
       // add site maps
-      console.log('Sending POST request to upload endpoint');
+      // console.log('Sending POST request to upload endpoint');
       const response = await authFetch(`${BASE_URL}/spaces/post`, {
         method: 'POST',
         body: uploadData,
       });
 
-      console.log('Upload response status:', response.status);
+      // console.log('Upload response status:', response.status);
 
       if (response.ok) {
         const newSiteMap = await response.json();
-        console.log('Upload successful, new site map:', newSiteMap);
-        setSiteMapsList(prev => [newSiteMap, ...prev]);
+        // console.log('Upload successful, new site map:', newSiteMap);
+
+        // Replace optimistic item with real data
+        setSiteMapsList(prev =>
+          prev.map(item =>
+            item.id === tempId
+              ? { ...newSiteMap, status: 'success' } // Mark as success
+              : item
+          )
+        );
+
         setIsUploadModalOpen(false);
         showMessage('Site map uploaded successfully!', 'success');
 
+        // Optional: Remove the status flag after a delay
+        setTimeout(() => {
+          setSiteMapsList(prev =>
+            prev.map(item =>
+              item.id === newSiteMap.id
+                ? { ...item, status: undefined, isOptimistic: undefined }
+                : item
+            )
+          );
+        }, 1000);
+
       } else {
+        // Mark optimistic item as failed
+        setSiteMapsList(prev =>
+          prev.map(item =>
+            item.id === tempId
+              ? { ...item, status: 'error' }
+              : item
+          )
+        );
+
         let errorMessage = `Upload failed: ${response.status}`;
         try {
           const errorData = await response.json();
@@ -159,6 +209,20 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       }
     } catch (error) {
       console.error('Upload error:', error);
+
+      // Mark optimistic item as error
+      setSiteMapsList(prev =>
+        prev.map(item =>
+          item.id === tempId
+            ? { ...item, status: 'error' }
+            : item
+        )
+      );
+
+      // Optional: Remove failed optimistic item after delay
+      setTimeout(() => {
+        setSiteMapsList(prev => prev.filter(item => item.id !== tempId));
+      }, 3000);
     } finally {
       setIsUploading(false);
       setLoading(false);
@@ -173,7 +237,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       async () => {
         try {
           const spaceId = siteMap.space_id || siteMap.id;
-          console.log('Attempting to delete site map. Space ID:', spaceId);
+          // console.log('Attempting to delete site map. Space ID:', spaceId);
 
           const response = await authFetch(`${BASE_URL}/spaces/delete/${spaceId}`, {
             method: 'DELETE',
@@ -183,10 +247,10 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
           }
           );
 
-          console.log('Delete response status:', response.status);
+          // console.log('Delete response status:', response.status);
 
           if (response.ok) {
-            console.log('Delete successful');
+            // console.log('Delete successful');
             setSiteMapsList(prev => prev.filter(sm => sm.space_id !== spaceId));
             showMessage('Site map deleted successfully!', 'success');
           } else {
@@ -213,7 +277,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
   };
 
   const handleEditSiteMap = (siteMap) => {
-    console.log('Edit site map:', siteMap);
+    // console.log('Edit site map:', siteMap);
     isEditingSiteMap('siteMap')
   };
 
@@ -289,9 +353,9 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       </div>
 
       {/* Site Maps Grid */}
-      {!selectedSiteMap ? (
-        siteMapsList?.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className={`${selectedSiteMap ? 'hidden' : 'block'}`}>
+        {siteMapsList?.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden">
             {siteMapsList.map((siteMap) => (
               <SiteMapCard
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
@@ -304,9 +368,11 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
           </div>
         ) : (
           <EmptySiteMapsState onUpload={() => setIsUploadModalOpen(true)} />
-        )
-      ) : (
-        // Show detail view
+        )}
+      </div>
+
+      {/* DETAIL SECTION */}
+      {selectedSiteMap && (
         <div className="theme-bg-card rounded-lg border theme-border p-3 md:p-6">
           <SiteMapDetailSection
             siteMap={selectedSiteMap}
@@ -369,7 +435,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   const [boardError, setBoardError] = useState(null);
   const [boardPage, setBoardPage] = useState(1);
   const [hasMoreBoardPosts, setHasMoreBoardPosts] = useState(true);
-  const {authFetch} = useAuth();
+  const { authFetch } = useAuth();
 
   const { showConfirmation, showMessage, showFailed } = useStatusMessage();
 
@@ -393,8 +459,6 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
       console.warn('Unknown Pinterest item type:', item);
     }
   };
-
-
 
   const handleCloseInspirationModal = () => {
     setSelectedInspiration(null);
@@ -448,11 +512,9 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
     );
   };
 
-  //CRITICAL
-
   // Drawing handlers
   const handleEditDrawing = (drawing) => {
-    console.log('Edit drawing:', drawing);
+    // console.log('Edit drawing:', drawing);
     setEditingDrawing(drawing);
   };
   //Delete Drawing
@@ -477,7 +539,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   // Vendor handlers
   const handleEditVendor = (vendor) => {
-    console.log('Edit vendor:', vendor);
+    // console.log('Edit vendor:', vendor);
     setEditingVendor(vendor)
   };
 
@@ -488,20 +550,21 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
 
   //update vendor not working
   const handleUpdateVendor = (updatedVendor) => {
-    console.log('🔄 PARENT: handleUpdateVendor called with:', updatedVendor);
-    console.log('🔄 PARENT: Current vendors before update:', vendors);
+    // console.log('🔄 PARENT: handleUpdateVendor called with:', updatedVendor);
+    // console.log('🔄 PARENT: Current vendors before update:', vendors);
 
     setVendors(prevVendors => {
       const newVendors = prevVendors.map(vendor =>
         vendor.id === updatedVendor.id ? updatedVendor : vendor
       );
-      console.log('🔄 PARENT: Vendors after update:', newVendors);
+      // console.log('🔄 PARENT: Vendors after update:', newVendors);
       return newVendors;
     });
 
     setEditingVendor(null);
-    console.log('✅ PARENT: Modal closed and state updated');
+    // console.log('✅ PARENT: Modal closed and state updated');
   };
+
   //Delete Vendor
   const handleDeleteVendor = async (vendorId) => {
     const vendor = vendors.find(v => v.id === vendorId);
@@ -543,8 +606,8 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
   };
 
   //deleteinspiration
-const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
-    console.log('Inspiration item:', inspirationItem);
+  const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
+    // console.log('Inspiration item:', inspirationItem);
     const inspirationName = inspirationItem?.title || inspirationItem?.name || inspirationItem?.filename || 'this inspiration';
 
     showConfirmation(
@@ -558,7 +621,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
             if (!Array.isArray(prev)) return prev;
             return prev.filter(item => item.id !== inspirationId);
           });
-          
+
           const response = await authFetch(`${BASE_URL}/inspiration/del_inspirations/${inspirationId}`, {
             method: 'DELETE',
           });
@@ -696,7 +759,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
           // console.log('Fetching all drawings...');
           const response = await authFetch(`${BASE_URL}/drawings/get/space/${spaceId}`);
 
-          console.log('Drawings fetch response status:', response.status);
+          // console.log('Drawings fetch response status:', response.status);
 
           if (response.ok) {
             const drawingsData = await response.json();
@@ -711,7 +774,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
             } else if (drawingsData && Array.isArray(drawingsData.drawings)) {
               allDrawings = drawingsData.drawings;
             } else {
-              console.log('Unexpected drawings response format:', drawingsData);
+              // console.log('Unexpected drawings response format:', drawingsData);
               allDrawings = [];
             }
 
@@ -720,10 +783,10 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
               drawing.space_id === spaceId
             );
 
-            console.log(`Filtered drawings for space ${spaceId}:`, filteredDrawings);
+            // console.log(`Filtered drawings for space ${spaceId}:`, filteredDrawings);
             setDrawings(filteredDrawings);
           } else {
-            console.log('Drawings fetch failed with status:', response.status);
+            // console.log('Drawings fetch failed with status:', response.status);
             setDrawings([]);
           }
         } catch (error) {
@@ -754,11 +817,11 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
           // console.log('Fetching inspiration for space:', spaceId);
           const response = await authFetch(`${BASE_URL}/inspiration/get/space/${spaceId}`);
 
-          console.log('Inspiration fetch response status:', response.status);
+          // console.log('Inspiration fetch response status:', response.status);
 
           if (response.ok) {
             const inspirationData = await response.json();
-            console.log('Fetched inspiration data:', inspirationData);
+            // console.log('Fetched inspiration data:', inspirationData);
 
             let inspirationArray = [];
             if (Array.isArray(inspirationData)) {
@@ -768,7 +831,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
             } else if (inspirationData && Array.isArray(inspirationData.inspiration)) {
               inspirationArray = inspirationData.inspiration;
             } else {
-              console.log('Unexpected inspiration response format:', inspirationData);
+              // console.log('Unexpected inspiration response format:', inspirationData);
               inspirationArray = [];
             }
 
@@ -779,7 +842,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
             setInspiration(filteredInspiration);
 
           } else {
-            console.log('Inspiration fetch failed with status:', response.status);
+            // console.log('Inspiration fetch failed with status:', response.status);
             setInspiration([]);
           }
         } catch (error) {
@@ -795,6 +858,40 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       fetchInspiration();
     }
   }, [activeTab, spaceId, refreshInspiration]);
+
+  //Drawing Parent Component
+  // In the parent component where you use AddDrawingModal:
+  const handleAddDrawing = (drawingData) => {
+    // If drawing is optimistic, add it to drawings list
+    if (drawingData.isOptimistic) {
+      setDrawings(prev => [drawingData, ...prev]);
+    }
+    // If drawing has success status (means it's real data from API)
+    else if (drawingData.status === 'success') {
+      setDrawings(prev => prev.map(drawing =>
+        drawing.isOptimistic && drawing.id === drawingData.tempId
+          ? { ...drawingData, status: undefined, isOptimistic: undefined }
+          : drawing
+      ));
+    }
+    // If drawing has error status
+    else if (drawingData.status === 'error') {
+      setDrawings(prev => prev.map(drawing =>
+        drawing.isOptimistic && drawing.id === drawingData.id
+          ? { ...drawing, status: 'error' }
+          : drawing
+      ));
+
+      // Optionally remove after delay
+      setTimeout(() => {
+        setDrawings(prev => prev.filter(d => d.id !== drawingData.id));
+      }, 3000);
+    }
+    // Regular API response (non-optimistic)
+    else {
+      setDrawings(prev => [drawingData, ...prev]);
+    }
+  };
 
 
   //fetching posts from pinterest board
@@ -869,9 +966,6 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
     });
   };
 
-
-
-
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -906,7 +1000,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
             } else if (tasksData && Array.isArray(tasksData.tasks)) {
               tasksArray = tasksData.tasks;
             } else {
-              console.log('Unexpected tasks response format:', tasksData);
+              // console.log('Unexpected tasks response format:', tasksData);
               tasksArray = [];
             }
 
@@ -926,7 +1020,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
 
             setTasks(transformedTasks);
           } else {
-            console.log('Tasks fetch failed with status:', response.status);
+            // console.log('Tasks fetch failed with status:', response.status);
             setTasks([]);
           }
         } catch (error) {
@@ -1049,43 +1143,45 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       {/* Content */}
       <div className="mt-6">
         {/* Drawings Tab*/}
-        {activeTab === 'Drawings' && (
-          <div className="h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden"> {/* Adjust height as needed */}
-            {loading.drawings ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-500 mt-2">Loading drawings...</p>
+        <div className={`overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden ${activeTab === 'Drawings' ? 'block' : 'hidden'}`}>
+          {loading.drawings && drawings.length === 0 ? (
+            // Initial loading state
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading drawings...</p>
+            </div>
+          ) : drawings.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {drawings.map((file) => (
+                <DrawingCard
+                  key={file.drawing_id || file.id}
+                  drawings={drawings}
+                  file={file}
+                  onEdit={handleEditDrawing}
+                  onDelete={handleDeleteDrawing}
+                  onClick={handleDrawingClick}
+                  // Add a prop to indicate if it's optimistic
+                  isOptimistic={file.isOptimistic}
+                  status={file.status}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+              <div className="text-gray-400 mb-3">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg>
               </div>
-            ) : drawings.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {drawings.map((file) => (
-                  <DrawingCard
-                    key={file.drawing_id || file.id}
-                    drawings={drawings}
-                    file={file}
-                    onEdit={handleEditDrawing}
-                    onDelete={handleDeleteDrawing}
-                    onClick={handleDrawingClick}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                <div className="text-gray-400 mb-3">
-                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium theme-text-secondary mb-2">No drawings yet</h3>
-                <button
-                  onClick={setIsAddDrawingOpen}
-                  className='text-blue-600 hover:text-blue-700 text-sm mb-4'>
-                  + Add your first Drawing to get started
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              <h3 className="text-lg font-medium theme-text-secondary mb-2">No drawings yet</h3>
+              <button
+                onClick={setIsAddDrawingOpen}
+                className='text-blue-600 hover:text-blue-700 text-sm mb-4'>
+                + Add your first Drawing to get started
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Drawing Click */}
         {selectedDrawing && (
@@ -1097,7 +1193,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
 
         {/* Vendors Tab*/}
         {activeTab === 'Vendors' && (
-          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
+          <div className='overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden'>
             {loading.vendors ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -1134,7 +1230,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
 
         {/* Inspiration Tab*/}
         {activeTab === 'Inspiration' && (
-          <div className='h-[600px] overflow-y-auto whitespace-nowrap scrollbar-hidden'>
+          <div className='overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden'>
             {loading.inspiration ? (
               <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
@@ -1204,7 +1300,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
 
         {/* Tasks Tab*/}
         {activeTab === 'Tasks' && (
-          <div className='overflow-y-auto scrollbar-hidden'>
+          <div className='overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden'>
             {loading.tasks ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -1222,7 +1318,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
                     onClose={() => setIsAddTaskOpen(false)}
                     onCancel={() => setIsAddTaskOpen(false)}
                     onCreate={(newTask) => {
-                      console.log('New task created:', newTask);
+                      // console.log('New task created:', newTask);
                       setTasks(prev => [...prev, newTask]);
                       setIsAddTaskOpen(false);
                     }}
@@ -1289,10 +1385,7 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
           spaceId={siteMap.id || siteMap.space_id}
           projectId={siteMap.project_id}
           onClose={() => setIsAddDrawingOpen(false)}
-          onAdd={() => {
-            setIsAddDrawingOpen(false);
-            setRefreshDrawings(prev => prev + 1);
-          }}
+          onAdd={handleAddDrawing}
         />
       )}
 
@@ -1328,12 +1421,12 @@ const handleDeleteInspiration = async (inspirationId, inspirationItem) => {
       {editingDrawing && (
         <>
           {/* Debug what's being passed to the modal */}
-          {console.log('=== PARENT COMPONENT DEBUG ===')}
+          {/* {console.log('=== PARENT COMPONENT DEBUG ===')}
           {console.log('Editing Drawing:', editingDrawing)}
           {console.log('Drawing ID to pass:', editingDrawing.drawing_id)}
           {console.log('Space ID to pass:', editingDrawing.space_id)}
           {console.log('SiteMap space_id:', siteMap?.space_id)}
-          {console.log('SiteMap id:', siteMap?.id)}
+          {console.log('SiteMap id:', siteMap?.id)} */}
 
           <EditDrawingModal
             drawing={editingDrawing}

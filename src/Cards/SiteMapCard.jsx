@@ -53,7 +53,7 @@ const SiteMapCard = ({ siteMap, onDelete, onClick, onEdit }) => {
 
   return (
     <div
-      className="theme-bg-card rounded-lg theme-border overflow-hidden md:hover:shadow-lg shadow-lg transition-shadow duration-300 group cursor-pointer relative"
+      className="theme-bg-card rounded-lg theme-border overflow-hidden md:hover:shadow-2xl shadow-md transition-shadow duration-300 group cursor-pointer relative"
       onClick={() => onClick(siteMap)}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}

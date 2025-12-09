@@ -18,10 +18,10 @@ const handleSubmit = async (e) => {
   setIsSubmitting(true);
 
   try {
-    console.log('=== TASK SUBMISSION DATA ===');
-    console.log('Form data:', formData);
-    console.log('spaceId:', spaceId);
-    console.log('projectId:', projectId);
+    // console.log('=== TASK SUBMISSION DATA ===');
+    // console.log('Form data:', formData);
+    // console.log('spaceId:', spaceId);
+    // console.log('projectId:', projectId);
 
     const requestBody = {
       task_title: formData.title,
@@ -32,7 +32,7 @@ const handleSubmit = async (e) => {
       status: 'pending'
     };
 
-    console.log('Request data to be sent:', requestBody);
+    // console.log('Request data to be sent:', requestBody);
 
     let response;
     try {
@@ -44,7 +44,7 @@ const handleSubmit = async (e) => {
         body: JSON.stringify(requestBody),
       });
     } catch (error) {
-      console.log('Standard fetch failed, trying with no-cors:', error);
+      // console.log('Standard fetch failed, trying with no-cors:', error);
       
       // Approach 2: Try with no-cors mode (limited - can't read response)
       response = await authFetch(`${BASE_URL}/tasks`, {
@@ -57,7 +57,7 @@ const handleSubmit = async (e) => {
       });
       
       // With no-cors, we can't read the response, so assume success
-      console.log('No-cors request sent (assuming success)');
+      // console.log('No-cors request sent (assuming success)');
       const mockTask = {
         id: Date.now(), // temporary ID
         title: formData.title,
@@ -70,11 +70,11 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    console.log('Task creation response status:', response.status);
+    // console.log('Task creation response status:', response.status);
 
     if (response.ok) {
       const newTask = await response.json();
-      console.log('New task created successfully:', newTask);
+      // console.log('New task created successfully:', newTask);
       
       const transformedTask = {
         id: newTask.task_id || newTask.id,

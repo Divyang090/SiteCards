@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../Configuration/Config";
+import { useAuth } from "./AuthContext";
 
 const InviteAccept = () => {
   const [searchParams] = useSearchParams();
@@ -13,9 +14,9 @@ const InviteAccept = () => {
 
   const [userData, setUserData] = useState({ email: "", password: "" });
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const { authFetch } = useAuth();
 
   // Validate invite token (POST + JWT)
   useEffect(() => {
@@ -27,7 +28,7 @@ const InviteAccept = () => {
 
     const validate = async () => {
       try {
-        const accessToken = localStorage.getItem("accessToken"); // or wherever you store it
+        const accessToken = localStorage.getItem("accessToken");
 
         const res = await axios.post(
           `${BASE_URL}/invite/invite/validate`,
@@ -91,12 +92,12 @@ const InviteAccept = () => {
   if (submitted) return <p className="text-green-500">Invite accepted! You can now login.</p>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center theme-bg-primary p-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md space-y-4"
+        className="theme-bg-card shadow-xl rounded-lg p-6 w-full max-w-md space-y-4"
       >
-        <h2 className="text-xl font-semibold">Accept Invite</h2>
+        <h2 className="text-xl font-semibold theme-text-primary">Accept Invite</h2>
 
         {/* <div>
           <label className="block mb-1 text-sm font-medium">Email</label>
@@ -110,7 +111,7 @@ const InviteAccept = () => {
 
         {/* Name */}
         <div>
-          <label className="block mb-1 text-sm font-medium">Name</label>
+          <label className="theme-text-secondary block mb-1 text-sm font-medium">Name</label>
           <input
             type="text"
             value={userData.name}
@@ -118,13 +119,13 @@ const InviteAccept = () => {
               setUserData({ ...userData, name: e.target.value })
             }
             required
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-gray-500 hover:border-blue-600 rounded-lg px-3 py-2"
           />
         </div>
 
         {/* Password */}
         <div>
-          <label className="block mb-1 text-sm font-medium">Password</label>
+          <label className="block mb-1 text-sm font-medium theme-text-secondary">Password</label>
           <input
             type="password"
             value={userData.password}
@@ -132,12 +133,12 @@ const InviteAccept = () => {
               setUserData({ ...userData, password: e.target.value })
             }
             required
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-gray-500 rounded-lg px-3 py-2"
           />
         </div>
 
         <div>
-          <label className="block mb-1 text-sm font-medium">
+          <label className="block mb-1 text-sm font-medium theme-text-secondary">
             Confirm Password
           </label>
           <input
@@ -145,7 +146,7 @@ const InviteAccept = () => {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full border border-gray-500 rounded-lg px-3 py-2"
           />
         </div>
 

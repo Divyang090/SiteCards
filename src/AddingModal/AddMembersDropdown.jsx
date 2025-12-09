@@ -3,12 +3,7 @@ import { useTheme } from '../Components/ThemeContext';
 import { useAuth } from '../Components/AuthContext';
 import { BASE_URL } from '../Configuration/Config';
 
-const AddMembersDropdown = ({
-    project,
-    isOpen,
-    onClose,
-    position = { right: 0, top: 0 }
-}) => {
+const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, top: 0 }}) => {
     const { isDark } = useTheme();
     const { authFetch, user } = useAuth();
     const [members, setMembers] = useState([]);

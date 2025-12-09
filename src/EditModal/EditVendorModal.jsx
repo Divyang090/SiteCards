@@ -27,9 +27,9 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
 
   useEffect(() => {
     if (vendor) {
-      console.log('🔍 EDIT MODAL - FULL VENDOR OBJECT:', vendor);
-      console.log('🔍 EDIT MODAL - Vendor ID:', vendor.id);
-      console.log('🔍 EDIT MODAL - All vendor keys:', Object.keys(vendor));
+      // console.log('🔍 EDIT MODAL - FULL VENDOR OBJECT:', vendor);
+      // console.log('🔍 EDIT MODAL - Vendor ID:', vendor.id);
+      // console.log('🔍 EDIT MODAL - All vendor keys:', Object.keys(vendor));
 
       const newFormData = {
         name: vendor.name || '',
@@ -40,14 +40,14 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
         notes: vendor.notes || ''
       };
 
-      console.log('🔍 EDIT MODAL - New form data:', newFormData);
+      // console.log('🔍 EDIT MODAL - New form data:', newFormData);
       setFormData(newFormData);
     }
   }, [vendor]);
 
   useEffect(() => {
     if (vendor) {
-      console.log('🔍 FULL VENDOR OBJECT:', vendor);
+      // console.log('🔍 FULL VENDOR OBJECT:', vendor);
 
       const newFormData = {
         name: vendor.name || '',
@@ -58,7 +58,7 @@ const EditVendorModal = ({ vendor, spaceId, projectId, onClose, onClick, onUpdat
         notes: vendor.notes || ''
       };
 
-      console.log('🔍 New form data:', newFormData);
+      // console.log('🔍 New form data:', newFormData);
       setFormData(newFormData);
     }
   }, [vendor]);

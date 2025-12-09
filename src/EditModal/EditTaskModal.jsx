@@ -206,13 +206,13 @@ const EditTaskModal = ({ task, spaceId, projectId, onClose, onUpdate, isInline =
 
       // Debug: Log FormData contents
       // console.log('DEBUG - Edit FormData contents:');
-      // for (let [key, value] of submitFormData.entries()) {
-      //   if (value instanceof File) {
-      //     console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
-      //   } else {
-      //     console.log(`${key}:`, value);
-      //   }
-      // }
+      for (let [key, value] of submitFormData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
 
       const response = await authFetch(`${BASE_URL}/tasks/tasks/${taskId}`, {
         method: 'PUT',

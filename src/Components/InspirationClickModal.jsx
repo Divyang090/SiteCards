@@ -5,30 +5,30 @@ const InspirationClickModal = ({ inspiration, onClose }) => {
     if (!inspiration) return null;
 
 const getFileUrl = (item) => {
-    console.log('🔍 Inspiration item:', item);
-    console.log('🔍 Files array:', item.files);
+    // console.log('🔍 Inspiration item:', item);
+    // console.log('🔍 Files array:', item.files);
     
     // For uploaded files - use the files array from backend response
     if (item.files && item.files.length > 0 && item.files[0].file_path) {
         let filePath = item.files[0].file_path;
-        console.log('🔍 File path:', filePath);
+        // console.log('🔍 File path:', filePath);
         
         // Remove /api from BASE_URL for file paths
         const fileBaseUrl = BASE_URL;
         
         // Construct full URL
         const fullUrl = `${fileBaseUrl}/${filePath}`;
-        console.log('🔍 Full image URL:', fullUrl);
+        // console.log('🔍 Full image URL:', fullUrl);
         return fullUrl;
     }
     
     // For Pinterest URLs
     if (item.pinterest_url || item.url) {
-        console.log('🔍 Pinterest URL:', item.pinterest_url || item.url);
+        // console.log('🔍 Pinterest URL:', item.pinterest_url || item.url);
         return item.pinterest_url || item.url;
     }
     
-    console.log('🔍 No valid image source found');
+    // console.log('🔍 No valid image source found');
     return '';
 };
 

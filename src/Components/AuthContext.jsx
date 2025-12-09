@@ -108,10 +108,9 @@ export const AuthProvider = ({ children }) => {
 
   // Enhanced login function that stores tokens
   const login = (userData, tokens = {}) => {
-    // Ensure userData contains company_id
     const enhancedUser = {
       ...userData,
-      company_id: userData.company_id,   // <-- important
+      company_id: userData.company_id,
     };
 
     setUser(enhancedUser);

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // for redirect after success
+import { useNavigate } from "react-router-dom";
+import { BASE_URL } from "../Configuration/Config";
 
 export default function PinterestCallback() {
   const navigate = useNavigate();
@@ -7,29 +8,22 @@ export default function PinterestCallback() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const code = url.searchParams.get("code");
-    const stateEncoded = url.searchParams.get("state");
-
-    if (!stateEncoded) return;
-
-    const { oauthState, jwt } = JSON.parse(stateEncoded);
+    const state = url.searchParams.get("state");
 
     console.log("Received code:", code);
-    console.log("JWT from state:", jwt);
+    console.log("Received state:", state);
 
-    fetch("http://localhost:5000/api/pinterest/pinterest/callback", {
-      method: "POST",
-      body: JSON.stringify({ code, state: oauthState })
+    if (!code || !state) return;
+
+    fetch(`${BASE_URL}/callback?code=` + code + "&state=" + state, {
+      method: "GET",
+      credentials: "include"
     })
-      .then(res => res.json())
-      .then(data => {
-        console.log("Backend callback response:", data);
+      .then(() => {
+        navigate("/pinterest/success");
       })
       .catch(err => console.error("Callback error:", err));
   }, []);
 
-  return (
-    <div>
-      Processing Pinterest login…
-    </div>
-  );
+  return <div>Processing Pinterest login…</div>;
 }

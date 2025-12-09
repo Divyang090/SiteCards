@@ -47,25 +47,25 @@ const EditSiteMapModal = ({ siteMap, projectId, onClose, onUpdate }) => {
       }
 
       // DEBUG LOGS
-      console.log('=== SITE MAP UPDATE DATA ===');
-      console.log('space_id:', spaceId);
-      console.log('space_name:', formData.name);
-      console.log('category:', formData.category);
-      console.log('project_id:', projectId);
-      for (let [key, value] of uploadData.entries()) {
-        console.log(`${key}:`, value);
-      }
+      // console.log('=== SITE MAP UPDATE DATA ===');
+      // console.log('space_id:', spaceId);
+      // console.log('space_name:', formData.name);
+      // console.log('category:', formData.category);
+      // console.log('project_id:', projectId);
+      // for (let [key, value] of uploadData.entries()) {
+      //   console.log(`${key}:`, value);
+      // }
 
       const response = await authFetch(`${BASE_URL}/spaces/update/${spaceId}`, {
         method: 'PUT',
         body: uploadData,
       });
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
       
       if (response.ok) {
         const updatedSiteMap = await response.json();
-        console.log('Site map updated:', updatedSiteMap);
+        // console.log('Site map updated:', updatedSiteMap);
         onUpdate(updatedSiteMap);
         showMessage('Site map updated successfully!', 'success');
       } else {

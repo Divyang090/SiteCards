@@ -91,16 +91,16 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRef
   return (
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-[1px]"
       onClick={onClose}>
-      <div className="theme-bg-card rounded-lg shadow-xl w-full max-w-xl"
+      <div className="theme-bg-card rounded-lg shadow-xl w-full max-w-xl animate-fadeInUp"
         onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-500">
+        <div className="px-3 py-3 border-b border-gray-500">
           <h2 className="text-xl font-semibold theme-text-primary">Choose Preset</h2>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-96 overflow-y-auto">
+        <div className="px-3 py-3 max-h-96 overflow-y-auto scrollbar-hidden">
           {isLoading ? (
             <p className="text-gray-400">Loading presets...</p>
           ) : (
@@ -130,7 +130,7 @@ const BulkPresetModal = ({ isOpen, onClose, onSiteMapsCreated, projectId, setRef
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-500 theme-bg-secondary rounded-b-lg">
+        <div className="px-3 py-3 border-t border-gray-500 theme-bg-secondary rounded-b-lg">
           <div className="flex justify-end gap-4 items-center">
             <button
               onClick={onClose}

@@ -7,13 +7,7 @@ const AddMembersModal = ({ onClose }) => {
     const [members, setMembers] = useState([
         { username: "", domain: "@gmail.com" },
     ]);
-
-    const [domains, setDomains] = useState([
-        "@gmail.com",
-        "@hotmail.com",
-        "@yahoo.com",
-    ]);
-
+    const [domains, setDomains] = useState(["@gmail.com", "@hotmail.com", "@yahoo.com",]);
     const [openDropdown, setOpenDropdown] = useState(null);
     const [showCustomInput, setShowCustomInput] = useState(false);
     const [customDomain, setCustomDomain] = useState("");
@@ -22,113 +16,90 @@ const AddMembersModal = ({ onClose }) => {
     const { showMessage } = useStatusMessage();
     const [isSending, setIsSending] = useState(false);
 
-    const [showDomainDropdown, setShowDomainDropdown] = useState(false);
     const dropdownRef = useRef(null);
-    const modalRef = useRef(null);
+    const pcModalRef = useRef(null);
+    const mobileModalRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Close modal if clicked outside modal
-            if (modalRef.current && !modalRef.current.contains(event.target)) {
-                onClose();
-            }
+            const clickedOutsidePC =
+                pcModalRef.current &&
+                !pcModalRef.current.contains(event.target);
 
-            // Close dropdown if clicked outside dropdown but inside modal
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-                modalRef.current && modalRef.current.contains(event.target)) {
-                setOpenDropdown(false);
+            const clickedOutsideMobile =
+                mobileModalRef.current &&
+                !mobileModalRef.current.contains(event.target);
+
+            // CLOSE ONLY IF:
+            // - clicked outside PC modal when PC modal is active (screen ≥ sm)
+            // - clicked outside Mobile modal when Mobile modal is active (screen < sm)
+            if (window.innerWidth >= 640) {
+                if (clickedOutsidePC) onClose();
+            } else {
+                if (clickedOutsideMobile) onClose();
             }
         };
 
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
 
-    const usernameRegex = /^[A-Za-z0-9]+$/;
+    const emailLocalPartRegex = /^[a-zA-Z0-9._]+$/;
 
-    // Username (local-part) validation
-// Regex for the local part of an email (before @)
-const emailLocalPartRegex = /^[a-zA-Z0-9._]+$/;
+    const handleUsernameChange = (index, value) => {
+        if (value === "" || emailLocalPartRegex.test(value)) {
+            const updated = [...members];
+            updated[index].username = value;
+            setMembers(updated);
+        }
+    };
 
-const handleUsernameChange = (index, value) => {
-    if (value === "" || emailLocalPartRegex.test(value)) {
-        const updated = [...members];
-        updated[index].username = value;
-        setMembers(updated);
-    }
-};
-
-    // Domain change
     const handleDomainChange = (index, value) => {
         const updated = [...members];
         updated[index].domain = value;
         setMembers(updated);
     };
 
-    // Dropdown toggle
     const toggleDropdown = (index) => {
         setOpenDropdown(openDropdown === index ? null : index);
     };
 
-    // Select a domain from dropdown
     const selectDomain = (index, domain) => {
         handleDomainChange(index, domain);
         setOpenDropdown(null);
     };
 
-    // Add new member row
     const addMemberField = () => {
         if (members.length >= 5) {
-            showMessage("Maximum 5 members can be added at once", 'message');
+            showMessage("Maximum 5 members can be added at once", "message");
             return;
         }
         setMembers((prev) => [...prev, { username: "", domain: domains[0] }]);
     };
 
-    // Remove member row
     const removeMemberField = (index) => {
         setMembers((prev) => prev.filter((_, i) => i !== index));
     };
 
-    // Delete domain
     const deleteDomain = (dom) => {
         setDomains((prev) => prev.filter((d) => d !== dom));
-
-        // Update any user using deleted domain
         setMembers((prev) =>
-            prev.map((m) =>
-                m.domain === dom ? { ...m, domain: domains[0] } : m
-            )
+            prev.map((m) => (m.domain === dom ? { ...m, domain: domains[0] } : m))
         );
     };
 
-    // Add custom domain
     const handleAddCustomDomain = () => {
         setDomainError("");
 
         const entry = customDomain.trim().toLowerCase();
 
-        if (!entry.includes("@")) {
-            setDomainError("Domain must contain '@'");
-            return;
-        }
-
-        if (!entry.includes(".")) {
-            setDomainError("Domain must contain a dot (.)");
-            return;
-        }
-
-        if (domains.includes(entry)) {
-            setDomainError("Domain already exists");
-            return;
-        }
+        if (!entry.includes("@")) return setDomainError("Domain must contain '@'");
+        if (!entry.includes(".")) return setDomainError("Domain must contain a dot (.)");
+        if (domains.includes(entry)) return setDomainError("Domain already exists");
 
         setDomains((prev) => [...prev, entry]);
 
-        // Apply this domain to all empty new entries
         setMembers((prev) =>
             prev.map((m) =>
                 m.domain === domains[0] ? { ...m, domain: entry } : m
@@ -139,12 +110,10 @@ const handleUsernameChange = (index, value) => {
         setShowCustomInput(false);
     };
 
-    // Final submit
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (isSending) return;  // prevent double-click
-
+        if (isSending) return;
         setIsSending(true);
 
         const finalEmails = members.map((m) => m.username + m.domain);
@@ -152,115 +121,108 @@ const handleUsernameChange = (index, value) => {
         try {
             const response = await authFetch(`${BASE_URL}/invite/invite/send`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ emails: finalEmails }),
             });
 
             const data = await response.json();
-            // console.log("API Response:", data);
+            if (!response.ok) throw new Error(data.error || "Failed to send invites");
 
-            if (!response.ok) {
-                throw new Error(data.error || "Failed to send invites");
-            }
-
-            showMessage("Invites sent successfully!", 'success');
-            // console.log("Invites sent successfully");
-
-            onClose(); // close modal on success
-
+            showMessage("Invites sent successfully!", "success");
+            onClose();
         } catch (err) {
-            showMessage(`Error: ${err.message}`, 'error');
-            console.error("Invite error:", err.message);
-
+            showMessage(`Error: ${err.message}`, "error");
         } finally {
-            setIsSending(false); // re-enable button only after API completes
+            setIsSending(false);
         }
     };
 
-
-
+    /* ============================================================
+       RETURN: TWO SEPARATE MODALS (PC & MOBILE)
+    ============================================================ */
     return (
         <div
-            className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
+            className="fixed inset-0 bg-black/30 z-9999 flex p-4"
             onClick={onClose}
         >
+
+            {/* ---------------- PC / TABLET MODAL ---------------- */}
             <div
-                className="theme-bg-card shadow-2xl rounded-xl p-3 animate-slide-in-up absolute bottom-12 right-0 z-50"
+                ref={pcModalRef}
+                className="hidden sm:block theme-bg-card shadow-2xl rounded-xl p-4 absolute bottom-12 right-18 w-full max-w-md animate-slide-in-up"
                 onClick={(e) => e.stopPropagation()}
-                ref={modalRef}
             >
                 <h2 className="text-xl theme-text-primary mb-2">Add Members</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-
                     {/* Member Inputs */}
                     {members.map((member, index) => (
-                        <div key={index} className="flex items-center gap-2">
-
-                            <div className="flex w-full border border-gray-300 rounded-lg px-3 py-2 relative">
+                        <div
+                            key={index}
+                            className="hidden sm:flex items-center gap-3 w-full"
+                        >
+                            {/* Username Input – takes full width */}
+                            <div className="flex flex-1 border border-gray-300 rounded-lg px-3 py-2">
                                 <input
                                     type="text"
                                     required
                                     value={member.username}
-                                    onChange={(e) =>
-                                        handleUsernameChange(index, e.target.value)
-                                    }
+                                    onChange={(e) => handleUsernameChange(index, e.target.value)}
                                     placeholder="user-mail"
                                     className="flex-1 outline-none"
                                 />
+                            </div>
 
-                                {/* Custom Dropdown */}
-                                <div className="relative" ref={dropdownRef}>
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleDropdown(index)}
-                                        className="outline-none theme-text-secondary bg-transparent px-2"
-                                    >
-                                        {member.domain}
-                                    </button>
+                            {/* Domain — fixed natural width */}
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleDropdown(index)}
+                                    className="outline-none theme-text-secondary bg-transparent whitespace-nowrap"
+                                >
+                                    {member.domain}
+                                </button>
 
-                                    {openDropdown === index && (
-                                        <div className="absolute right-0 top-full mt-1 w-48 theme-bg-card shadow-xl rounded-lg border z-50">
+                                {/* Dropdown */}
+                                {openDropdown === index && (
+                                    <div className="absolute h-30 right-0 top-full mt-1 w-48 theme-bg-card shadow-xl rounded-lg border z-50 overflow-y-auto whitespace-nowrap scrollbar-hidden">
 
-                                            {domains.map((dom) => (
-                                                <div
-                                                    key={dom}
-                                                    className="flex justify-between items-center px-3 py-2 cursor-pointer"
-                                                    onClick={() => selectDomain(index, dom)}
-                                                >
-                                                    <span>{dom}</span>
-
-                                                    {/* Delete custom domains only */}
-                                                    {!["@gmail.com", "@hotmail.com", "@yahoo.com"].includes(dom) && (
-                                                        <button
-                                                            className="text-red-500 text-xs"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                deleteDomain(dom);
-                                                            }}
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-
-                                            {/* Add Custom Button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowCustomInput(true);
-                                                    setOpenDropdown(false);
-                                                }}
-                                                className="w-full text-left px-3 py-2 theme-bg-card border-t"
+                                        {domains.map((dom) => (
+                                            <div
+                                                key={dom}
+                                                className="flex justify-between items-center px-3 py-2 cursor-pointer"
+                                                onClick={() => selectDomain(index, dom)}
                                             >
-                                                + Add custom domain
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
+                                                <span>{dom}</span>
+
+                                                {/* Delete custom domains only */}
+                                                {!["@gmail.com", "@hotmail.com", "@yahoo.com"].includes(dom) && (
+                                                    <button
+                                                        className="text-red-500 text-xs"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteDomain(dom);
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        {/* Add custom domain */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowCustomInput(true);
+                                                setOpenDropdown(false);
+                                            }}
+                                            className="w-full text-left px-3 py-2 theme-bg-card border-t"
+                                        >
+                                            + Add custom domain
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Add Row */}
@@ -297,6 +259,7 @@ const handleUsernameChange = (index, value) => {
                             )}
                         </div>
                     ))}
+
 
                     {/* Custom Domain Input */}
                     {showCustomInput && (
@@ -357,10 +320,168 @@ const handleUsernameChange = (index, value) => {
                         >
                             {isSending ? "Sending…" : "Send Invite"}
                         </button>
-
                     </div>
                 </form>
             </div>
+
+            {/* ---------------- MOBILE MODAL ---------------- */}
+            <div
+                ref={mobileModalRef}
+                className="block sm:hidden theme-bg-card shadow-2xl rounded-xl p-2 w-full max-w-sm mx-auto animate-slide-in-up self-center"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 className="text-xl theme-text-primary mb-2">Add Members</h2>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+
+                    {members.map((member, index) => (
+                        <div key={index} className="flex items-center gap-2 w-full">
+
+                            {/* Local part scrollable */}
+                            <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hidden">
+                                <div className="inline-flex items-center border border-gray-300 rounded-lg px-3 py-2 w-max">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={member.username}
+                                        onChange={(e) => handleUsernameChange(index, e.target.value)}
+                                        placeholder="user-mail"
+                                        className="outline-none min-w-[120px]"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Domain compact on mobile */}
+                            <div className="relative flex-shrink-0 max-w-[70px]" ref={dropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleDropdown(index)}
+                                    className="outline-none theme-text-secondary bg-transparent px-2 truncate w-full text-left"
+                                >
+                                    {member.domain}
+                                </button>
+
+                                {openDropdown === index && (
+                                    <div className="absolute right-0 top-full mt-1 w-48 theme-bg-card shadow-xl rounded-lg border z-50">
+                                        {domains.map((dom) => (
+                                            <div
+                                                key={dom}
+                                                className="flex justify-between items-center px-3 py-2 cursor-pointer"
+                                                onClick={() => selectDomain(index, dom)}
+                                            >
+                                                <span>{dom}</span>
+
+                                                {!["@gmail.com", "@hotmail.com", "@yahoo.com"].includes(dom) && (
+                                                    <button
+                                                        className="text-red-500 text-xs"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            deleteDomain(dom);
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowCustomInput(true);
+                                                setOpenDropdown(false);
+                                            }}
+                                            className="w-full text-left px-3 py-2 theme-bg-card border-t"
+                                        >
+                                            + Add custom domain
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Add Row */}
+                            <button
+                                type="button"
+                                onClick={addMemberField}
+                                className="p-2 flex-shrink-0 rounded-lg theme-text-secondary"
+                            >
+                                +
+                            </button>
+
+                            {/* Remove Row */}
+                            {members.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeMemberField(index)}
+                                    className="p-2 flex-shrink-0 rounded-lg text-red-500"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Custom Domain */}
+                    {showCustomInput && (
+                        <div className="animate-fadeIn border rounded-lg p-3 theme-bg-card">
+                            <input
+                                type="text"
+                                placeholder="@example.com"
+                                value={customDomain}
+                                onChange={(e) => setCustomDomain(e.target.value)}
+                                className="border rounded-lg px-3 py-2 w-full"
+                            />
+                            {domainError && (
+                                <p className="text-red-500 text-sm mt-1">{domainError}</p>
+                            )}
+
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCustomInput(false);
+                                        setCustomDomain("");
+                                        setDomainError("");
+                                    }}
+                                    className="px-4 py-1 text-gray-600"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAddCustomDomain}
+                                    className="px-4 py-1 bg-blue-600 text-white rounded-lg"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-gray-600"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={isSending}
+                            className={`px-4 py-2 rounded-lg text-white ${isSending
+                                ? "bg-blue-400 cursor-not-allowed"
+                                : "bg-blue-600"
+                                }`}
+                        >
+                            {isSending ? "Sending…" : "Send Invite"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </div>
     );
 };

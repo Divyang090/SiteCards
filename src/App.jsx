@@ -20,6 +20,9 @@ import AuthDebug from './Pages/AuthDebug';
 import AddMembersModal from './AddingModal/AddMembersModal';
 import InviteAccept from './Components/InviteAccept';
 import PinterestCallback from './Components/PinterestCallback';
+import PinterestSuccess from './Components/PinterestSuccess';
+import VendorsPage from './Pages/VendorsPage';
+import PinterestBoardsTest from './Pages/PinterestBoardsTest';
 
 const HomeWithDelete = ({ projects, onAddProject, onLoginClick, onSearch, onFilter, searchTerm, projectsloading, error, activeProjectsCount, onDeleteProject, onEditProject }) => {
   const { showMessage, showConfirmation } = useStatusMessage();
@@ -536,6 +539,10 @@ const AppContent = () => {
               <Route path="/invite/accept" element={<InviteAccept />} />
 
               <Route path="/pinterest/callback" element={<PinterestCallback />} />
+
+              <Route path="vendors" element={<VendorsPage />} />
+
+              <Route path="/test-boards" element={<PinterestBoardsTest />} />
 
               {/* <Route path='/send' element={<AddMembersModal />}/> */}
 

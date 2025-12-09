@@ -25,9 +25,9 @@ const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInlin
     const { authFetch } = useAuth();
 
     // Add this useEffect for debugging
-    useEffect(() => {
-        console.log('Current task data:', taskData);
-    }, [taskData]);
+    // useEffect(() => {
+    //     console.log('Current task data:', taskData);
+    // }, [taskData]);
 
     // Add this validation function
     const validateForm = () => {
@@ -131,7 +131,7 @@ const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInlin
             });
 
             // Debug: Log FormData contents
-            console.log('Sending FormData:');
+            // console.log('Sending FormData:');
             for (let [key, value] of formData.entries()) {
                 if (value instanceof File) {
                     console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
@@ -159,7 +159,7 @@ const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInlin
             }
 
             const taskResult = await taskResponse.json();
-            console.log('Task creation success:', taskResult);
+            // console.log('Task creation success:', taskResult);
 
             // Reset form
             setTaskData({

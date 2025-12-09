@@ -21,16 +21,16 @@ const ForgotPasswordModal = ({ isOpen, onClose, initialEmail = '' }) => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get('token');
       
-      console.log('🔍 ForgotPasswordModal - Checking for token:', token);
+      // console.log('🔍 ForgotPasswordModal - Checking for token:', token);
       
       if (token) {
-        console.log('✅ Token found, switching to reset step');
+        // console.log('✅ Token found, switching to reset step');
         setResetToken(token);
         setCurrentStep('reset');
         // Clear the URL to prevent loops
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
-        console.log('❌ No token found, staying on email step');
+        // console.log('❌ No token found, staying on email step');
         setCurrentStep('email');
         setEmail(initialEmail);
       }

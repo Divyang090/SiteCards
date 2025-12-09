@@ -46,7 +46,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         status: formData.status
       };
 
-      console.log('Sending to backend:', backendData);
+      // console.log('Sending to backend:', backendData);
 
       // ==================== API CALL ====================
       const response = await authFetch(CREATE_PROJECT_API, {
@@ -66,8 +66,8 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
       const newProject = await response.json();
 
       // ==================== DEBUG BACKEND RESPONSE ====================
-      console.log('🔍 FULL BACKEND RESPONSE:', newProject);
-      console.log('🔍 All fields from backend:');
+      // console.log('🔍 FULL BACKEND RESPONSE:', newProject);
+      // console.log('🔍 All fields from backend:');
       Object.keys(newProject).forEach(key => {
         console.log(`  ${key}:`, newProject[key]);
       });
@@ -78,19 +78,18 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         title: newProject.project_name || newProject.name || newProject.title || formData.title,
         assignee: newProject.client_name || newProject.client || newProject.assignee || newProject.assigned_to || formData.assignee,
         status: newProject.status || formData.status,
-        // FIXED: Proper date handling - use backend response first
         docDate: newProject.due_date ? new Date(newProject.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
           newProject.end_date ? new Date(newProject.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
             formData.dueDate ? new Date(formData.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
         isOverdue: newProject.is_overdue || newProject.overdue || false,
         cardsCount: newProject.cards_count || newProject.cardsCount || 0,
         location: newProject.location || formData.location,
-        updated: newProject.updated_at ? new Date(newProject.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Just now",
+        // updated: newProject.updated_at ? new Date(newProject.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Just now",
         description: newProject.project_description || newProject.description || formData.description
       };
 
-      console.log('TRANSFORMED PROJECT:', transformedProject);
-      console.log('DATE DEBUG - Final docDate:', transformedProject.docDate);
+      // console.log('TRANSFORMED PROJECT:', transformedProject);
+      // console.log('DATE DEBUG - Final docDate:', transformedProject.docDate);
 
       // ==================== SUCCESS ====================
       setSuccess('Project created successfully!');

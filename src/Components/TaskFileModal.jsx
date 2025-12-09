@@ -138,7 +138,7 @@ const TaskFileModal = ({
       ></div>
 
       {/* Modal */}
-      <div className="relative theme-bg-card rounded-lg shadow-xl w-full max-w-2xl mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
+      <div className="animate-fadeInUp relative theme-bg-card rounded-lg shadow-xl w-full max-w-2xl mx-4 border border-gray-200 flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex justify-between items-center px-3 py-2 border-b border-gray-100">
           <div>

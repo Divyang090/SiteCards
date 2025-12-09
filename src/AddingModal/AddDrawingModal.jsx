@@ -29,7 +29,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
   //CLOSE ANIMATION HANDLER
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(() => onClose(), 200); // match CSS duration
+    setTimeout(() => onClose(), 200);
   };
 
   useEffect(() => {
@@ -44,7 +44,25 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
     e.preventDefault();
     setIsUploading(true);
 
+    // Create optimistic drawing data
+    const optimisticDrawing = {
+      id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      drawing_name: formData.name,
+      space_id: spaceId,
+      project_id: projectId,
+      description: formData.description || '',
+      created_at: new Date().toISOString(),
+      isOptimistic: true,
+      status: 'uploading',
+      file: formData.file,
+      // Add preview URL for immediate display
+      preview_url: imagePreview
+    };
+
     try {
+      // Call onAdd immediately with optimistic data
+      onAdd(optimisticDrawing);
+
       const uploadData = new FormData();
       uploadData.append('drawing_name', formData.name);
       uploadData.append('space_id', spaceId);
@@ -59,7 +77,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
       // console.log('space_id:', spaceId);
       // console.log('project_id:', projectId);
       for (let [key, value] of uploadData.entries()) {
-        console.log(`${key}:`, value);
+        // console.log(`${key}:`, value);
       }
 
       const response = await authFetch(`${BASE_URL}/drawings/post`, {
@@ -67,25 +85,55 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
         body: uploadData,
       });
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
 
       if (response.ok) {
         const newDrawing = await response.json();
-        console.log('New drawing created:', newDrawing);
-        onAdd(newDrawing);
+        // console.log('New drawing created:', newDrawing);
+        
+        // Replace optimistic drawing with real data
+        onAdd({ 
+          ...newDrawing, 
+          status: 'success',
+          // Keep the preview URL temporarily
+          preview_url: imagePreview 
+        });
+        
+        // Close modal on success
+        handleClose();
+        
+        // Show success message
+        showMessage('Drawing added successfully!', 'success');
       } else {
         // Get detailed error message
         const errorText = await response.text();
         console.error('Server error response:', errorText);
+        
+        // Mark optimistic drawing as failed
+        onAdd({ 
+          ...optimisticDrawing, 
+          status: 'error',
+          error: `Failed to add drawing: ${response.status}`
+        });
+        
         throw new Error(`Failed to add drawing: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error adding drawing:', error);
+      
+      // Mark optimistic drawing as failed
+      onAdd({ 
+        ...optimisticDrawing, 
+        status: 'error',
+        error: error.message
+      });
+      
       showMessage('Failed to add drawing: ' + error.message, 'failed');
     } finally {
       setIsUploading(false);
     }
   };
+
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
@@ -115,7 +163,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
                 <input
                   type="file"
                   required
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".jpg,.jpeg,.png"
                   onChange={handleFileChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
@@ -150,7 +198,7 @@ const AddDrawingModal = ({ spaceId, projectId, onClose, onAdd }) => {
                       />
                     </svg>
                     <p className="text-sm theme-text-secondary">Click to upload or drag and drop</p>
-                    <p className="text-xs theme-text-secondary mt-1">PDF, JPG, PNG</p>
+                    <p className="text-xs theme-text-secondary mt-1">JPG, PNG</p>
                   </>
                 )}
               </div>

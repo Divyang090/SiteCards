@@ -6,6 +6,8 @@ import { useAuth } from './AuthContext';
 import AddMembersModal from '../AddingModal/AddMembersModal';
 import ManageMembersModal from './ManageMembersModal';
 import DeleteAccountModal from './DeleteAccountModal';
+import VendorsPage from '../Pages/VendorsPage';
+import { BASE_URL } from '../Configuration/Config';
 
 const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onClose, closeModal, companyId }) => {
   const { user, logout, openAuthModal, authFetch } = useAuth();
@@ -33,7 +35,6 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
   //Extract user info
   useEffect(() => {
     if (user) {
-      // Create a normalized userInfo object
       const normalizedUserInfo = {
         name: user.pendingLoginData?.name || 'User',
         email: user.pendingLoginData?.email || '',
@@ -72,7 +73,6 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
     if (isAnimating) return;
 
     setShowMorph(true);
-    // Trigger the theme toggle which will update CSS variables
     toggleTheme();
   };
 
@@ -84,10 +84,14 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
     navigate('/templates');
   };
 
+  const handleVendorsClick =() => {
+    navigate('/vendors')
+  };
+
   //LINK PINTEREST
   const handlePinterestLink = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/pinterest/pinterest/start", {
+      const res = await authFetch(`${BASE_URL}/pinterest/start`, {
         method: "GET",
         credentials: "include",
       });
@@ -109,54 +113,6 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
       console.error("Pinterest link failed:", err);
     }
   };
-
-  // LINK PINTEREST
-  // const handlePinterestLink = async () => {
-  //   try {
-  //     // 1. Get JWT from localStorage
-  //     const jwtToken = localStorage.getItem("jwt_token");
-  //     if (!jwtToken) {
-  //       console.error("JWT token not found. Please login first.");
-  //       return;
-  //     }
-
-  //     // 2. Generate random OAuth state
-  //     const oauthState = crypto.randomUUID();
-
-  //     // 3. Combine OAuth state and JWT into a single string, then encode
-  //     const combinedState = btoa(JSON.stringify({ oauthState, jwtToken }));
-
-  //     // 4. Call backend to get auth URL
-  //     const res = await fetch("http://localhost:5000/api/pinterest/pinterest/start", {
-  //       method: "GET",
-  //       credentials: "include",
-  //       headers: {
-  //         "X-Auth-State": combinedState // optional: backend can also read this
-  //       },
-  //     });
-
-  //     if (!res.ok) {
-  //       console.error("Backend error:", res.status);
-  //       return;
-  //     }
-
-  //     const data = await res.json();
-
-  //     if (data.auth_url) {
-  //       // 5. Append combined state to the Pinterest URL
-  //       const url = new URL(data.auth_url);
-  //       url.searchParams.set("state", combinedState);
-
-  //       // Redirect the user to Pinterest OAuth
-  //       window.location.href = url.toString();
-  //     } else {
-  //       console.error("auth_url missing from response");
-  //     }
-
-  //   } catch (err) {
-  //     console.error("Pinterest link failed:", err);
-  //   }
-  // };
 
   return (
     <>
@@ -297,7 +253,7 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                   {/* Manage Members */}
                   <button
                     onClick={() => {
-                      setIsManageMembersOpen(true); // ← open new panel
+                      setIsManageMembersOpen(true);
                       setShowMenu(false);
                     }}
                     className="w-full px-3 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200"
@@ -310,11 +266,24 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      {/* <circle cx="18" cy="10" r="1.2" />
-                      <circle cx="18" cy="14" r="1.2" />
-                      <circle cx="18" cy="18" r="1.2" /> */}
                     </svg>
-                    Manage Members
+                    Teams
+                  </button>
+
+                  {/* Vendors */}
+                  <button 
+                  onClick={() => {
+                      handleVendorsClick();
+                      setShowMenu(false);
+                    }}
+                  className="w-full px-2 py-2 rounded-md text-left flex items-center gap-3 theme-text-primary hover:theme-bg-hover transition-all duration-200">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">  <path d="M3 6h18l-2 3H5L3 6z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="7" cy="13" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M4 20c0-2.2 1.8-4 4-4s4 1.8 4 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="17" cy="13" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M14 20c0-2.2 1.8-4 4-4s4 1.8 4 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Vendors
                   </button>
 
                   {/* Connect to Pinterest */}

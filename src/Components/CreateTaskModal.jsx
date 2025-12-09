@@ -117,7 +117,7 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
       taskData.files.forEach(file => formData.append('uploads', file));
 
       // Debug: Log FormData contents
-      console.log('Sending FormData:');
+      // console.log('Sending FormData:');
       for (let [key, value] of formData.entries()) {
         console.log(`${key}:`, value);
       }

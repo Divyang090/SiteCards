@@ -158,7 +158,7 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
             });
 
             // Debug: Log FormData contents
-            console.log('DEBUG - Edit FormData contents:');
+            // console.log('DEBUG - Edit FormData contents:');
             for (let [key, value] of submitFormData.entries()) {
                 if (value instanceof File) {
                     console.log(`${key}:`, value.name, `(File: ${value.size} bytes)`);
@@ -172,11 +172,11 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
                 body: submitFormData,
             });
 
-            console.log('DEBUG - Edit response status:', response.status);
+            // console.log('DEBUG - Edit response status:', response.status);
 
             if (response.ok) {
                 const updatedTask = await response.json();
-                console.log('DEBUG - Task updated successfully:', updatedTask);
+                // console.log('DEBUG - Task updated successfully:', updatedTask);
                 onUpdate(updatedTask);
                 showMessage('Task updated successfully!', 'success');
                 onClose();
@@ -229,7 +229,7 @@ const EditSiteTask = ({ task, spaceId, projectId, onClose, onUpdate, isInline = 
     };
 
     if (!task) {
-        console.log('EditSiteTask - No task provided');
+        // console.log('EditSiteTask - No task provided');
         return null;
     }
 

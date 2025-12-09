@@ -79,9 +79,9 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
 
       const inspirationId = inspiration.inspiration_id || inspiration.isnpiration_id || inspiration.id;
 
-      console.log('🔍 === INSPIRATION UPDATE DEBUGGING ===');
-      console.log('📝 Inspiration object:', inspiration);
-      console.log('🆔 Inspiration ID found:', inspirationId);
+      // console.log('🔍 === INSPIRATION UPDATE DEBUGGING ===');
+      // console.log('📝 Inspiration object:', inspiration);
+      // console.log('🆔 Inspiration ID found:', inspirationId);
 
       if (!inspirationId) {
         throw new Error('No inspiration ID found!');
@@ -99,16 +99,16 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
       }
 
       const url = `${BASE_URL}/inspiration/update_inspirations/${inspirationId}`;
-      console.log('🌐 Making PUT request to:', url);
+      // console.log('🌐 Making PUT request to:', url);
 
       // Add timeout to prevent hanging
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('⏰ Request timeout after 10 seconds');
+        // console.log('⏰ Request timeout after 10 seconds');
         controller.abort();
       }, 10000);
 
-      console.log('🕐 Starting fetch request...');
+      // console.log('🕐 Starting fetch request...');
       const startTime = Date.now();
 
       const response = await authFetch(url, {
@@ -119,30 +119,30 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
 
       clearTimeout(timeoutId);
       const endTime = Date.now();
-      console.log(`🕐 Request completed in ${endTime - startTime}ms`);
+      // console.log(`🕐 Request completed in ${endTime - startTime}ms`);
 
-      console.log('📡 Response Status:', response.status);
-      console.log('📡 Response OK:', response.ok);
+      // console.log('📡 Response Status:', response.status);
+      // console.log('📡 Response OK:', response.ok);
 
       // Get response as text first
       const responseText = await response.text();
-      console.log('📄 Raw Response Text:', responseText);
-      console.log('📄 Response Text Length:', responseText.length);
+      // console.log('📄 Raw Response Text:', responseText);
+      // console.log('📄 Response Text Length:', responseText.length);
 
       if (response.ok) {
-        console.log('✅ Request was successful');
+        // console.log('✅ Request was successful');
 
         let result;
         if (responseText && responseText.trim() !== '') {
           try {
             result = JSON.parse(responseText);
-            console.log('✅ Parsed Response JSON:', result);
+            // console.log('✅ Parsed Response JSON:', result);
           } catch (parseError) {
-            console.log('⚠️ Failed to parse JSON, using raw text:', responseText);
+            // console.log('⚠️ Failed to parse JSON, using raw text:', responseText);
             result = { message: responseText };
           }
         } else {
-          console.log('ℹ️ Empty response from server');
+          // console.log('ℹ️ Empty response from server');
           result = { message: 'Update successful' };
         }
 
@@ -157,7 +157,7 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
           updated_at: new Date().toISOString()
         };
 
-        console.log('🔄 Calling onUpdate with:', finalInspiration);
+        // console.log('🔄 Calling onUpdate with:', finalInspiration);
 
         // Update parent component
         onUpdate(finalInspiration);
@@ -165,8 +165,8 @@ const EditInspirationModal = ({ inspiration, spaceId, projectId, onClose, onUpda
         onClose();
 
       } else {
-        console.log('❌ Request failed with status:', response.status);
-        console.log('❌ Error response:', responseText);
+        // console.log('❌ Request failed with status:', response.status);
+        // console.log('❌ Error response:', responseText);
         throw new Error(`Server returned ${response.status}: ${responseText || 'No error message'}`);
       }
 

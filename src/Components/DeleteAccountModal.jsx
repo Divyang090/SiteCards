@@ -89,7 +89,7 @@ const DeleteAccountModal = ({ onClose }) => {
             console.log("Password length:", password.length);
 
             // Make API call to delete user
-            const response = await fetch(`http://127.0.0.1:5000/api/user/delete_user/${userId}`, {
+            const response = await fetch(`${BASE_URL}/user/delete_user/${userId}`, {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",

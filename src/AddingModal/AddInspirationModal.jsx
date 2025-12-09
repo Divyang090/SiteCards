@@ -3,20 +3,18 @@ import { BASE_URL } from '../Configuration/Config';
 import StatusMessageProvider from "../Alerts/StatusMessage";
 import { useStatusMessage } from "../Alerts/StatusMessage";
 import { useAuth } from "../Components/AuthContext";
+
 const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const { showMessage } = useStatusMessage();
   const { authFetch } = useAuth();
-  const [formData, setFormData] = useState({
-    title: '',
-    file: null,
-    description: '',
-    pinterestUrl: '',
-    tags: []
-  });
+  const [formData, setFormData] = useState({ title: '', file: null, description: '', pinterestUrl: '', tags: [] });
   const [isUploading, setIsUploading] = useState(false);
   const [importOption, setImportOption] = useState('');
+  const [pinterestOption, setPinterestOption] = useState(''); // 'pin' or 'board'
   const [customTag, setCustomTag] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
+  const [boards, setBoards] = useState([]);
+  const [loadingBoards, setLoadingBoards] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -25,6 +23,33 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
       }
     };
   }, [imagePreview]);
+
+  // Load Pinterest boards when board option is selected
+  useEffect(() => {
+    if (pinterestOption === 'board') {
+      loadPinterestBoards();
+    }
+  }, [pinterestOption]);
+
+  const loadPinterestBoards = async () => {
+    setLoadingBoards(true);
+    try {
+      const response = await authFetch(`${BASE_URL}/pinterest/boards`);
+      const data = await response.json();
+
+      if (Array.isArray(data.items)) {
+        setBoards(data.items);
+      } else {
+        setBoards([]);
+      }
+    } catch (err) {
+      console.error("Error loading boards:", err);
+      showMessage('Failed to load Pinterest boards', 'failed');
+      setBoards([]);
+    } finally {
+      setLoadingBoards(false);
+    }
+  };
 
   //Detects if it is a board
   const isPinterestBoardUrl = (url) => {
@@ -51,7 +76,6 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     return match ? match[1] : url; // fallback to full URL if pattern doesn't match
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -60,25 +84,27 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
       return;
     }
 
+    if (importOption === 'pinterest' && pinterestOption === 'pin' && !formData.pinterestUrl) {
+      showMessage('Please enter a Pinterest URL', 'failed');
+      return;
+    }
+
     setIsUploading(true);
 
     try {
       const uploadData = new FormData();
-      console.log("============DEBUG spaceId:=============", spaceId);
-
-
       uploadData.append('space_id', spaceId);
       uploadData.append('title', formData.title || 'Untitled Inspiration');
 
       if (importOption === 'upload') {
         uploadData.append('uploads', formData.file);
-      } else if (importOption === 'pinterest') {
+      } else if (importOption === 'pinterest' && pinterestOption === 'pin') {
         // Extract board ID
         const boardId = extractBoardIdFromUrl(formData.pinterestUrl);
 
         // Append Pinterest data
         uploadData.append('url', formData.pinterestUrl);
-        uploadData.append('board_id', boardId); // send boardId to backend
+        uploadData.append('board_id', boardId);
         uploadData.append('isBoard', isPinterestBoardUrl(formData.pinterestUrl));
       }
 
@@ -115,7 +141,6 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     }
   };
 
-
   const handleAddCustomTag = () => {
     if (customTag.trim() && !formData.tags.includes(customTag.trim())) {
       setFormData(prev => ({
@@ -133,7 +158,17 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     }));
   };
 
-  if (!importOption) {
+  // Handle board selection
+  const handleBoardSelect = (board) => {
+    // Here you would implement board import logic
+    // For now, just show a message and close
+    showMessage(`Selected board: ${board.name}. Board import functionality to be implemented.`, 'success');
+    // You could add board import logic here
+    // onClose();
+  };
+
+  // Render Pinterest options selection
+  if (importOption === '' && !pinterestOption) {
     return (
       <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
         onClick={onClose}
@@ -147,7 +182,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
           </p>
 
           <div className="space-y-4">
-            {/*Upload from Device */}
+            {/* Upload from Device */}
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
               onClick={() => setImportOption('upload')}
@@ -159,7 +194,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
               <p className="text-xs theme-text-secondary">Choose images from your device or storage</p>
             </div>
 
-            {/*Import from Pinterest */}
+            {/* Import from Pinterest */}
             <div
               className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
               onClick={() => setImportOption('pinterest')}
@@ -168,7 +203,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
                 <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.042-3.441.219-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017 0z" />
               </svg>
               <div className="text-sm font-medium mb-1">Import from Pinterest</div>
-              <p className="text-xs text-gray-500">Paste a Pinterest pin URL</p>
+              <p className="text-xs text-gray-500">Import pins or entire boards</p>
             </div>
           </div>
         </div>
@@ -176,7 +211,162 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
     );
   }
 
-  // If an option is selected, show the respective form
+  // Render Pinterest options (pin or board)
+  if (importOption === 'pinterest' && !pinterestOption) {
+    return (
+      <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
+        onClick={onClose}
+      >
+        <div className="shadow-2xl animate-fadeInUp theme-bg-secondary rounded-lg max-w-md w-full p-6"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => setImportOption('')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
+
+          <h2 className="text-xl font-bold mb-2">Import from Pinterest</h2>
+          <p className="theme-text-secondary mb-6">
+            Choose what you want to import from Pinterest
+          </p>
+
+          <div className="space-y-4">
+            {/* Import Individual Pins */}
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
+              onClick={() => setPinterestOption('pin')}
+            >
+              <div className="flex justify-center items-center mb-2">
+                <svg className="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L4 12l8 10 8-10L12 2zm0 15a3 3 0 110-6 3 3 0 010 6z" />
+                </svg>
+              </div>
+              <div className="text-sm font-semibold mb-1">Import Individual Pins</div>
+              <p className="text-xs theme-text-secondary">Import single pins using URLs</p>
+            </div>
+
+            {/* Import Boards */}
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
+              onClick={() => setPinterestOption('board')}
+            >
+              <div className="flex justify-center items-center mb-2">
+                <svg className="w-6 h-6 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4 4h7v7H4zm0 9h7v7H4zm9 0h7v7h-7zm0-9h7v7h-7z" />
+                </svg>
+              </div>
+              <div className="text-sm font-semibold mb-1">Import Boards</div>
+              <p className="text-xs theme-text-secondary">Import entire Pinterest boards</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render board grid view
+  if (pinterestOption === 'board') {
+    return (
+      <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px] overflow-auto"
+        onClick={onClose}
+      >
+        <div className="theme-bg-secondary rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <button
+                type="button"
+                onClick={() => setPinterestOption('')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+              <h2 className="text-xl font-bold mt-2">Select a Pinterest Board</h2>
+              <p className="theme-text-secondary text-sm">Choose a board to import</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {loadingBoards ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3">Loading boards...</span>
+            </div>
+          ) : boards.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="theme-text-secondary">No Pinterest boards found</p>
+              <button
+                onClick={loadPinterestBoards}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {boards.map((board) => (
+                <div
+                  key={board.id}
+                  className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer theme-bg-primary"
+                  onClick={() => handleBoardSelect(board)}
+                >
+                  {board.image_cover_url ? (
+                    <div className="h-40 overflow-hidden">
+                      <img
+                        src={board.image_cover_url}
+                        alt={board.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-40 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
+                      <svg className="w-12 h-12 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.042-3.441.219-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017 0z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h3 className="font-semibold truncate">{board.name}</h3>
+                    {board.description && (
+                      <p className="text-sm theme-text-secondary truncate mt-1">{board.description}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-xs text-gray-500">
+                        {board.pin_count || 0} pins
+                      </span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                        Import
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Render the form (for upload or individual pin)
   return (
     <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px]"
       onClick={onClose}
@@ -184,10 +374,38 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
       <div className="theme-bg-secondary rounded-lg max-w-md w-full p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-sm font-bold mb-2">Add Inspiration Images</h2>
-        <p className="theme-text-secondary mb-6">
-          Upload images or import from Pinterest to build your inspiration board
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                if (importOption === 'pinterest') {
+                  setPinterestOption('');
+                } else {
+                  setImportOption('');
+                }
+              }}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            <h2 className="text-sm font-bold mt-2">
+              {importOption === 'upload' ? 'Upload from Device' : 'Import Individual Pin'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -232,7 +450,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
             )}
 
             {/* Pinterest Import Section */}
-            {importOption === 'pinterest' && (
+            {importOption === 'pinterest' && pinterestOption === 'pin' && (
               <div>
                 <label className="block text-sm font-medium theme-text-secondary mb-1">Pinterest URL</label>
                 <input
@@ -327,11 +545,11 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
           <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
-              onClick={() => setImportOption('')}
+              onClick={onClose}
               disabled={isUploading}
               className="px-4 py-2 text-gray-600 hover:text-gray-500 disabled:opacity-50"
             >
-              Back
+              Cancel
             </button>
             <button
               type="submit"

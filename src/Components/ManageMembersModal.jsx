@@ -27,7 +27,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${BASE_URL}/user/get_users_by_company/${companyId}`
+        `${BASE_URL}/user/get_users_by_company_with_role/${companyId}`
       );
 
       if (!response.ok) {
@@ -87,6 +87,14 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
     }
   };
 
+  useEffect(() => {
+    console.log("Members state:", members);
+    if (Array.isArray(members)) {
+      members.forEach((m, i) => console.log(`member[${i}] keys:`, Object.keys(m), "roles:", m.roles));
+    }
+  }, [members]);
+
+
   return (
     <div
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center md:p-6 p-4 z-50"
@@ -133,7 +141,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
                 <div className="grid grid-cols-4 items-center px-4 py-2 theme-bg-primary theme-text-secondary text-sm font-medium">
                   <span className="text-center">Name</span>
                   <span className="text-center">Email</span>
-                  <span className="text-center">Created At</span>
+                  <span className="text-center">Roles</span>
                   <span className="text-center">Action</span>
                 </div>
 
@@ -147,11 +155,20 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
                         className="grid grid-cols-4 px-4 py-3 border-t theme-border theme-text-primary text-sm items-center hover:theme-bg-hover"
                       >
                         <span className="text-center overflow-auto whitespace-nowrap scrollbar-hidden px-2">{member.user_name || "—"}</span>
-                        <span className="text-center overflow-auto whitespace-nowrap scrollbar-hidden px-2">{member.user_email || "—"}</span>
+                        <span className="text-center overflow-auto whitespace-nowrap scrollbar-hidden px-2">
+                          {member.user_email ? (
+                            <a
+                              href={`mailto:${member.user_email}`}
+                              className="text-blue-400 hover:underline"
+                            >
+                              {member.user_email}
+                            </a>) : ("—")}
+                        </span>
                         <span className="text-center whitespace-nowrap px-2">
-                          {member.created_at
+                          {/* {member.created_at
                             ? new Date(member.created_at).toLocaleDateString()
-                            : "—"}
+                            : "—"} */}
+                          {member.roles.join(", ")}
                         </span>
                         <div className="text-center">
                           <button
@@ -192,8 +209,8 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
                           {/* Left side - Name and info */}
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <div className="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-medium text-blue-500">
+                              <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-medium text-green-500">
                                   {(member.user_name || 'U').charAt(0).toUpperCase()}
                                 </span>
                               </div>
@@ -205,8 +222,15 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
                             </div>
 
                             {/* Email */}
-                            <p className="text-xs overflow-auto scrollbar-hidden theme-text-secondary" title={member.user_email}>
-                              {member.user_email || "No email"}
+                            <p className="text-xs overflow-auto scrollbar-hidden theme-text-secondary">
+                              {member.user_email ? (
+                                <a
+                                  href={`mailto:${member.user_email}`}
+                                  title={member.user_email}
+                                  className="hover:underline text-blue-400"
+                                >
+                                  {member.user_email}
+                                </a>) : ("No email")}
                             </p>
                           </div>
 
@@ -245,7 +269,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
           {!showInvitePopup && (
             <button
               onClick={() => setShowInvitePopup(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 hover:text-lg transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -260,21 +284,21 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
               Send Invite
             </button>
           )}
-
-          {showInvitePopup && (
-            <div className="absolute bottom-14 right-0 animate-slide-in-up w-[100rem]">
-              {/* change */}
-              <AddMembersModal
-                onClose={() => {
-                  setShowInvitePopup(false);
-                  fetchMembers();
-                }}
-                companyId={companyId}
-              />
-            </div>
-          )}
         </div>
       </div>
+
+      {showInvitePopup && (
+        <div className="absolute bottom-16 right-4 w-full max-w-sm sm:max-w-md lg:max-w-lg">
+          {/* change */}
+          <AddMembersModal
+            onClose={() => {
+              setShowInvitePopup(false);
+              fetchMembers();
+            }}
+            companyId={companyId}
+          />
+        </div>
+      )}
     </div>
   );
 };

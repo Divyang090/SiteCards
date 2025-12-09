@@ -20,7 +20,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
     // console.log('Available file properties:', Object.keys(file));
 
     const drawingId = file.drawing_id || file.id || file.file_id;
-    console.log('Drawing ID to delete:', drawingId);
+    // console.log('Drawing ID to delete:', drawingId);
     const drawingName = file.drawing_name;
 
     if (!drawingId) {
@@ -109,7 +109,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
   };
 
   return (
-    <div className="theme-border-light rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 group cursor-pointer"
+    <div className="theme-border-light rounded-lg overflow-hidden shadow-sm hover:shadow-2xl transition-shadow duration-300 group cursor-pointer"
       onClick={() => onClick && onClick(file)}
     >
       <div className="aspect-video bg-gray-100 relative overflow-hidden">
@@ -195,6 +195,7 @@ const DrawingCard = ({ file, onEdit, onDelete, onClick }) => {
           )}
         </div>
       </div>
+      
     </div>
   );
 };

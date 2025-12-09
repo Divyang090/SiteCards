@@ -51,7 +51,7 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
         onClick={onClose}
       ></div>
 
-      <div className="relative theme-bg-secondary rounded-lg w-full max-w-md mx-4 shadow-2xl">
+      <div className="relative theme-bg-secondary rounded-lg w-full max-w-md mx-4 shadow-2xl animate-fadeInUp">
         <div className="flex justify-between items-center md:p-4 p-2 border-b border-gray-100">
           <h2 className="text-xl font-semibold theme-text-primary">Upload Site Map</h2>
           <button

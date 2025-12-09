@@ -87,8 +87,8 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
   // Autofill data from default vendors
   const handleVendorSelect = async (vendor) => {
-    console.log('=== VENDOR SELECT DEBUG START ===');
-    console.log('Original vendor object:', vendor);
+    // console.log('=== VENDOR SELECT DEBUG START ===');
+    // console.log('Original vendor object:', vendor);
 
     // Validate required fields
     if (!vendor.email) {
@@ -115,10 +115,10 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
       trade: ""
     };
 
-    console.log('Processed vendor data:', vendorData);
-    console.log('spaceId:', spaceId);
-    console.log('URL:', `${BASE_URL}/vendors/vendors/post/space/${spaceId}`);
-    console.log('=== VENDOR SELECT DEBUG END ===');
+    // console.log('Processed vendor data:', vendorData);
+    // console.log('spaceId:', spaceId);
+    // console.log('URL:', `${BASE_URL}/vendors/vendors/post/space/${spaceId}`);
+    // console.log('=== VENDOR SELECT DEBUG END ===');
 
     try {
       setIsSubmitting(true);
@@ -129,12 +129,12 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
         body: JSON.stringify(vendorData),
       });
 
-      console.log('DEBUG - Response status:', response.status);
-      console.log('DEBUG - Response headers:', Object.fromEntries(response.headers.entries()));
+      // console.log('DEBUG - Response status:', response.status);
+      // console.log('DEBUG - Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const newVendor = await response.json();
-        console.log('DEBUG - Success response:', newVendor);
+        // console.log('DEBUG - Success response:', newVendor);
 
         const transformedVendor = {
           id: newVendor.vendor_id,
@@ -239,8 +239,8 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
 
     try {
 
-      console.log('=== MANUAL SUBMIT DEBUG ===');
-      console.log('Form data:', formData);
+      // console.log('=== MANUAL SUBMIT DEBUG ===');
+      // console.log('Form data:', formData);
 
       const requestData = {
         contact_person: formData.name,
@@ -254,9 +254,9 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
         project_id: projectId
       };
 
-      console.log('Manual request data:', requestData);
-      console.log('Manual spaceId:', spaceId);
-      console.log('=== MANUAL SUBMIT DEBUG END ===');
+      // console.log('Manual request data:', requestData);
+      // console.log('Manual spaceId:', spaceId);
+      // console.log('=== MANUAL SUBMIT DEBUG END ===');
 
       const response = await authFetch(`${BASE_URL}/vendors/vendors/post/space/${spaceId}`, {
         method: 'POST',
@@ -266,11 +266,11 @@ const AddVendorModal = ({ spaceId, projectId, onClose, onAdd }) => {
         body: JSON.stringify(requestData),
       });
 
-      console.log('Response status:', response.status);
+      // console.log('Response status:', response.status);
 
       if (response.ok) {
         const newVendor = await response.json();
-        console.log('New vendor created successfully:', newVendor);
+        // console.log('New vendor created successfully:', newVendor);
 
         //Transform backend response to match frontend structure
         const transformedVendor = {
