@@ -27,7 +27,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${BASE_URL}/user/get_users_by_company_with_role/${companyId}`
+        `${BASE_URL}/user/get_users_from_company_with_role/${companyId}`
       );
 
       if (!response.ok) {
@@ -37,7 +37,7 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
       const data = await response.json();
 
       // API returns array directly, not {members: [...]}
-      console.log("API Response:", data);
+      // console.log("API Response:", data);
       setMembers(data || []);
       setError("");
     } catch (err) {
@@ -49,8 +49,8 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
   };
 
   useEffect(() => {
-    console.log("AuthContext user:", user);
-    console.log("Derived Company ID:", companyId);
+    // console.log("AuthContext user:", user);
+    // console.log("Derived Company ID:", companyId);
 
     if (companyId) {
       fetchMembers();
@@ -87,12 +87,12 @@ const ManageMembersModal = ({ onClose, companyId: propCompanyId }) => {
     }
   };
 
-  useEffect(() => {
-    console.log("Members state:", members);
-    if (Array.isArray(members)) {
-      members.forEach((m, i) => console.log(`member[${i}] keys:`, Object.keys(m), "roles:", m.roles));
-    }
-  }, [members]);
+  // useEffect(() => {
+  //   console.log("Members state:", members);
+  //   if (Array.isArray(members)) {
+  //     members.forEach((m, i) => console.log(`member[${i}] keys:`, Object.keys(m), "roles:", m.roles));
+  //   }
+  // }, [members]);
 
 
   return (

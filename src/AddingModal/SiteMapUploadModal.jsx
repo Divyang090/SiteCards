@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useStatusMessage } from '../Alerts/StatusMessage';
 import { useAuth } from "../Components/AuthContext";
+import { motion } from "framer-motion";
 
 const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
-  const {showConfirmation, showMessage} = useStatusMessage();
+  const { showConfirmation, showMessage } = useStatusMessage();
   const [formData, setFormData] = useState({
     name: '',
     category: '',
     description: '',
     file: null
   });
+  const [open, setOpen] = useState(false);
 
   const categories = [
     'Custom',
@@ -81,26 +83,55 @@ const SiteMapUploadModal = ({ onClose, onSubmit, isUploading }) => {
             </div>
 
             {/* Category Dropdown */}
-            <div className='w-[120px]'>
+            <div className="w-[150px]">
               <label className="block text-sm font-medium theme-text-secondary mb-2">
                 Category
               </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                required
-                size={1}
-                className="w-full px-3 py-2 theme-bg-card theme-text-secondary border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:bg-gray-500 transition-colors duration-200 overflow-y-auto max-h-20"
-              >
-                <option value="">Category</option>
-                {categories.map(category => (
-                  <option key={category} value={category} className="theme-bg-card theme-text-secondary">
-                    {category}
-                  </option>
-                ))}
-              </select>
+
+              <div className="relative w-full">
+                <button
+                  type="button"
+                  onClick={() => setOpen(!open)}
+                  className=" w-full px-3 py-2 theme-bg-card theme-text-secondary  border border-gray-300 rounded-2xl cursor-pointer  flex justify-between items-center"
+                >
+                  {formData.category || "Category"}
+                  <motion.svg
+                    initial={{ rotate: 0 }}
+                    animate={{ rotate: open ? 180 : 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-4 h-4 theme-text-secondary"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                  </motion.svg>
+                </button>
+
+                {open && (
+                  <div
+                    className="absolute mt-2 w-full  theme-bg-card border border-gray-300  rounded-2xl shadow-lg z-50  max-h-40 overflow-y-auto scrollbar-hidden"
+                  >
+                    {categories.map(category => (
+                      <div
+                        key={category}
+                        onClick={() => {
+                          handleChange({ target: { name: "category", value: category } });
+                          setOpen(false);
+                        }}
+                        className=" px-4 py-2 theme-text-secondary  hover:bg-gray-400 cursor-pointer  rounded-xl mx-1 my-1 transition"
+                      >
+                        {category}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
             </div>
+
             {/* <div>
               <label className='block text-sm font-medium theme-text-secondary mb-2'>
                 Description

@@ -96,14 +96,11 @@ const CreateTaskModal = ({ isOpen, onClose, onCreate, projectId, isInline = fals
       formData.append('task_type', taskData.task_type);
       formData.append('project_id', String(projectId));
 
-      // ✅ FIX: Convert date from "yyyy-mm-ddThh:mm" to "dd-mm-yyyyThh-mm"
       if (taskData.date) {
-        // Parse the datetime-local input (format: "yyyy-mm-ddThh:mm")
         const [datePart, timePart] = taskData.date.split('T');
         const [year, month, day] = datePart.split('-');
         const [hours, minutes] = timePart.split(':');
 
-        // Convert to "dd-mm-yyyyThh-mm"
         const formattedDate = `${day}-${month}-${year}T${hours}:${minutes}`;
         formData.append('date', formattedDate);
       }
@@ -440,6 +437,17 @@ const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
 
 // Conditional fields for selecting task type
 const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
+  const dateInputRef = useRef(null);
+  //Date Cliclable
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+  };
+
+  const handleInputFocus = () => {
+    if (dateInputRef.current && typeof dateInputRef.current.showPicker === 'function') {
+      dateInputRef.current.showPicker();
+    }
+  };
   if (task_type === 'Site Visits') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -451,6 +459,8 @@ const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
             name="date"
             value={taskData.date}
             onChange={handleChange}
+            ref={dateInputRef}
+            onFocus={handleInputFocus}
             required
             className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
           />
@@ -472,6 +482,8 @@ const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
             name="date"
             value={taskData.date}
             onChange={handleChange}
+            ref={dateInputRef}
+            onFocus={handleInputFocus}
             required
             className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
           />

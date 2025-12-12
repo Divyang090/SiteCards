@@ -9,23 +9,24 @@ const TaskFileModal = ({
 }) => {
   if (!isOpen) return null;
 
+  const [previewFile, setPreviewFile] = React.useState(null);
+
   //Download handler
   const handleDownload = (file) => {
     if (file.file_path && file.filename) {
-      const downloadUrl = `${file.file_path}`;
-      window.open(downloadUrl, '_blank');
+      const downloadUrl = buildFileUrl(file.file_path);
+      window.open(downloadUrl, "_blank");
       return;
     }
 
-    // Original logic for other file types
-    if (typeof file === 'string') {
-      window.open(file, '_blank');
+    if (typeof file === "string") {
+      window.open(file, "_blank");
       return;
     }
 
     if (file instanceof File) {
       const url = URL.createObjectURL(file);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = file.name;
       document.body.appendChild(a);
@@ -35,26 +36,36 @@ const TaskFileModal = ({
     }
   };
 
+
+  // URL Builder
+  const buildFileUrl = (filePath) => {
+    if (!filePath) return "";
+    const clean = filePath.replace(/\\/g, "/");
+    return `${BASE_URL}/${filePath.replace(/\\/g, "/")}`;
+  };
+
+
   // View handler
   const handleView = (file) => {
-    // Handle backend file objects
     if (file.file_path && file.filename) {
-      const viewUrl = `${file.file_path}`; // You might need your base URL here
-      window.open(viewUrl, '_blank');
-      return;
-    }
-
-    // Original logic for other file types
-    if (typeof file === 'string') {
-      window.open(file, '_blank');
+      const viewUrl = buildFileUrl(file.file_path);
+      setPreviewFile({
+        url: viewUrl,
+        name: file.filename,
+      });
       return;
     }
 
     if (file instanceof File) {
       const url = URL.createObjectURL(file);
-      window.open(url, '_blank');
+      setPreviewFile({
+        url,
+        name: file.name,
+      });
     }
   };
+
+
 
   //FileIcon
   const getFileIcon = (file) => {
@@ -159,56 +170,116 @@ const TaskFileModal = ({
           </button>
         </div>
 
-        {/* Files List */}
+        {/* Files List & Preview */}
         <div className="p-3 overflow-y-auto flex-1">
-          {files.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-gray-400 mb-3">
-                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium theme-text-primary mb-2">No files</h3>
-              <p className="text-gray-500 text-sm">This task has no attached files.</p>
+
+          {/* ===== PREVIEW MODE ===== */}
+          {previewFile ? (
+            <div className="flex flex-col items-center gap-4">
+
+              {/* Back Button */}
+              <button
+                onClick={() => setPreviewFile(null)}
+                className="px-3 py-1 text-sm theme-text-secondary flex absolute left-3"
+              >
+                ← Back
+              </button>
+
+              {/* File Name */}
+              <h3 className="text-lg font-semibold theme-text-primary text-center">
+                {previewFile.name}
+              </h3>
+
+              {/* IMAGE PREVIEW */}
+              {previewFile.url.match(/\.(jpg|jpeg|png|gif)$/i) && (
+                <img
+                  src={previewFile.url}
+                  alt={previewFile.name}
+                  className="max-h-[65vh] rounded-lg shadow-md object-contain"
+                />
+              )}
+
+              {/* PDF PREVIEW */}
+              {previewFile.url.match(/\.pdf$/i) && (
+                <iframe
+                  src={previewFile.url}
+                  className="w-full h-[70vh] rounded-lg border"
+                  title="PDF Viewer"
+                />
+              )}
+
+              {/* FALLBACK */}
+              {!previewFile.url.match(/\.(jpg|jpeg|png|gif|pdf)$/i) && (
+                <div className="text-center">
+                  <p className="text-gray-500 mb-3">
+                    Preview not available for this file type.
+                  </p>
+                  <button
+                    onClick={() => window.open(previewFile.url, "_blank")}
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Download File
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-2xl transition-colors duration-200"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="text-xl">{getFileIcon(file)}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium theme-text-primary text-sm truncate">
-                        {getFileName(file)}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        {getFileSize(file)}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleView(file)}
-                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleDownload(file)}
-                      className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
-                    >
-                      Download
-                    </button>
+            /* ===== NORMAL FILE LIST ===== */
+            <>
+              {files.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-3">
+                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                        d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
                   </div>
+                  <h3 className="text-lg font-medium theme-text-primary mb-2">No files</h3>
+                  <p className="text-gray-500 text-sm">This task has no attached files.</p>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="space-y-3">
+                  {files.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-md hover:shadow-lg transition-colors duration-200"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <span className="text-xl">{getFileIcon(file)}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium theme-text-primary text-sm truncate">
+                            {getFileName(file)}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            {getFileSize(file)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleView(file)}
+                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDownload(file)}
+                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-200"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
+
         </div>
+
 
       </div>
     </div>

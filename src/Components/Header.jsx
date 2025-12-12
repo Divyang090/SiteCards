@@ -196,8 +196,8 @@ const Header = ({ onNewProjectClick, onLoginClick, activeProjectsCount = 0, onCl
                   </div>
                 </div>
               )}
-            </div>
-          ) : (
+            </div> 
+            ) : (
             <button
               onClick={openAuthModal}
               className="px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:opacity-80 theme-border theme-text-primary theme-bg-secondary border"

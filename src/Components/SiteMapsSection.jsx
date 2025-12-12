@@ -355,7 +355,7 @@ const SiteMapsSection = ({ projectId, siteMaps = [] }) => {
       {/* Site Maps Grid */}
       <div className={`${selectedSiteMap ? 'hidden' : 'block'}`}>
         {siteMapsList?.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-200px)] scrollbar-hidden p-6">
             {siteMapsList.map((siteMap) => (
               <SiteMapCard
                 key={siteMap.space_id || siteMap.id || `sitemap-${siteMap.name}`}
@@ -1151,7 +1151,7 @@ const SiteMapDetailSection = ({ siteMap, onClose, tabs, activeTab, onTabChange }
               <p className="text-gray-500 mt-2">Loading drawings...</p>
             </div>
           ) : drawings.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {drawings.map((file) => (
                 <DrawingCard
                   key={file.drawing_id || file.id}

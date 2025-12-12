@@ -3,7 +3,7 @@ import { useTheme } from '../Components/ThemeContext';
 import { useAuth } from '../Components/AuthContext';
 import { BASE_URL } from '../Configuration/Config';
 
-const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, top: 0 }}) => {
+const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, top: 0 } }) => {
     const { isDark } = useTheme();
     const { authFetch, user } = useAuth();
     const [members, setMembers] = useState([]);
@@ -50,18 +50,19 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
     const fetchMembers = async () => {
         // console.log('🔍 fetchMembers called');
         // console.log('User company_id:', user?.company_id);
+        // console.log('Project id:', project?.id);
 
-        if (!user?.company_id) {
-            console.error('❌ No company_id found');
+        if (!user?.company_id || !project?.id) {
+            console.error('❌ No company_id or project_id found');
             return;
         }
 
         setLoading(true);
         try {
-            const apiUrl = `${BASE_URL}/user/get_users_by_company/${user.company_id}`;
+            // Updated API URL with both company_id and project_id
+            const apiUrl = `${BASE_URL}/user/get_users_by_company/${user.company_id}/${project.id}`;
             // console.log('📡 API URL:', apiUrl);
 
-            // Try with authFetch first
             const response = await authFetch(apiUrl);
 
             // console.log('📨 Response status:', response.status);
@@ -81,13 +82,22 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
             setMembers(membersList);
             setFilteredMembers(membersList);
 
+            // Initialize addedMembers based on 'assigned' field
+            const initialAddedMembers = {};
+            membersList.forEach(member => {
+                if (member.assigned) {
+                    initialAddedMembers[member.user_id] = true;
+                }
+            });
+            setAddedMembers(initialAddedMembers);
+
         } catch (error) {
             console.error('❌ Error fetching members:', error);
 
             // Fallback: Try direct fetch
             try {
                 const token = localStorage.getItem('accessToken');
-                const apiUrl = `${BASE_URL}/api/user/get_users_by_company/${user.company_id}`;
+                const apiUrl = `${BASE_URL}/user/get_users_by_company/${user.company_id}/${project.id}`;
 
                 const directResponse = await fetch(apiUrl, {
                     headers: {
@@ -103,11 +113,21 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
                     const membersList = Array.isArray(directData) ? directData : [];
                     setMembers(membersList);
                     setFilteredMembers(membersList);
+
+                    // Initialize addedMembers based on 'assigned' field
+                    const initialAddedMembers = {};
+                    membersList.forEach(member => {
+                        if (member.assigned) {
+                            initialAddedMembers[member.user_id] = true;
+                        }
+                    });
+                    setAddedMembers(initialAddedMembers);
                 }
             } catch (fallbackError) {
                 console.error('❌ Fallback also failed:', fallbackError);
                 setMembers([]);
                 setFilteredMembers([]);
+                setAddedMembers({});
             }
         } finally {
             setLoading(false);
@@ -134,12 +154,21 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
             const data = await response.json();
             // console.log('Add members response:', data);
 
-            // Update added members state based on API response
+            // Update added members state
             const newAddedMembers = { ...addedMembers };
             userIds.forEach(userId => {
                 newAddedMembers[userId] = true;
             });
             setAddedMembers(newAddedMembers);
+
+            // Also update the members list to reflect assigned status
+            setMembers(prevMembers =>
+                prevMembers.map(member =>
+                    userIds.includes(member.user_id)
+                        ? { ...member, assigned: true }
+                        : member
+                )
+            );
 
             return data;
         } catch (error) {
@@ -148,7 +177,7 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
         }
     };
 
-    //Remove Members from Project
+    // Remove Members from Project
     const removeMemberFromProject = async (userId) => {
         try {
             const response = await authFetch(
@@ -163,13 +192,21 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
             const data = await response.json();
             // console.log("Remove member response:", data);
 
+            // Update the members list to reflect assigned status
+            setMembers(prevMembers =>
+                prevMembers.map(member =>
+                    member.user_id === userId
+                        ? { ...member, assigned: false }
+                        : member
+                )
+            );
+
             return data;
         } catch (error) {
             console.error("Error removing member:", error);
             throw error;
         }
     };
-
 
     // Handle adding/removing a member
     const handleMemberAction = async (member) => {
@@ -221,10 +258,16 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
         }
     };
 
-
+    // Get button state
     // Get button state
     const getMemberButtonState = (memberId) => {
+        // First check if member is in addedMembers state
         if (addedMembers[memberId]) return 'added';
+
+        // Also check the original data if available
+        const member = members.find(m => m.user_id === memberId);
+        if (member?.assigned) return 'added';
+
         const state = addingMembers[memberId];
         if (state === true) return 'loading';
         if (state === 'success') return 'success';
@@ -290,10 +333,13 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
         );
     };
 
-    // Separate added and not added members
-    const addedMembersList = filteredMembers.filter(member => addedMembers[member.user_id]);
-    const notAddedMembersList = filteredMembers.filter(member => !addedMembers[member.user_id]);
-
+    // Separate added and not added members based on both state and assigned field
+    const addedMembersList = filteredMembers.filter(member =>
+        addedMembers[member.user_id] || member.assigned
+    );
+    const notAddedMembersList = filteredMembers.filter(member =>
+        !addedMembers[member.user_id] && !member.assigned
+    );
     if (!isOpen) return null;
 
     return (
@@ -314,20 +360,6 @@ const AddMembersDropdown = ({ project, isOpen, onClose, position = { right: 0, t
         >
             {/* Header */}
             <div className="px-3 py-2 border-b border-gray-200">
-                {/* <div className="flex items-center justify-between mb-2"> */}
-                {/* <h4 className={`font-medium text-sm ${isDark ? 'theme-text-primary' : 'text-gray-700'}`}>
-                        Add Members to {project?.title || 'Project'}
-                    </h4> */}
-                {/* <button
-                        onClick={onClose}
-                        className={`p-1 rounded ${isDark ? 'hover:theme-bg-hover' : 'hover:bg-gray-100'}`}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button> */}
-                {/* </div> */}
-
                 {/* Search Bar */}
                 <div className="relative">
                     <input

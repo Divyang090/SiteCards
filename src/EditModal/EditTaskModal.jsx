@@ -469,6 +469,18 @@ const ActionButtons = ({ isLoading, onCancel, taskTitle, isInline, isEdit }) => 
 );
 
 const ConditionalFields = ({ task_type, formData, handleChange, isInline }) => {
+  const dateInputRef = useRef(null);
+
+  //Date Click
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+  };
+  const handleInputFocus = () => {
+    if (dateInputRef.current && typeof dateInputRef.current.showPicker === 'function') {
+      dateInputRef.current.showPicker();
+    }
+  };
+
   // Convert date to datetime-local format if needed
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
@@ -494,6 +506,9 @@ const ConditionalFields = ({ task_type, formData, handleChange, isInline }) => {
             name="date"
             value={formatDateForInput(formData.date)}
             onChange={handleChange}
+            ref={dateInputRef}
+            // onMouseDown={handleMouseDown}
+            onFocus={handleInputFocus}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
           />
@@ -512,6 +527,8 @@ const ConditionalFields = ({ task_type, formData, handleChange, isInline }) => {
             name="date"
             value={formatDateForInput(formData.date)}
             onChange={handleChange}
+            ref={dateInputRef}
+            onFocus={handleInputFocus}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 text-sm"
           />

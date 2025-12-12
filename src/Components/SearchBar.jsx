@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../assets/responsive.css'
+import { motion } from "framer-motion";
 
 const SearchBar = ({ onSearch, onFilter, currentFilter, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -92,11 +93,23 @@ const SearchBar = ({ onSearch, onFilter, currentFilter, onClose }) => {
                 : 'theme-bg-card theme-text-primary hover:gray-500'
               }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 
-              1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 
-              7.207A1 1 0 013 6.5V4z" />
-            </svg>
+            <motion.svg
+  initial={{ rotate: 0 }}
+  animate={{ rotate: showFilterDropdown ? 180 : 0 }}
+  transition={{ duration: 0.35, ease: "easeInOut" }}
+  className="w-5 h-5"
+  fill="none"
+  viewBox="0 0 24 24"
+  stroke="currentColor"
+>
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={2}
+    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"
+  />
+</motion.svg>
+
           </button>
 
           {/* Clear Filter Button*/}

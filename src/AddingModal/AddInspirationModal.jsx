@@ -15,6 +15,11 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [boards, setBoards] = useState([]);
   const [loadingBoards, setLoadingBoards] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState(null);
+  const [boardPins, setBoardPins] = useState([]);
+  const [loadingPins, setLoadingPins] = useState(false);
+  const [selectedPins, setSelectedPins] = useState([]);
+  const [importStep, setImportStep] = useState('selectBoard');
 
   useEffect(() => {
     return () => {
@@ -48,6 +53,28 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
       setBoards([]);
     } finally {
       setLoadingBoards(false);
+    }
+  };
+
+  //Load Pins from boards
+  const loadBoardPins = async (boardId) => {
+    setLoadingPins(true);
+    try {
+      const response = await authFetch(`${BASE_URL}/pinterest/boards/${boardId}/pins`);
+      const data = await response.json();
+
+      if (Array.isArray(data.items)) {
+        setBoardPins(data.items);
+      } else {
+        setBoardPins([]);
+        showMessage('No pins found in this board', 'info');
+      }
+    } catch (err) {
+      console.error("Error loading board pins:", err);
+      showMessage('Failed to load board pins', 'failed');
+      setBoardPins([]);
+    } finally {
+      setLoadingPins(false);
     }
   };
 
@@ -159,12 +186,10 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
   };
 
   // Handle board selection
-  const handleBoardSelect = (board) => {
-    // Here you would implement board import logic
-    // For now, just show a message and close
-    showMessage(`Selected board: ${board.name}. Board import functionality to be implemented.`, 'success');
-    // You could add board import logic here
-    // onClose();
+  const handleBoardSelect = async (board) => {
+    setSelectedBoard(board);
+    setImportStep('selectPins');
+    await loadBoardPins(board.id);
   };
 
   // Render Pinterest options selection
@@ -276,7 +301,7 @@ const AddInspirationModal = ({ spaceId, projectId, onClose, onAdd }) => {
       <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-[1px] overflow-auto"
         onClick={onClose}
       >
-        <div className="theme-bg-secondary rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl"
+        <div className="theme-bg-secondary rounded-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto p-6 shadow-2xl scrollbar-hidden"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-6">

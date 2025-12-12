@@ -38,26 +38,26 @@ const defaultTemplates = [
 
 const ProjectTemplates = () => {
   const [activeTab, setActiveTab] = useState('All Templates');
-  const [searchQuery, setSearchQuery] = useState(''); 
-  const [templates, setTemplates] = useState([]); 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTemplates, setselectedTemplates] =useState(null);
+  const [selectedTemplates, setselectedTemplates] = useState(null);
   const [isUseTemplateModalOpen, setIsUseTemplateModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         console.log('Fetching templates from API...');
         const response = await fetch(`${BASE_URL}/templates/templates`);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const rawData = await response.json();
         console.log('Raw API response:', rawData);
 
@@ -66,26 +66,26 @@ const ProjectTemplates = () => {
         // Handle single template object
         if (rawData && typeof rawData === 'object' && rawData.template_id) {
           console.log('Single template object detected');
-          
+
           //backend to frontend mapping
           const singleTemplate = {
             template_id: rawData.template_id,
             title: rawData.template_name,
             description: rawData.description,
-            type: "assessment", 
+            type: "assessment",
             cards: rawData.files ? rawData.files.length : 0,
             duration: "Not specified",
             tags: ["site-assessment", "initial-visit", "protocol"],
             includedCards: [
-              { 
-                type: "site", 
-                title: "Site Assessment", 
-                description: "Document environmental factors and access issues" 
+              {
+                type: "site",
+                title: "Site Assessment",
+                description: "Document environmental factors and access issues"
               },
-              { 
-                type: "note", 
-                title: "Municipal Permits", 
-                description: "Check required permits before project initiation" 
+              {
+                type: "note",
+                title: "Municipal Permits",
+                description: "Check required permits before project initiation"
               }
             ]
           };
@@ -121,7 +121,7 @@ const ProjectTemplates = () => {
 
         console.log('Final templates:', extractedTemplates);
         setTemplates(extractedTemplates);
-        
+
       } catch (err) {
         console.error('Error fetching templates:', err);
         setError(`Failed to load templates: ${err.message}`);
@@ -130,8 +130,8 @@ const ProjectTemplates = () => {
       } finally {
         setLoading(false);
       }
-    }; 
-    
+    };
+
     fetchTemplates();
   }, []);
 
@@ -139,20 +139,20 @@ const ProjectTemplates = () => {
 
   const filteredTemplates = templates.filter(template => {
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       template.title?.toLowerCase().includes(searchLower) ||
       template.description?.toLowerCase().includes(searchLower) ||
       template.tags?.some(tag => tag.toLowerCase().includes(searchLower));
-    
-    const matchesTab = activeTab === 'All Templates' || 
-                      template.type?.toLowerCase() === activeTab.toLowerCase() ||
-                      template.tags?.includes(activeTab.toLowerCase());
-    
+
+    const matchesTab = activeTab === 'All Templates' ||
+      template.type?.toLowerCase() === activeTab.toLowerCase() ||
+      template.tags?.includes(activeTab.toLowerCase());
+
     return matchesSearch && matchesTab;
   });
 
   const getCardIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'site': return '';
       case 'vendor': return '';
       case 'inspiration': return '';
@@ -198,11 +198,10 @@ const ProjectTemplates = () => {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`whitespace-nowrap py-2 px-3 border-b-2 font-medium text-xs ${
-                    activeTab === tab
+                  className={`whitespace-nowrap py-2 px-3 border-b-2 font-medium text-xs ${activeTab === tab
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab}
                 </button>
@@ -299,14 +298,14 @@ const ProjectTemplates = () => {
                         ))}
                       </div>
                     </div>
-                      {/* use Template */}
+                    {/* use Template */}
                     <div className="border-t border-gray-200 pt-6">
-                      <button 
-                      // onClick={() => {
-                      //   setselectedTemplates(template);
-                      //   setIsUseTemplateModalOpen(true);
-                      // }} 
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
+                      <button
+                        // onClick={() => {
+                        //   setselectedTemplates(template);
+                        //   setIsUseTemplateModalOpen(true);
+                        // }} 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 text-base">
                         <span className="text-lg">+</span>
                         <span>Use Template</span>
                       </button>
@@ -318,20 +317,20 @@ const ProjectTemplates = () => {
           )}
 
           {isUseTemplateModalOpen && selectedTemplate && (
-  <UseTemplateModal
-    template={selectedTemplate}
-    onClose={() => {
-      setIsUseTemplateModalOpen(false);
-      setSelectedTemplate(null);
-    }}
-    onSave={(projectData) => {
-      // Handle creating project from template
-      console.log('Creating project from template:', projectData);
-      setIsUseTemplateModalOpen(false);
-      setSelectedTemplate(null);
-    }}
-  />
-)}
+            <UseTemplateModal
+              template={selectedTemplate}
+              onClose={() => {
+                setIsUseTemplateModalOpen(false);
+                setSelectedTemplate(null);
+              }}
+              onSave={(projectData) => {
+                // Handle creating project from template
+                console.log('Creating project from template:', projectData);
+                setIsUseTemplateModalOpen(false);
+                setSelectedTemplate(null);
+              }}
+            />
+          )}
 
           {!loading && !error && filteredTemplates.length === 0 && (
             <div className="text-center py-12">

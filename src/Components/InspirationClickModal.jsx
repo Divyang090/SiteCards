@@ -95,13 +95,13 @@ const getFileUrl = (item) => {
                         )}
                     </div>
 
-                    <h2 className="text-md theme-text-primary">{inspiration.title || inspiration.name || 'Untitled Inspiration'}</h2>
+                    <h2 className="text-xl theme-text-primary">{inspiration.title || inspiration.name || 'Untitled Inspiration'}</h2>
 
 
                     {/* Description */}
                     {inspiration.description && (
                         <div className="mb-2">
-                            <p className="theme-text-secondary whitespace-pre-wrap">{inspiration.description}</p>
+                            <p className="theme-text-secondary text-lg whitespace-pre-wrap">{inspiration.description}</p>
                         </div>
                     )}
 

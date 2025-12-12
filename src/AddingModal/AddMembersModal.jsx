@@ -2,12 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { BASE_URL } from "../Configuration/Config";
 import { useAuth } from "../Components/AuthContext";
 import StatusMessageProvider, { useStatusMessage } from "../Alerts/StatusMessage";
+import { motion } from "framer-motion";
 
 const AddMembersModal = ({ onClose }) => {
     const [members, setMembers] = useState([
         { username: "", domain: "@gmail.com" },
     ]);
-    const [domains, setDomains] = useState(["@gmail.com", "@hotmail.com", "@yahoo.com",]);
+    const [domains, setDomains] = useState([
+        "@gmail.com",
+        "@hotmail.com",
+        "@yahoo.com",]);
     const [openDropdown, setOpenDropdown] = useState(null);
     const [showCustomInput, setShowCustomInput] = useState(false);
     const [customDomain, setCustomDomain] = useState("");
@@ -15,20 +19,25 @@ const AddMembersModal = ({ onClose }) => {
     const { authFetch } = useAuth();
     const { showMessage } = useStatusMessage();
     const [isSending, setIsSending] = useState(false);
+    const [titleDropdownOpen, setTitleDropdownOpen] = useState(false);
+    const [selectedRole, setSelectedRole] = useState("");
 
     const dropdownRef = useRef(null);
     const pcModalRef = useRef(null);
     const mobileModalRef = useRef(null);
+    const titleDropdownRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             const clickedOutsidePC =
                 pcModalRef.current &&
-                !pcModalRef.current.contains(event.target);
+                !pcModalRef.current.contains(event.target) &&
+                !event.target.closest('.role-dropdown-menu');
 
             const clickedOutsideMobile =
                 mobileModalRef.current &&
-                !mobileModalRef.current.contains(event.target);
+                !mobileModalRef.current.contains(event.target) &&
+                !event.target.closest('.role-dropdown-menu');
 
             // CLOSE ONLY IF:
             // - clicked outside PC modal when PC modal is active (screen ≥ sm)
@@ -43,6 +52,25 @@ const AddMembersModal = ({ onClose }) => {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    //Select Roles
+    const memberOptions = [
+        "Architect",
+        "Co-Admin",
+        "Member",
+        "Client"
+    ];
+
+    //Click Outside role dropdown
+    // useEffect(() => {
+    //     function handleClickOutside(e) {
+    //         if (titleDropdownRef.current && !titleDropdownRef.current.contains(e.target)) {
+    //             setTitleDropdownOpen(false);
+    //         }
+    //     }
+    //     document.addEventListener("mousedown", handleClickOutside);
+    //     return () => document.removeEventListener("mousedown", handleClickOutside);
+    // }, []);
 
 
     const emailLocalPartRegex = /^[a-zA-Z0-9._]+$/;
@@ -114,6 +142,11 @@ const AddMembersModal = ({ onClose }) => {
         e.preventDefault();
 
         if (isSending) return;
+
+        if (!selectedRole || selectedRole.trim() === "") {
+            showMessage("Please select a role for the members", "error");
+            return;
+        }
         setIsSending(true);
 
         const finalEmails = members.map((m) => m.username + m.domain);
@@ -122,8 +155,13 @@ const AddMembersModal = ({ onClose }) => {
             const response = await authFetch(`${BASE_URL}/invite/invite/send`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ emails: finalEmails }),
+                body: JSON.stringify({
+                    emails: finalEmails,
+                    role_name: selectedRole
+                }),
             });
+
+            console.log('===========Role=========', selectedRole);
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "Failed to send invites");
@@ -137,22 +175,64 @@ const AddMembersModal = ({ onClose }) => {
         }
     };
 
-    /* ============================================================
-       RETURN: TWO SEPARATE MODALS (PC & MOBILE)
-    ============================================================ */
+    /* TWO SEPARATE MODALS (PC & MOBILE) */
     return (
         <div
             className="fixed inset-0 bg-black/30 z-9999 flex p-4"
             onClick={onClose}
         >
 
-            {/* ---------------- PC / TABLET MODAL ---------------- */}
+            {/* PC / TABLET MODAL */}
             <div
                 ref={pcModalRef}
                 className="hidden sm:block theme-bg-card shadow-2xl rounded-xl p-4 absolute bottom-12 right-18 w-full max-w-md animate-slide-in-up"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-xl theme-text-primary mb-2">Add Members</h2>
+
+                <div className="flex items-center gap-3 mb-2 relative" ref={titleDropdownRef}>
+                    <h2 className="text-xl theme-text-primary">Add Members</h2>
+
+                    {/* Small Dropdown Button */}
+                    <button
+                        type="button"
+                        onClick={() => setTitleDropdownOpen(!titleDropdownOpen)}
+                        className="relative px-2 py-1 border border-gray-400 rounded-lg theme-text-secondary text-sm bg-transparent flex items-center gap-1"
+                    >
+                        {selectedRole || 'Select Role'}
+
+                        <motion.svg
+                            animate={{ rotate: titleDropdownOpen ? 180 : 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            className="w-4 h-4"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </motion.svg>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {titleDropdownOpen && (
+                        <div className="absolute right-30 top-full mt-1 w-40 theme-bg-card shadow-xl rounded-lg border z-50 bg-white role-dropdown-menu">
+                            {memberOptions.map((item) => (
+                                <div
+                                    key={item}
+                                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 whitespace-nowrap"
+                                    onClick={() => {
+                                        console.log("Selected:", item);
+                                        setSelectedRole(item);
+                                        setTitleDropdownOpen(false);
+                                    }}
+                                >
+                                    {item}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Member Inputs */}
@@ -330,12 +410,58 @@ const AddMembersModal = ({ onClose }) => {
                 className="block sm:hidden theme-bg-card shadow-2xl rounded-xl p-2 w-full max-w-sm mx-auto animate-slide-in-up self-center"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-xl theme-text-primary mb-2">Add Members</h2>
+                <div
+                    className="flex items-center gap-3 mb-2 relative"
+                    ref={titleDropdownRef}
+                >
+                    <h2 className="text-xl theme-text-primary">Add Members</h2>
+
+                    <button
+                        type="button"
+                        onClick={() => setTitleDropdownOpen(!titleDropdownOpen)}
+                        className="px-2 py-1 border border-gray-400 rounded-lg theme-text-secondary text-sm bg-transparent flex items-center gap-1"
+                    >
+                        {selectedRole || 'Select Role'}
+
+                        <motion.svg
+                            animate={{ rotate: titleDropdownOpen ? 180 : 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                            stroke="currentColor"
+                            className="w-4 h-4"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </motion.svg>
+                    </button>
+
+                    {titleDropdownOpen && (
+                        <div className="absolute right-18 top-full mt-1 w-40 theme-bg-card shadow-xl rounded-lg border z-50">
+                            {memberOptions.map(item => (
+                                <div
+                                    key={item}
+                                    className="px-3 py-2 cursor-pointer hover:bg-gray-100 whitespace-nowrap"
+                                    onClick={() => {
+                                        console.log("Selected:", item);
+                                        setSelectedRole(item);
+                                        setTitleDropdownOpen(false);
+                                    }}
+                                >
+                                    {item}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
 
                     {members.map((member, index) => (
-                        <div key={index} className="flex items-center gap-2 w-full">
+                        <div key={index}
+                            className={`flex items-center w-full ${members.length === 1 ? "gap-1" : "gap-2"
+                                }`}>
 
                             {/* Local part scrollable */}
                             <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hidden">

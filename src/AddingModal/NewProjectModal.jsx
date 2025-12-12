@@ -1,24 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { BASE_URL } from '../Configuration/Config';
 import { useAuth } from "../Components/AuthContext";
 
 const NewProjectModal = ({ isOpen, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    assignee: '',
-    location: '',
-    description: '',
-    status: 'open',
-    dueDate: ''
-  });
+  const [formData, setFormData] = useState({ title: '', assignee: '', location: '', description: '', status: 'open', dueDate: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isClosing, setIsClosing] = useState(false);
   const { authFetch } = useAuth();
+  const dateInputRef = useRef(null);
 
-  // ==================== API CONFIG ====================
+  //API CONFIG
   const CREATE_PROJECT_API = `${BASE_URL}/projects/projects`;
+
+  const handleInputClick = () => {
+    if (dateInputRef.current && typeof dateInputRef.current.showPicker === 'function') {
+      dateInputRef.current.showPicker();
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +40,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     setLoading(true);
 
     try {
-      // ==================== PREPARE DATA ====================
+      //PREPARE DATA
       const backendData = {
         project_name: formData.title.trim(),
         client_name: formData.assignee.trim(),
@@ -48,7 +52,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
       // console.log('Sending to backend:', backendData);
 
-      // ==================== API CALL ====================
+      //API CALL
       const response = await authFetch(CREATE_PROJECT_API, {
         method: 'POST',
         headers: {
@@ -57,7 +61,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
         body: JSON.stringify(backendData)
       });
 
-      // ==================== HANDLE RESPONSE ====================
+      //HANDLE RESPONSE
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || `Server error: ${response.status}`);
@@ -65,33 +69,37 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
 
       const newProject = await response.json();
 
-      // ==================== DEBUG BACKEND RESPONSE ====================
+      //DEBUG BACKEND RESPONSE
       // console.log('🔍 FULL BACKEND RESPONSE:', newProject);
       // console.log('🔍 All fields from backend:');
       Object.keys(newProject).forEach(key => {
         console.log(`  ${key}:`, newProject[key]);
       });
 
-      // ==================== TRANSFORM WITH PROPER DATE HANDLING ====================
+      //    TRANSFORM WITH PROPER DATE HANDLING   
       const transformedProject = {
         id: newProject.id || newProject.project_id,
         title: newProject.project_name || newProject.name || newProject.title || formData.title,
         assignee: newProject.client_name || newProject.client || newProject.assignee || newProject.assigned_to || formData.assignee,
         status: newProject.status || formData.status,
+        start_date: newProject.start_date ?
+          (typeof newProject.start_date === 'string' && newProject.start_date.includes('-') ?
+            newProject.start_date : // Keep as-is if already in YYYY-MM-DD format
+            new Date(newProject.start_date).toISOString().split('T')[0]) : // Convert to YYYY-MM-DD
+          new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
         docDate: newProject.due_date ? new Date(newProject.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
           newProject.end_date ? new Date(newProject.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) :
             formData.dueDate ? new Date(formData.dueDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date',
         isOverdue: newProject.is_overdue || newProject.overdue || false,
         cardsCount: newProject.cards_count || newProject.cardsCount || 0,
         location: newProject.location || formData.location,
-        // updated: newProject.updated_at ? new Date(newProject.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : "Just now",
-        description: newProject.project_description || newProject.description || formData.description
+        description: newProject.project_description || newProject.description || formData.description,
       };
 
       // console.log('TRANSFORMED PROJECT:', transformedProject);
-      // console.log('DATE DEBUG - Final docDate:', transformedProject.docDate);
+      // console.log('DATE DEBUG - Final docDate:', transformedProject.start_date);
 
-      // ==================== SUCCESS ====================
+      //    SUCCESS   
       setSuccess('Project created successfully!');
 
       // Wait a moment to show success message, then update parent
@@ -108,7 +116,8 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
       let userMessage = err.message;
 
       if (err.message.includes('Failed to fetch')) {
-        userMessage = 'Cannot connect to server. Please check if backend is running.';
+        userMessage = 'Cannot connect to server.';
+        // Please check if backend is running.
       } else if (err.message.includes('NetworkError')) {
         userMessage = 'Network error. Please check your internet connection.';
       }
@@ -119,7 +128,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     }
   };
 
-  // ==================== FORM MANAGEMENT ====================
+  //    FORM MANAGEMENT   
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -162,7 +171,7 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
     setTimeout(() => onClose(), 200); // match animation duration
   };
 
-  // ==================== RENDER ====================
+  //    RENDER   
   if (!isOpen) return null;
 
   return (
@@ -292,6 +301,9 @@ const NewProjectModal = ({ isOpen, onClose, onSave }) => {
                 onChange={handleChange}
                 required
                 disabled={loading}
+                ref={dateInputRef}
+                onMouseDown={handleMouseDown}
+                onClick={handleInputClick}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 disabled:opacity-50"
               />
             </div>

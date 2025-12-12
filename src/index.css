@@ -41,6 +41,7 @@
 .theme-text-muted,
 .theme-border,
 .theme-shadow,
+.theme-bg-hover,
 [class*="theme-"] {
   transition: background-color 0.3s ease,
     color 0.3s ease,
@@ -56,8 +57,20 @@ body {
 }
 
 /* Custom utility classes */
+.theme-bg-card:hover {
+  background-color: var(--bg-hover);
+}
+
 .theme-bg-primary {
   background-color: var(--bg-primary) !important;
+}
+
+.theme-accent:hover {
+  background-color: var(--accent-hover);
+}
+
+.theme-text-primary:hover {
+  color: var(--text-secondary);
 }
 
 .theme-bg-secondary {

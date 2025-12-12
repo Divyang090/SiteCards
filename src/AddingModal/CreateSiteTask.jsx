@@ -115,7 +115,7 @@ const CreateSiteTask = ({ isOpen, onClose, onCreate, projectId, spaceId, isInlin
                 // Convert to "dd-mm-yyyyThh-mm"
                 const formattedDate = `${day}-${month}-${year}T${hours}:${minutes}`;
                 formData.append('date', formattedDate);
-                formData.append('visit_date',formattedDate);
+                formData.append('visit_date', formattedDate);
             }
 
             if (taskData.location && taskData.location.trim()) {
@@ -459,6 +459,18 @@ const ActionButtons = ({ uploading, onCancel, taskTitle, isInline }) => (
 
 // Conditional fields for selecting task type
 const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
+
+    const dateInputRef = useRef(null);
+
+    const handleMouseDown = (e) => {
+        e.preventDefault();
+    };
+
+    const handleInputFocus = () => {
+        if (dateInputRef.current && typeof dateInputRef.current.showPicker === 'function') {
+            dateInputRef.current.showPicker();
+        }
+    };
     if (task_type === 'Site Visits') {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -470,6 +482,8 @@ const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
                         name="date"
                         value={taskData.date}
                         onChange={handleChange}
+                        ref={dateInputRef}
+                        onFocus={handleInputFocus}
                         required
                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
                     />
@@ -491,6 +505,8 @@ const ConditionalFields = ({ task_type, taskData, handleChange, isInline }) => {
                         name="date"
                         value={taskData.date}
                         onChange={handleChange}
+                        ref={dateInputRef}
+                        onFocus={handleInputFocus}
                         required
                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 ${isInline ? 'text-sm' : ''}`}
                     />

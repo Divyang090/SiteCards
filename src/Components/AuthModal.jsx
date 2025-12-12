@@ -158,7 +158,8 @@ const AuthModal = () => {
     } catch (err) {
       console.error('Login error:', err);
       if (err.message.includes('Failed to fetch')) {
-        setError('Cannot connect to server. Please check if backend is running on port 5000.');
+        setError('Cannot connect to server.');
+        // Please check if backend is running on port 5000.
       } else {
         setError(err.message || 'Login failed. Please try again.');
       }
